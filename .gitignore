@@ -1,0 +1,20 @@
+**/__pycache__/
+*.py[cod]
+*.o
+*.obj
+*.exe
+*.tmp
+*.log
+
+# Local build and generated assets
+**/build/
+**/endpoint_packed.bin
+**/submission.zip
+
+# Million-row inputs/predictions are reproducible and should not bloat Git history.
+/submission_v7_20260919/qa/requests_1m.csv
+/submission_v7_20260919/qa/external_reference_1m.csv
+
+# Local experiment outputs
+/experiments/**/predictions*.csv
+/experiments/**/result*.csv

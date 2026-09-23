@@ -1,0 +1,10 @@
+{
+  "read_only_container": true,
+  "network": "none",
+  "mounted_release_contains_only_binary": true,
+  "memory_address_space_limit": 2000000000,
+  "archive_executable_mode": "0o755",
+  "output_identical_to_validated_million": true,
+  "output_sha256": "22bced0abbe590b33d20cc4def21eb0506d8e2668928d50d09b9c0901f0dded9",
+  "stderr": "processed=1000000 bad_rows=0 local_queries=162484 fallback_queries=837516 threads=1 total_elapsed=0.540444 stream_elapsed=0.28299 total_cpu=0.540457 stream_cpu=0.283059 atlas_memory_bytes=1265401596\n"
+}

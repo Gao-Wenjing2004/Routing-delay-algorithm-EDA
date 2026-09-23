@@ -1,0 +1,17 @@
+{
+  "zip_sha256": "9b9f5e1252151664ebaeadf38c91107c4b64e93fb0b3252623ba4529d7370d2b",
+  "executable_sha256": "888032d50ea38fb5fcd0bde4129af5eca94128f735643680a7e2120c784e839c",
+  "atlas_sha256": "99fc58ee86f323c140c81ee0b128e2a0273d2ba6ab7088a82f4d153082f228e1",
+  "zip_payload_crc_and_sha256_verified": true,
+  "embedded_atlas_equals_build_asset": true,
+  "source_sha256": {
+    "e2e_format.hpp": "f17a56fef2bc3dfb80cf246a0e1561c451c1b4342893d9d9c2fb354f02b8f46c",
+    "estimate.cpp": "4b9c8d850473e744f586813589a053d9342db13743ba2ca0b03befb6608d1efc",
+    "fast_model_data.hpp": "cd3978a3f8cfb525cee9826c96979facbd50d0f73d790ce0aea45785c24d3c11",
+    "local_arch_data.hpp": "be23efd706f4d4b36720e5278b6a4407cf4db54508efe59db4bafee39a471fac",
+    "release.cpp": "3ca231884d3fda91189892144dd6ef874ae96db75f19e860fd14e1497c96efee",
+    "residual_model.hpp": "cd1e86eaba7168a5fff7ae7dfcc62ba9dd88a698ff3a6ba9e0becb9354a2e7ea",
+    "srb_fast.hpp": "0d6721d18aa2650b0cac3e78106b0181bf0f16894d422a7c67179b0263973bd5",
+    "srb_hybrid.hpp": "4085e115c89e3603a4e5157756a2e134cdd9d25ead759af584e791b6cd4f7b9b"
+  }
+}

@@ -1,0 +1,251 @@
+{
+  "holdout": {
+    "v6": {
+      "all": {
+        "rows": 200000,
+        "acc_score": 94.8718424673307,
+        "exact_percent": 10.245
+      },
+      "short": {
+        "rows": 42326,
+        "acc_score": 92.3151656051389,
+        "exact_percent": 43.93044464395407
+      },
+      "long": {
+        "rows": 157674,
+        "acc_score": 95.55815666541604,
+        "exact_percent": 1.2024810685338103
+      }
+    },
+    "v7": {
+      "all": {
+        "rows": 200000,
+        "acc_score": 95.64760631751196,
+        "exact_percent": 15.3055
+      },
+      "short": {
+        "rows": 42326,
+        "acc_score": 95.38596846137862,
+        "exact_percent": 67.70306667296697
+      },
+      "long": {
+        "rows": 157674,
+        "acc_score": 95.71784036940743,
+        "exact_percent": 1.239900046932278
+      }
+    }
+  },
+  "public_training": {
+    "v6": {
+      "all": {
+        "rows": 1000000,
+        "acc_score": 95.27036540738824,
+        "exact_percent": 10.496
+      },
+      "short": {
+        "rows": 210238,
+        "acc_score": 92.89518888804018,
+        "exact_percent": 44.23891018750179
+      },
+      "long": {
+        "rows": 789762,
+        "acc_score": 95.9026474886591,
+        "exact_percent": 1.5134939386802606
+      }
+    },
+    "v7": {
+      "all": {
+        "rows": 1000000,
+        "acc_score": 95.97964392407927,
+        "exact_percent": 15.5079
+      },
+      "short": {
+        "rows": 210238,
+        "acc_score": 95.52915760817241,
+        "exact_percent": 67.7032696277552
+      },
+      "long": {
+        "rows": 789762,
+        "acc_score": 96.09956529543129,
+        "exact_percent": 1.6132708334916088
+      }
+    }
+  },
+  "diagnostic": {
+    "v6": {
+      "all": {
+        "rows": 253,
+        "acc_score": 93.98511008180911,
+        "exact_percent": 22.529644268774703
+      },
+      "short": {
+        "rows": 102,
+        "acc_score": 93.72992159427596,
+        "exact_percent": 55.88235294117647
+      },
+      "long": {
+        "rows": 151,
+        "acc_score": 94.1574890601428,
+        "exact_percent": 0.0
+      }
+    },
+    "v7": {
+      "all": {
+        "rows": 253,
+        "acc_score": 95.41115162326274,
+        "exact_percent": 30.8300395256917
+      },
+      "short": {
+        "rows": 102,
+        "acc_score": 96.9100538928244,
+        "exact_percent": 74.50980392156863
+      },
+      "long": {
+        "rows": 151,
+        "acc_score": 94.39864810342652,
+        "exact_percent": 1.3245033112582782
+      }
+    }
+  },
+  "timing": {
+    "v6": {
+      "runs": [
+        {
+          "full_cpu_seconds": 0.804162,
+          "wall_seconds": 0.8069779612123966,
+          "total_cpu": 0.694784,
+          "stream_cpu": 0.517186,
+          "md5": "5c00333ffbbe750f33a0523d9695d999"
+        },
+        {
+          "full_cpu_seconds": 0.878782,
+          "wall_seconds": 1.147574907168746,
+          "total_cpu": 0.782082,
+          "stream_cpu": 0.537988,
+          "md5": "5c00333ffbbe750f33a0523d9695d999"
+        },
+        {
+          "full_cpu_seconds": 0.9415779999999994,
+          "wall_seconds": 1.9076701756566763,
+          "total_cpu": 0.822777,
+          "stream_cpu": 0.620677,
+          "md5": "5c00333ffbbe750f33a0523d9695d999"
+        },
+        {
+          "full_cpu_seconds": 0.5970179999999994,
+          "wall_seconds": 1.3471883777529001,
+          "total_cpu": 0.487749,
+          "stream_cpu": 0.313777,
+          "md5": "5c00333ffbbe750f33a0523d9695d999"
+        },
+        {
+          "full_cpu_seconds": 0.6838200000000003,
+          "wall_seconds": 4.165371011942625,
+          "total_cpu": 0.588875,
+          "stream_cpu": 0.403514,
+          "md5": "5c00333ffbbe750f33a0523d9695d999"
+        },
+        {
+          "full_cpu_seconds": 0.5805519999999986,
+          "wall_seconds": 1.77537233941257,
+          "total_cpu": 0.471243,
+          "stream_cpu": 0.301067,
+          "md5": "5c00333ffbbe750f33a0523d9695d999"
+        },
+        {
+          "full_cpu_seconds": 0.6779929999999998,
+          "wall_seconds": 5.4927525240927935,
+          "total_cpu": 0.58354,
+          "stream_cpu": 0.396811,
+          "md5": "5c00333ffbbe750f33a0523d9695d999"
+        }
+      ],
+      "mean_1m_full_cpu_seconds": 0.7377007142857139,
+      "mean_1m_stream_cpu_seconds": 0.4415742857142857,
+      "extrapolated_1b_cpu_seconds": 441.8704121428571,
+      "extrapolated_1b_cpu_min_max": [
+        301.346485,
+        620.9979010000001
+      ],
+      "time_score_estimate": 75.45164376984127,
+      "composite_estimate": 92.21522053934075
+    },
+    "v7": {
+      "runs": [
+        {
+          "full_cpu_seconds": 0.8117289999999999,
+          "wall_seconds": 2.6130693964660168,
+          "total_cpu": 0.699155,
+          "stream_cpu": 0.440144,
+          "md5": "06e7c57b4fad46c50ed957225487e8fa"
+        },
+        {
+          "full_cpu_seconds": 0.7923560000000004,
+          "wall_seconds": 0.7938094809651375,
+          "total_cpu": 0.692562,
+          "stream_cpu": 0.477262,
+          "md5": "06e7c57b4fad46c50ed957225487e8fa"
+        },
+        {
+          "full_cpu_seconds": 0.6542780000000001,
+          "wall_seconds": 3.0140480156987906,
+          "total_cpu": 0.553985,
+          "stream_cpu": 0.333202,
+          "md5": "06e7c57b4fad46c50ed957225487e8fa"
+        },
+        {
+          "full_cpu_seconds": 0.6416740000000001,
+          "wall_seconds": 4.779412422329187,
+          "total_cpu": 0.559267,
+          "stream_cpu": 0.326843,
+          "md5": "06e7c57b4fad46c50ed957225487e8fa"
+        },
+        {
+          "full_cpu_seconds": 0.6209740000000004,
+          "wall_seconds": 3.4426081981509924,
+          "total_cpu": 0.519641,
+          "stream_cpu": 0.302766,
+          "md5": "06e7c57b4fad46c50ed957225487e8fa"
+        },
+        {
+          "full_cpu_seconds": 0.6341010000000002,
+          "wall_seconds": 7.20668456889689,
+          "total_cpu": 0.550631,
+          "stream_cpu": 0.32078,
+          "md5": "06e7c57b4fad46c50ed957225487e8fa"
+        },
+        {
+          "full_cpu_seconds": 0.6243419999999977,
+          "wall_seconds": 3.3141687754541636,
+          "total_cpu": 0.524118,
+          "stream_cpu": 0.316173,
+          "md5": "06e7c57b4fad46c50ed957225487e8fa"
+        }
+      ],
+      "mean_1m_full_cpu_seconds": 0.6827791428571427,
+      "mean_1m_stream_cpu_seconds": 0.3595957142857143,
+      "extrapolated_1b_cpu_seconds": 359.9188977142857,
+      "extrapolated_1b_cpu_min_max": [
+        303.084208,
+        477.577094
+      ],
+      "time_score_estimate": 80.00450568253969,
+      "composite_estimate": 93.51876090639053
+    }
+  },
+  "diagnostic_note": "253 existing reachable exact-solver cases, small non-representative diagnostic; 3 unreachable cases excluded and not handled by either fast estimator.",
+  "cpu_affinity": [
+    31
+  ],
+  "cpu_info": "Architecture:        x86_64\nCPU op-mode(s):      32-bit, 64-bit\nAddress sizes:       46 bits physical, 48 bits virtual\nByte Order:          Little Endian\nCPU(s):              32\nOn-line CPU(s) list: 0-31\nVendor ID:           GenuineIntel\nModel name:          Intel(R) Xeon(R) CPU E5-2640 v3 @ 2.60GHz\nCPU family:          6\nModel:               63\nThread(s) per core:  2\nCore(s) per socket:  8\nSocket(s):           2\nStepping:            2\nCPU max MHz:         3400.0000\nCPU min MHz:         1200.0000\nBogoMIPS:            5200.38\nFlags:               fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe syscall nx pdpe1gb rdtscp lm constant_tsc arch_perfmon pebs bts rep_good nopl xtopology nonstop_tsc aperfmperf eagerfpu pni pclmulqdq dtes64 monitor ds_cpl vmx smx est tm2 ssse3 sdbg fma cx16 xtpr pdcm pcid dca sse4_1 sse4_2 x2apic movbe popcnt tsc_deadline_timer aes xsave avx f16c rdrand lahf_lm abm epb invpcid_single intel_ppin ssbd rsb_ctxsw ibrs ibpb stibp tpr_shadow vnmi flexpriority ept vpid fsgsbase tsc_adjust bmi1 avx2 smep bmi2 erms invpcid cqm xsaveopt cqm_llc cqm_occup_llc dtherm ida arat pln pts md_clear spec_ctrl intel_stibp flush_l1d\nVirtualization:      VT-x\nL1d cache:           512 KiB (16 instances)\nL1i cache:           512 KiB (16 instances)\nL2 cache:            4 MiB (16 instances)\nL3 cache:            40 MiB (2 instances)\nNUMA node(s):        2\nNUMA node0 CPU(s):   0-7,16-23\nNUMA node1 CPU(s):   8-15,24-31\n",
+  "rival_reported_cpu_seconds": 359.618,
+  "benchmark_note": "Only existing 1M requests, 7 paired runs. V6 is instrumented and prefaulted to separate one-time faults from stream cost; predictions verified against original. V7 is actual packaged binary. 1B time and total score are extrapolations, not platform measurements; rival hardware is unknown.",
+  "preprocessing": {
+    "endpoint_expansion_observed_wall_seconds": 29.7235,
+    "full_v7_preparation_measured": false,
+    "hypothetical_preparation_seconds": 300,
+    "hypothetical_including_preparation_seconds": 659.9188977142858,
+    "hypothetical_composite_including_preparation": 91.01876090639053,
+    "note": "300 seconds is an assumed budget, not measured or an upper bound. Official submission runs a prebuilt binary."
+  }
+}

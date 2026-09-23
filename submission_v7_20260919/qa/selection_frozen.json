@@ -1,0 +1,12 @@
+{
+  "selected_before_outer_evaluation": true,
+  "outer_split": "existing 800000 train / 200000 test, seed 20260825",
+  "inner_split": "800000 training file row index modulo 5: 0 validation, others train",
+  "distance_table": {"base_radius": 24, "hot_radius": 72, "hot_sources": 110, "hot_targets": 256, "hot_port_selection": "inner 640000 endpoint frequencies only"},
+  "encoding": "16 values per block, uint16 base plus 10-bit differences, 1023 denotes INF",
+  "model": "premerged V6 features plus four long-distance categorical residual groups",
+  "residual": {"groups": 4, "shrink": 20, "minimum_chebyshev_distance": 73, "fit_rounds": 12, "robust_rounds": 4},
+  "implementation": "compact residual tables, read-only mmap with MAP_POPULATE, portable x86-64, single thread",
+  "selection_evidence": ["experiments/residual_selection.json", "experiments/second_comparison.json", "experiments/residual_timing.json"],
+  "limits": "Global physical shortest paths are not guaranteed. The architecture-derived local table and long-distance regression are approximations. No billion-request benchmark was run."
+}

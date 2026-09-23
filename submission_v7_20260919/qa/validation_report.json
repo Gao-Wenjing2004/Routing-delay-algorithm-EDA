@@ -1,0 +1,70 @@
+{
+  "memory_limit_bytes": 2000000000,
+  "runs": [
+    {
+      "wall_seconds": 0.6530891973525286,
+      "sampled_peak_rss_bytes": 1282723840,
+      "sampled_max_threads": 1,
+      "exit_code": 0,
+      "stderr": "processed=1000000 bad_rows=0 local_queries=162484 fallback_queries=837516 threads=1 total_elapsed=0.53467 stream_elapsed=0.31096 total_cpu=0.534696 stream_cpu=0.311049 atlas_memory_bytes=1265401596",
+      "sha256": "22bced0abbe590b33d20cc4def21eb0506d8e2668928d50d09b9c0901f0dded9",
+      "md5": "06e7c57b4fad46c50ed957225487e8fa"
+    },
+    {
+      "wall_seconds": 0.7857365980744362,
+      "sampled_peak_rss_bytes": 1282519040,
+      "sampled_max_threads": 1,
+      "exit_code": 0,
+      "stderr": "processed=1000000 bad_rows=0 local_queries=162484 fallback_queries=837516 threads=1 total_elapsed=0.660651 stream_elapsed=0.423434 total_cpu=0.660336 stream_cpu=0.423161 atlas_memory_bytes=1265401596",
+      "sha256": "22bced0abbe590b33d20cc4def21eb0506d8e2668928d50d09b9c0901f0dded9",
+      "md5": "06e7c57b4fad46c50ed957225487e8fa"
+    },
+    {
+      "wall_seconds": 1.536609085276723,
+      "sampled_peak_rss_bytes": 1282519040,
+      "sampled_max_threads": 1,
+      "exit_code": 0,
+      "stderr": "processed=1000000 bad_rows=0 local_queries=162484 fallback_queries=837516 threads=1 total_elapsed=1.41847 stream_elapsed=0.324037 total_cpu=0.568804 stream_cpu=0.324136 atlas_memory_bytes=1265401596",
+      "sha256": "22bced0abbe590b33d20cc4def21eb0506d8e2668928d50d09b9c0901f0dded9",
+      "md5": "06e7c57b4fad46c50ed957225487e8fa"
+    },
+    {
+      "wall_seconds": 1.8238943181931973,
+      "sampled_peak_rss_bytes": 1282719744,
+      "sampled_max_threads": 1,
+      "exit_code": 0,
+      "stderr": "processed=1000000 bad_rows=0 local_queries=162484 fallback_queries=837516 threads=1 total_elapsed=1.70345 stream_elapsed=0.352128 total_cpu=0.605171 stream_cpu=0.352171 atlas_memory_bytes=1265401596",
+      "sha256": "22bced0abbe590b33d20cc4def21eb0506d8e2668928d50d09b9c0901f0dded9",
+      "md5": "06e7c57b4fad46c50ed957225487e8fa"
+    },
+    {
+      "wall_seconds": 0.7408691197633743,
+      "sampled_peak_rss_bytes": 1282519040,
+      "sampled_max_threads": 1,
+      "exit_code": 0,
+      "stderr": "processed=1000000 bad_rows=0 local_queries=162484 fallback_queries=837516 threads=1 total_elapsed=0.621116 stream_elapsed=0.349835 total_cpu=0.564307 stream_cpu=0.34993 atlas_memory_bytes=1265401596",
+      "sha256": "22bced0abbe590b33d20cc4def21eb0506d8e2668928d50d09b9c0901f0dded9",
+      "md5": "06e7c57b4fad46c50ed957225487e8fa"
+    }
+  ],
+  "checks": {
+    "five_run_md5_identical": true,
+    "row_count": 1000000,
+    "exact_header_order_and_integer_delay": true,
+    "embedded_equals_external_atlas_predictions": true,
+    "crlf_bom_no_final_newline": true,
+    "empty_file": true,
+    "header_only": true,
+    "byte_block_boundary": true,
+    "standalone_binary_foreign_cwd_and_symlink": true,
+    "failure_exits": true
+  },
+  "max_child_rss_bytes": 1282920448,
+  "mean_1m_wall_seconds": 1.1080396637320518,
+  "exe_sha256": "888032d50ea38fb5fcd0bde4129af5eca94128f735643680a7e2120c784e839c",
+  "exe_bytes": 1271029532,
+  "external_reference_sha256": "22bced0abbe590b33d20cc4def21eb0506d8e2668928d50d09b9c0901f0dded9",
+  "prediction_sha256": "22bced0abbe590b33d20cc4def21eb0506d8e2668928d50d09b9c0901f0dded9",
+  "environment": "PRETTY_NAME=\"Ubuntu 22.04.5 LTS\"\nNAME=\"Ubuntu\"\nVERSION_ID=\"22.04\"\nVERSION=\"22.04.5 LTS (Jammy Jellyfish)\"\nVERSION_CODENAME=jammy\nID=ubuntu\nID_LIKE=debian\nHOME_URL=\"https://www.ubuntu.com/\"\nSUPPORT_URL=\"https://help.ubuntu.com/\"\nBUG_REPORT_URL=\"https://bugs.launchpad.net/ubuntu/\"\nPRIVACY_POLICY_URL=\"https://www.ubuntu.com/legal/terms-and-policies/privacy-policy\"\nUBUNTU_CODENAME=jammy\ng++ (Ubuntu 11.4.0-1ubuntu1~22.04.3) 11.4.0\n\tlinux-vdso.so.1 (0x00007ffc439c5000)\n\tlibm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 (0x00007fc926d97000)\n\tlibc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007fc926b6e000)\n\t/lib64/ld-linux-x86-64.so.2 (0x00007fc9273e6000)\n",
+  "caveat": "1M public rows only; not a hidden evaluation or a measured billion-row test. This final model was trained on the public 1M."
+}

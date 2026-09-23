@@ -1,0 +1,11 @@
+{
+  "archive": "submission.zip",
+  "bytes": 904919134,
+  "sha256": "9b9f5e1252151664ebaeadf38c91107c4b64e93fb0b3252623ba4529d7370d2b",
+  "entries": [
+    "bin/estimate"
+  ],
+  "unix_mode": "0755",
+  "executable_sha256": "888032d50ea38fb5fcd0bde4129af5eca94128f735643680a7e2120c784e839c",
+  "crc_and_payload_hash_verified": true
+}
