@@ -21,3 +21,5 @@
 
 # Reproducible PRP-R million-row prediction output (about 40 MB).
 /srb_prpr_v8/analysis/prpr/p1_predictions_1m.csv
+/srb_prpr_v8/analysis/p2*/p2_cpp_predictions_1m.csv
+/srb_prpr_v8/.train_deps/

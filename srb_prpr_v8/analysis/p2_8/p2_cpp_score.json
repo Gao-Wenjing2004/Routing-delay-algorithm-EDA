@@ -1,0 +1,39 @@
+{
+  "contract": {
+    "accuracy_weight": 0.8,
+    "time_weight": 0.15,
+    "consistency_weight": 0.05,
+    "tanh_coefficient": 4.0,
+    "limit_time_seconds": 1800.0,
+    "run_count": 5,
+    "zero_golden_policy": "exact_zero",
+    "clip_time_score": false,
+    "invalid_run_threshold": 2
+  },
+  "accuracy": {
+    "rows": 1000000,
+    "acc_score": 94.58176690862034,
+    "mae": 29.544775,
+    "rmse": 49.919287164381664,
+    "mean_relative_error": 0.01407201933105218,
+    "median_relative_error": 0.006806579693703914,
+    "p50_absolute_error": 20.0,
+    "p90_absolute_error": 58.0,
+    "p95_absolute_error": 84.0,
+    "p99_absolute_error": 198.0,
+    "max_absolute_error": 786.0,
+    "exact_matches": 16039,
+    "within_5pct": 0.9488109488109489,
+    "within_10pct": 0.9844539844539845
+  },
+  "score": {
+    "acc_score": 94.58176690862034,
+    "time_score": 93.39753333333334,
+    "consistency_score": 100.0,
+    "estimated_total_score": 94.67504352689627,
+    "average_seconds": 118.8444,
+    "consistent": true,
+    "invalid_runs": 0,
+    "disqualified": false
+  }
+}

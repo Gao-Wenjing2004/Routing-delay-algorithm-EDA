@@ -1,8 +1,8 @@
-# SRB PRP-R V8（第一轮）
+# SRB PRP-R V8
 
-这是独立于 V3/V4/V7 的无 Atlas 研究分支。当前实现完成 PRP-R 第一轮：周期商图、自动原语发现、`P0_no_atlas` 对照、纯结构 `P1_primitive_base`、百万条误差分析，以及小于 100MB 的正式 C++ 流式程序。
+这是独立于 V3/V4/V7 的无 Atlas 研究分支。当前实现包含 P1 周期路由原语研究，以及可提交试测的 P2 小模型。
 
-当前结论不是“P1 已可提交争取高分”。P1 的体积和速度达标，但准确度只有 68.817773；应把它保留为结构基线，并进入 P2 低秩端口修正与 P3 余数校正。
+P1 的体积和速度达标，但准确度只有 68.817773，不能直接提交。P2 改用无 Atlas V6 回退作为数值基线，用离线 Dijkstra Teacher 和 Golden 固定训练侧蒸馏出 8+8 棵小树；公开全量 C++ 准确度 94.581767，固定验证 94.471213，亿条本机线性投影 118.8444 秒。
 
 ## 目录
 
@@ -14,6 +14,10 @@
 - `src/estimate.cpp`：面向大 CSV 的单线程流式入口。
 - `docs/prpr_design.md`：设计与边界说明。
 - `analysis/prpr/first_stage_conclusion.md`：第一轮数据和 Go/No-Go 结论。
+- `training/train_p2_student.py`：固定留出、Teacher/Golden 两阶段训练和消融。
+- `tools/export_p2_trees.py`：把选定 LightGBM 小树量化导出成 C++ 头。
+- `p2_runtime/`：P2 无 Atlas 单线程正式运行时。
+- `analysis/p2/README.md`：P2 结果、边界与记忆策略总说明。
 
 ## 复现实验
 
@@ -29,6 +33,15 @@ py -3.14 srb_prpr_v8/training/evaluate_first_stage.py `
   --golden ../plusone-srb_fast_v3/srb_fast_v3/arch/delay_estimate_ans.csv `
   --p0 ../analysis/srb_fast_v4/atlas_disabled_v3_predictions.csv `
   --v3 ../plusone-srb_fast_v3/srb_fast_v3/output/v3_predictions_1m.csv
+
+# P2 训练需要 numpy、scikit-learn、lightgbm；8+8 正式候选参数如下
+py -3.14 srb_prpr_v8/training/train_p2_student.py `
+  --golden ../baseline-srb_solver/srb_solver/arch/delay_estimate_ans.csv `
+  --arch-dir ../plusone-srb_fast_v3/srb_fast_v3/arch `
+  --base ../analysis/srb_fast_v6/atlas_radius_ablation/radius_0.csv `
+  --teacher ../analysis/srb_fast_v6/atlas_radius_ablation/radius_56.csv `
+  --trees 8 --lgb-learning-rate 0.5 `
+  --output-dir srb_prpr_v8/analysis/p2_8
 ```
 
 Linux 常规构建：
@@ -41,11 +54,11 @@ cd srb_prpr_v8
 
 也可在 Windows 上用 `build_linux_with_zig.ps1 -ZigExe <zig.exe>` 交叉编译静态 Linux x86-64 程序。编译参数未使用 `-march=native`。
 
-## 当前产物
+## 当前正式产物（P2 8+8）
 
-- Linux 静态二进制：`submission/bin/estimate`，8,165,056 bytes。
-- Windows 本地性能二进制：1,033,216 bytes（`build/` 被 Git 忽略）。
-- 嵌入模型头：197,497 bytes。
+- Linux 静态二进制：`submission/bin/estimate`，12,850,040 bytes。
+- Windows 本地性能二进制：5,941,248 bytes（`build/` 被 Git 忽略）。
+- 8+8 树模型头：191,650 bytes；其余约 9.3 MB 是无 Atlas 回退参数头。
 - 外部 Atlas：0 bytes。
 
-百万请求的五次本地输出 SHA-256 完全一致。详细数据见 `analysis/prpr/benchmark_results.json`。
+百万请求的五次本地输出 SHA-256 完全一致。详细数据见 `analysis/p2_8/runtime_benchmark.json` 和 `analysis/p2_8/p2_cpp_score.json`。P2 尚未达到固定验证 94.6 目标，当前定位是“可提交试测、继续优化”。

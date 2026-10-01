@@ -1,0 +1,13 @@
+{
+  "platform": "local Windows x86-64, single thread",
+  "rows": 1000000,
+  "runs_seconds": [1.18795, 1.20238, 1.18475, 1.17661, 1.19053],
+  "average_seconds": 1.188444,
+  "projected_100m_seconds": 118.8444,
+  "unique_output_hashes": 1,
+  "output_sha256": "119469FE08A10D7788B7F1DF708F2FD0089E9248BBFC8A02300CA011C318911B",
+  "windows_binary_bytes": 5941248,
+  "linux_static_binary_bytes": 12850040,
+  "linux_static_binary_sha256": "18ED1748A71DB45FB303CB266812B7CA039FF9BC36C3BC9C84280F7800BF317E",
+  "notes": "The 100M value is a linear projection, not an official-platform measurement."
+}
