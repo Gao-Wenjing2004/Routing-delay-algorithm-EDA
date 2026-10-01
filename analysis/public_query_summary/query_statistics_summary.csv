@@ -1,0 +1,24 @@
+﻿metric,value,unit,denominator,definition
+source_rows_total,1000000,rows,input CSV,Rows found in input after header
+analyzed_rows,1000000,rows,selected sample/full input,Rows selected for analysis
+successfully_parsed,1000000,requests,analyzed_rows,Rows with valid canonical endpoints and delay when present
+parse_failures,0,requests,analyzed_rows,Rows retained in parse_failures.csv
+unique_exact_queries,1000000,keys,successful requests,"(architecture SHA-256, canonical From endpoint, canonical To endpoint)"
+exact_cache_hit_ratio_after_first,0.0,ratio,successful requests,(N - unique exact keys) / N
+unique_from,903129,endpoints,successful requests,canonical absolute endpoint: instance identity + full port name
+from_one_minus_unique_over_total,0.096871,ratio,successful requests,1 - unique From / N
+from_repeated_request_ratio,0.18733,ratio,successful requests,Requests whose From occurs at least twice / N
+unique_to,956421,endpoints,successful requests,canonical absolute endpoint: instance identity + full port name
+to_one_minus_unique_over_total,0.043579,ratio,successful requests,1 - unique To / N
+to_repeated_request_ratio,0.085343,ratio,successful requests,Requests whose To occurs at least twice / N
+unique_geometry_templates,999440,keys,successful requests,"(full from_port, full to_port, dx, dy); bus index/direction remain in full port name"
+geometry_template_repeat_upper_bound,0.00056,ratio,successful requests,Geometry repeats after first; not safety proof
+conservative_safe_template_hit_ratio,0.0,ratio,successful requests,Safe signature fixes absolute origin; equals Exact reuse
+bbox_block_related_ratio,0.477308,ratio,successful requests,closed endpoint axis-aligned bounding box intersects a configured Block rectangle
+endpoint_span_gap_related_ratio,0.984696,ratio,successful requests,endpoint coordinate span crosses at least one configured Gap Line; not necessarily the exact path crossing count
+atlas_precheck_candidate_ratio,0.090493,ratio,successful requests,Chebyshev<=48 and endpoint bbox misses all Blocks
+actual_atlas_ratio,0.090182,ratio,successful requests,Actual V3 Atlas branch from optional classifier
+current_v3_model_fallback_ratio,0.909818,ratio,successful requests,Actual V3 fallback branch from optional classifier
+max_configured_net_span,12,coordinate units,SRB_Net.json,Maximum abs(delta x/delta y)
+analysis_elapsed_seconds,26.52845700000762,seconds,one analysis run,"Parsing, statistics, output, and charts"
+peak_process_rss_mib,946.046875,MiB,analysis process,Best-effort sampled peak RSS/Windows peak working set

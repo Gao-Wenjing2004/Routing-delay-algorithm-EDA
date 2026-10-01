@@ -1,5 +1,7 @@
 # Routing-delay-algorithm-EDA
 
+> 版本总览、指标口径、历史源码索引与 100 MB 新规路线：[`docs/VERSION_HISTORY.md`](docs/VERSION_HISTORY.md)
+
 面向超大规模 FPGA SRB 阵列的布局布线延时估算算法。评测程序会执行大规模查询，
 并综合准确度、运行时间、内存占用和结果一致性评分。
 

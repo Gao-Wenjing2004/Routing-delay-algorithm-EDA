@@ -1,0 +1,196 @@
+#!/usr/bin/env python3
+"""Generate compact C++ routing-template data for the V2 local delay atlas."""
+
+from __future__ import annotations
+
+import argparse
+import json
+from pathlib import Path
+
+
+def args():
+    here = Path(__file__).resolve().parent
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--ports", type=Path, default=here / "arch" / "SRB_Port.json")
+    parser.add_argument("--arcs", type=Path, default=here / "arch" / "SRB_Arc.json")
+    parser.add_argument("--nets", type=Path, default=here / "arch" / "SRB_Net.json")
+    parser.add_argument("--gaps", type=Path, default=here / "arch" / "SRB_Gap.json")
+    parser.add_argument("--out", type=Path, default=here / "local_arch_data.hpp")
+    return parser.parse_args()
+
+
+def load(path: Path):
+    with path.open("r", encoding="utf-8") as stream:
+        return json.load(stream)
+
+
+def write_numeric(stream, ctype, name, values, per_line=12):
+    stream.write(f"static const {ctype} {name}[{len(values)}] = {{\n")
+    for i in range(0, len(values), per_line):
+        stream.write("    " + ", ".join(str(int(v)) for v in values[i : i + per_line]) + ",\n")
+    stream.write("};\n\n")
+
+
+def offsets_and_flat(rows):
+    offsets = [0]
+    flat = []
+    for row in rows:
+        flat.extend(row)
+        offsets.append(len(flat))
+    return offsets, flat
+
+
+def main():
+    opt = args()
+    port_root = load(opt.ports)
+    port_rows = port_root.get("Port", port_root.get("Ports"))
+    ports = [r.get("Name", r.get("name")) for r in port_rows]
+    directions = [r.get("Direction", r.get("direction")).lower() for r in port_rows]
+    pid = {name: i for i, name in enumerate(ports)}
+
+    input_ports = [i for i, d in enumerate(directions) if d == "input"]
+    port_to_input = [-1] * len(ports)
+    for iid, p in enumerate(input_ports):
+        port_to_input[p] = iid
+
+    net_rows = load(opt.nets)["Nets"]
+    input_to_route = [-1] * len(input_ports)
+    route_to_input = []
+    output_net = [(-1, 0, 0) for _ in ports]  # target route, dx, dy
+    for net in net_rows:
+        op = pid[net["from"]]
+        ip = pid[net["to"]]
+        iid = port_to_input[ip]
+        if iid < 0:
+            raise ValueError(f"Net target is not Input: {net['to']}")
+        if input_to_route[iid] < 0:
+            input_to_route[iid] = len(route_to_input)
+            route_to_input.append(iid)
+        route = input_to_route[iid]
+        if output_net[op][0] >= 0:
+            raise ValueError(f"duplicate Net source: {net['from']}")
+        output_net[op] = (route, int(net["delta x"]), int(net["delta y"]))
+
+    arc_rows = load(opt.arcs)["Arcs"]
+    # Keep the minimum delay for duplicate Input -> Output arcs.
+    arc_map = {}
+    for arc in arc_rows:
+        fp, tp = pid[arc["from"]], pid[arc["to"]]
+        if port_to_input[fp] < 0 or directions[tp] != "output":
+            raise ValueError(f"expected Arc Input -> Output: {arc['from']} -> {arc['to']}")
+        key = (port_to_input[fp], tp)
+        arc_map[key] = min(arc_map.get(key, 1 << 30), int(arc["delay"]))
+
+    transitions = [[] for _ in input_ports]
+    direct = [[] for _ in input_ports]
+    target_arcs = [[] for _ in ports]
+
+    for (iid, out_pid), cost in arc_map.items():
+        direct[iid].append((out_pid, cost))
+        route, dx, dy = output_net[out_pid]
+        if route >= 0:
+            transitions[iid].append((route, dx, dy, cost))
+        source_route = input_to_route[iid]
+        if source_route >= 0:
+            target_arcs[out_pid].append((source_route, cost))
+
+    # Collapse identical template edges and sort for reproducibility.
+    for iid, edges in enumerate(transitions):
+        best = {}
+        for route, dx, dy, cost in edges:
+            key = (route, dx, dy)
+            best[key] = min(best.get(key, 1 << 30), cost)
+        transitions[iid] = [(r, dx, dy, c) for (r, dx, dy), c in sorted(best.items())]
+    for iid in range(len(direct)):
+        direct[iid].sort()
+    for op in range(len(target_arcs)):
+        target_arcs[op].sort()
+
+    trans_off, trans_flat = offsets_and_flat(transitions)
+    direct_off, direct_flat = offsets_and_flat(direct)
+    target_off, target_flat = offsets_and_flat(target_arcs)
+
+    loaded_gaps = load(opt.gaps)
+    gap_root = loaded_gaps.get("Gap", loaded_gaps.get("Gaps"))
+    line_rows = gap_root.get("Line", gap_root.get("Lines", []))
+    block_rows = gap_root.get("Block", gap_root.get("Blocks", []))
+    x_prefix = [0] * 120
+    y_prefix = [0] * 550
+    for line in line_rows:
+        site, delay = int(line["site"]), int(line["delay"])
+        if line["direction"].lower() == "vertical":
+            for x in range(site + 1, 120):
+                x_prefix[x] += delay
+        else:
+            for y in range(site + 1, 550):
+                y_prefix[y] += delay
+
+    sorted_ports = sorted(enumerate(ports), key=lambda item: item[1])
+
+    opt.out.parent.mkdir(parents=True, exist_ok=True)
+    with opt.out.open("w", encoding="utf-8", newline="\n") as out:
+        out.write("// Generated by prepare_local_arch.py. Do not edit.\n")
+        out.write("#pragma once\n\n#include <cstdint>\n\nnamespace srb_local_arch {\n\n")
+        out.write(f"static constexpr int kPortCount = {len(ports)};\n")
+        out.write(f"static constexpr int kInputCount = {len(input_ports)};\n")
+        out.write(f"static constexpr int kRouteCount = {len(route_to_input)};\n\n")
+        out.write("struct Transition { uint16_t next_route; int8_t dx; int8_t dy; uint16_t cost; };\n")
+        out.write("struct PortCost { uint16_t id; uint16_t cost; };\n")
+        out.write("struct OutputNet { int16_t next_route; int8_t dx; int8_t dy; };\n\n")
+        out.write("struct Block { int16_t lower, upper, left, right; bool vpass; uint16_t vdelay; bool hpass; uint16_t hdelay; };\n\n")
+
+        out.write(f"static const char* const kPortNames[{len(ports)}] = {{\n")
+        for name in ports:
+            out.write(f'    "{name}",\n')
+        out.write("};\n\n")
+        out.write(f"static const char* const kSortedPortNames[{len(ports)}] = {{\n")
+        for _, name in sorted_ports:
+            out.write(f'    "{name}",\n')
+        out.write("};\n\n")
+        write_numeric(out, "uint16_t", "kSortedPortIds", [i for i, _ in sorted_ports])
+
+        write_numeric(out, "int16_t", "kPortToInput", port_to_input)
+        write_numeric(out, "int16_t", "kInputToRoute", input_to_route)
+        write_numeric(out, "uint16_t", "kRouteToInput", route_to_input)
+        write_numeric(out, "uint16_t", "kInputPort", input_ports)
+
+        out.write(f"static const OutputNet kOutputNet[{len(output_net)}] = {{\n")
+        for route, dx, dy in output_net:
+            out.write(f"    {{{route}, {dx}, {dy}}},\n")
+        out.write("};\n\n")
+
+        write_numeric(out, "uint32_t", "kTransitionOffset", trans_off)
+        out.write(f"static const Transition kTransitions[{len(trans_flat)}] = {{\n")
+        for route, dx, dy, cost in trans_flat:
+            out.write(f"    {{{route}, {dx}, {dy}, {cost}}},\n")
+        out.write("};\n\n")
+
+        write_numeric(out, "uint32_t", "kDirectOffset", direct_off)
+        out.write(f"static const PortCost kDirectArcs[{len(direct_flat)}] = {{\n")
+        for output_pid, cost in direct_flat:
+            out.write(f"    {{{output_pid}, {cost}}},\n")
+        out.write("};\n\n")
+
+        write_numeric(out, "uint32_t", "kTargetOffset", target_off)
+        out.write(f"static const PortCost kTargetArcs[{len(target_flat)}] = {{\n")
+        for route, cost in target_flat:
+            out.write(f"    {{{route}, {cost}}},\n")
+        out.write("};\n\n")
+        write_numeric(out, "uint16_t", "kXGapPrefix", x_prefix)
+        write_numeric(out, "uint16_t", "kYGapPrefix", y_prefix)
+        out.write(f"static constexpr int kBlockCount = {len(block_rows)};\n")
+        out.write(f"static const Block kBlocks[{len(block_rows)}] = {{\n")
+        for b in block_rows:
+            out.write("    {%d, %d, %d, %d, %s, %d, %s, %d},\n" % (
+                int(b["lower"]), int(b["upper"]), int(b["left"]), int(b["right"]),
+                str(bool(b.get("vertical crossable", False))).lower(), int(b.get("vertical cross delay", 0)),
+                str(bool(b.get("horizontal crossable", False))).lower(), int(b.get("horizontal cross delay", 0))))
+        out.write("};\n\n}  // namespace srb_local_arch\n")
+
+    print(f"ports={len(ports)} inputs={len(input_ports)} routes={len(route_to_input)}")
+    print(f"transitions={len(trans_flat)} target_arcs={len(target_flat)} direct_arcs={len(direct_flat)}")
+    print(f"generated={opt.out.resolve()}")
+
+
+if __name__ == "__main__":
+    main()

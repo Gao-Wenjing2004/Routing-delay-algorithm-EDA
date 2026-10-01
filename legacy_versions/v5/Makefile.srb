@@ -1,0 +1,10 @@
+CXX ?= g++
+CXXFLAGS ?= -std=c++17 -O3 -DNDEBUG -march=native -Wall -Wextra -pedantic
+
+all: estimate
+
+estimate: estimate.cpp srb_arch_estimator.hpp local_arch_data.hpp
+	$(CXX) $(CXXFLAGS) estimate.cpp -o $@
+
+clean:
+	rm -f estimate

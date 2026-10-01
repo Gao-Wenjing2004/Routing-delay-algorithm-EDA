@@ -1,0 +1,168 @@
+{
+  "feature_version": "v6-port-family-macro10-family-phase-irls-v1",
+  "candidate": "port_family_macro10_family_phase",
+  "status": "experimental; fixed heldout not used for fit",
+  "alpha": 1.25,
+  "iterations": 3,
+  "seed": 20260827,
+  "production_split": "random_stratified",
+  "training_rows": 800304,
+  "heldout_validation_rows": 199696,
+  "residual_training_rows": 728040,
+  "validation_rows_used_for_final_fit": 0,
+  "atlas_query_radius_for_residual_fit": 48,
+  "port_count": 496,
+  "family_count": 216,
+  "family_rule": "remove terminal [decimal-index]; otherwise preserve full port name",
+  "parameter_count": 205932,
+  "parameter_bytes_float32": 823728,
+  "groups": [
+    {
+      "name": "prediction_bin",
+      "size": 68,
+      "shrink": 500.0
+    },
+    {
+      "name": "distance_quad",
+      "size": 162,
+      "shrink": 500.0
+    },
+    {
+      "name": "boundary",
+      "size": 10,
+      "shrink": 500.0
+    },
+    {
+      "name": "gap_shape",
+      "size": 256,
+      "shrink": 500.0
+    },
+    {
+      "name": "block_distance",
+      "size": 1296,
+      "shrink": 500.0
+    },
+    {
+      "name": "port_family_pair",
+      "size": 46656,
+      "shrink": 30.0
+    },
+    {
+      "name": "source_family_distance",
+      "size": 34992,
+      "shrink": 30.0
+    },
+    {
+      "name": "target_family_distance",
+      "size": 34992,
+      "shrink": 30.0
+    },
+    {
+      "name": "macro8_direction",
+      "size": 900,
+      "shrink": 100.0
+    },
+    {
+      "name": "source_family_macro8",
+      "size": 21600,
+      "shrink": 50.0
+    },
+    {
+      "name": "target_family_macro8",
+      "size": 21600,
+      "shrink": 50.0
+    },
+    {
+      "name": "source_phase",
+      "size": 100,
+      "shrink": 100.0
+    },
+    {
+      "name": "target_phase",
+      "size": 100,
+      "shrink": 100.0
+    },
+    {
+      "name": "source_family_phase",
+      "size": 21600,
+      "shrink": 50.0
+    },
+    {
+      "name": "target_family_phase",
+      "size": 21600,
+      "shrink": 50.0
+    }
+  ],
+  "architecture_fingerprint_sha256": "6510489f75c3b8b7168891bcae4f493e037c1cc228351dde4e6429dd28526541",
+  "atlas_sha256": "04fd3fba2f7ac48a09d7cccdab23cf4c7d6a33d313b75af8cfa85b93a4358750",
+  "atlas_crc32": "FEA93235",
+  "atlas_metadata": {
+    "source": "plusone-srb_fast_v3\\srb_fast_v3\\local_atlas.bin",
+    "header": {
+      "version": 1,
+      "radius": 56,
+      "routes": 160,
+      "cells": 12769,
+      "values": 326886400,
+      "bytes": 653772840
+    },
+    "classification": "Python reproduction of HybridEstimator::predict_local reachability; query_radius=48"
+  },
+  "training_data_sha256": "2d3350b1aed4b7489fbd2fc361b2d680a422db218159a07938782ed850b4c19f",
+  "fixed_splits_sha256": "2055652ea4f1e1cce61b3d1864428a4fbffc72e96184936173ab074348178d6b",
+  "base_v3_predictions_sha256": "d39ed2678619ccf791730a672eb7a7f0cb3226eb55ffb5e605a9030043996f75",
+  "header_sha256": "bd02e22e5a3eb8d4e14ecbb6d2b2c32a9ddb8e91f882501c7da0224ec12da79e",
+  "metrics": {
+    "v3": {
+      "rows": 1000000,
+      "acc_score": 95.30854947319631,
+      "mae": 29.955889,
+      "rmse": 51.97034819009778,
+      "mean_relative_error": 0.012125502954779778,
+      "median_relative_error": 0.006321419888159494,
+      "p50_absolute_error": 20.0,
+      "p90_absolute_error": 61.0,
+      "p95_absolute_error": 87.0,
+      "p99_absolute_error": 214.0,
+      "max_absolute_error": 809.0,
+      "exact_matches": 91770,
+      "within_5pct": 0.9646909646909647,
+      "within_10pct": 0.9891029891029891
+    },
+    "family_public_all_mixed_train_and_holdout": {
+      "rows": 1000000,
+      "acc_score": 95.49653921990149,
+      "mae": 28.600043,
+      "rmse": 51.71999861755605,
+      "mean_relative_error": 0.011657377342254506,
+      "median_relative_error": 0.005835907998626845,
+      "p50_absolute_error": 18.0,
+      "p90_absolute_error": 58.0,
+      "p95_absolute_error": 84.0,
+      "p99_absolute_error": 212.0,
+      "max_absolute_error": 836.0,
+      "exact_matches": 93120,
+      "within_5pct": 0.9655289655289655,
+      "within_10pct": 0.988982988982989
+    },
+    "public_all_delta_acc_score": 0.18798974670518476,
+    "family_heldout": {
+      "rows": 199696,
+      "acc_score": 95.42438360857793,
+      "mae": 29.199913869081,
+      "rmse": 52.43144376773603,
+      "mean_relative_error": 0.011848072628381914,
+      "median_relative_error": 0.006042296072507553,
+      "p50_absolute_error": 19.0,
+      "p90_absolute_error": 58.0,
+      "p95_absolute_error": 84.0,
+      "p99_absolute_error": 215.0,
+      "max_absolute_error": 836.0,
+      "exact_matches": 18293,
+      "within_5pct": 0.9655626552359586,
+      "within_10pct": 0.9889131479849371
+    },
+    "heldout_delta_acc_score": 0.12640997819893585
+  },
+  "elapsed_seconds": 12.724177500000224
+}

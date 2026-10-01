@@ -1,0 +1,6 @@
+windows_benchmark_executable_bytes=1033216
+linux_static_submission_executable_bytes=8165056
+embedded_model_header_bytes=197497
+architecture_model_json_bytes=790857
+external_atlas_bytes=0
+under_90mb=yes

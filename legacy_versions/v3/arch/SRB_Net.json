@@ -1,0 +1,964 @@
+{
+    "Nets": [
+        {
+            "from": "ZSEA[0]",
+            "to": "ISEA[0]",
+            "delta x": 1,
+            "delta y": 0
+        },
+        {
+            "from": "ZSEB[0]",
+            "to": "ISEB[0]",
+            "delta x": 1,
+            "delta y": 0
+        },
+        {
+            "from": "ZSNA[0]",
+            "to": "ISNA[0]",
+            "delta x": 0,
+            "delta y": 1
+        },
+        {
+            "from": "ZSNB[0]",
+            "to": "ISNB[0]",
+            "delta x": 0,
+            "delta y": 1
+        },
+        {
+            "from": "ZSSA[0]",
+            "to": "ISSA[0]",
+            "delta x": 0,
+            "delta y": -1
+        },
+        {
+            "from": "ZSSB[0]",
+            "to": "ISSB[0]",
+            "delta x": 0,
+            "delta y": -1
+        },
+        {
+            "from": "ZSWA[0]",
+            "to": "ISWA[0]",
+            "delta x": -1,
+            "delta y": 0
+        },
+        {
+            "from": "ZSWB[0]",
+            "to": "ISWB[0]",
+            "delta x": -1,
+            "delta y": 0
+        },
+        {
+            "from": "ZDE[0]",
+            "to": "IDE[0]",
+            "delta x": 2,
+            "delta y": 0
+        },
+        {
+            "from": "ZDN[0]",
+            "to": "IDN[0]",
+            "delta x": 0,
+            "delta y": 2
+        },
+        {
+            "from": "ZDS[0]",
+            "to": "IDS[0]",
+            "delta x": 0,
+            "delta y": -2
+        },
+        {
+            "from": "ZDW[0]",
+            "to": "IDW[0]",
+            "delta x": -2,
+            "delta y": 0
+        },
+        {
+            "from": "ZQE[0]",
+            "to": "IQE[0]",
+            "delta x": 4,
+            "delta y": 0
+        },
+        {
+            "from": "ZQN[0]",
+            "to": "IQN[0]",
+            "delta x": 0,
+            "delta y": 4
+        },
+        {
+            "from": "ZQS[0]",
+            "to": "IQS[0]",
+            "delta x": 0,
+            "delta y": -4
+        },
+        {
+            "from": "ZQW[0]",
+            "to": "IQW[0]",
+            "delta x": -4,
+            "delta y": 0
+        },
+        {
+            "from": "ZLE[0]",
+            "to": "ILE[0]",
+            "delta x": 10,
+            "delta y": 0
+        },
+        {
+            "from": "ZLN[0]",
+            "to": "ILN[0]",
+            "delta x": 0,
+            "delta y": 12
+        },
+        {
+            "from": "ZLS[0]",
+            "to": "ILS[0]",
+            "delta x": 0,
+            "delta y": -12
+        },
+        {
+            "from": "ZLW[0]",
+            "to": "ILW[0]",
+            "delta x": -10,
+            "delta y": 0
+        },
+        {
+            "from": "ZSEA[1]",
+            "to": "ISEA[1]",
+            "delta x": 1,
+            "delta y": 0
+        },
+        {
+            "from": "ZSEB[1]",
+            "to": "ISEB[1]",
+            "delta x": 1,
+            "delta y": 0
+        },
+        {
+            "from": "ZSNA[1]",
+            "to": "ISNA[1]",
+            "delta x": 0,
+            "delta y": 1
+        },
+        {
+            "from": "ZSNB[1]",
+            "to": "ISNB[1]",
+            "delta x": 0,
+            "delta y": 1
+        },
+        {
+            "from": "ZSSA[1]",
+            "to": "ISSA[1]",
+            "delta x": 0,
+            "delta y": -1
+        },
+        {
+            "from": "ZSSB[1]",
+            "to": "ISSB[1]",
+            "delta x": 0,
+            "delta y": -1
+        },
+        {
+            "from": "ZSWA[1]",
+            "to": "ISWA[1]",
+            "delta x": -1,
+            "delta y": 0
+        },
+        {
+            "from": "ZSWB[1]",
+            "to": "ISWB[1]",
+            "delta x": -1,
+            "delta y": 0
+        },
+        {
+            "from": "ZDE[1]",
+            "to": "IDE[1]",
+            "delta x": 2,
+            "delta y": 0
+        },
+        {
+            "from": "ZDN[1]",
+            "to": "IDN[1]",
+            "delta x": 0,
+            "delta y": 2
+        },
+        {
+            "from": "ZDS[1]",
+            "to": "IDS[1]",
+            "delta x": 0,
+            "delta y": -2
+        },
+        {
+            "from": "ZDW[1]",
+            "to": "IDW[1]",
+            "delta x": -2,
+            "delta y": 0
+        },
+        {
+            "from": "ZQE[1]",
+            "to": "IQE[1]",
+            "delta x": 4,
+            "delta y": 0
+        },
+        {
+            "from": "ZQN[1]",
+            "to": "IQN[1]",
+            "delta x": 0,
+            "delta y": 4
+        },
+        {
+            "from": "ZQS[1]",
+            "to": "IQS[1]",
+            "delta x": 0,
+            "delta y": -4
+        },
+        {
+            "from": "ZQW[1]",
+            "to": "IQW[1]",
+            "delta x": -4,
+            "delta y": 0
+        },
+        {
+            "from": "ZLE[1]",
+            "to": "ILE[1]",
+            "delta x": 10,
+            "delta y": 0
+        },
+        {
+            "from": "ZLN[1]",
+            "to": "ILN[1]",
+            "delta x": 0,
+            "delta y": 12
+        },
+        {
+            "from": "ZLS[1]",
+            "to": "ILS[1]",
+            "delta x": 0,
+            "delta y": -12
+        },
+        {
+            "from": "ZLW[1]",
+            "to": "ILW[1]",
+            "delta x": -10,
+            "delta y": 0
+        },
+        {
+            "from": "ZSEA[2]",
+            "to": "ISEA[2]",
+            "delta x": 1,
+            "delta y": 0
+        },
+        {
+            "from": "ZSEB[2]",
+            "to": "ISEB[2]",
+            "delta x": 1,
+            "delta y": 0
+        },
+        {
+            "from": "ZSNA[2]",
+            "to": "ISNA[2]",
+            "delta x": 0,
+            "delta y": 1
+        },
+        {
+            "from": "ZSNB[2]",
+            "to": "ISNB[2]",
+            "delta x": 0,
+            "delta y": 1
+        },
+        {
+            "from": "ZSSA[2]",
+            "to": "ISSA[2]",
+            "delta x": 0,
+            "delta y": -1
+        },
+        {
+            "from": "ZSSB[2]",
+            "to": "ISSB[2]",
+            "delta x": 0,
+            "delta y": -1
+        },
+        {
+            "from": "ZSWA[2]",
+            "to": "ISWA[2]",
+            "delta x": -1,
+            "delta y": 0
+        },
+        {
+            "from": "ZSWB[2]",
+            "to": "ISWB[2]",
+            "delta x": -1,
+            "delta y": 0
+        },
+        {
+            "from": "ZDE[2]",
+            "to": "IDE[2]",
+            "delta x": 2,
+            "delta y": 0
+        },
+        {
+            "from": "ZDN[2]",
+            "to": "IDN[2]",
+            "delta x": 0,
+            "delta y": 2
+        },
+        {
+            "from": "ZDS[2]",
+            "to": "IDS[2]",
+            "delta x": 0,
+            "delta y": -2
+        },
+        {
+            "from": "ZDW[2]",
+            "to": "IDW[2]",
+            "delta x": -2,
+            "delta y": 0
+        },
+        {
+            "from": "ZQE[2]",
+            "to": "IQE[2]",
+            "delta x": 4,
+            "delta y": 0
+        },
+        {
+            "from": "ZQN[2]",
+            "to": "IQN[2]",
+            "delta x": 0,
+            "delta y": 4
+        },
+        {
+            "from": "ZQS[2]",
+            "to": "IQS[2]",
+            "delta x": 0,
+            "delta y": -4
+        },
+        {
+            "from": "ZQW[2]",
+            "to": "IQW[2]",
+            "delta x": -4,
+            "delta y": 0
+        },
+        {
+            "from": "ZLE[2]",
+            "to": "ILE[2]",
+            "delta x": 10,
+            "delta y": 0
+        },
+        {
+            "from": "ZLN[2]",
+            "to": "ILN[2]",
+            "delta x": 0,
+            "delta y": 12
+        },
+        {
+            "from": "ZLS[2]",
+            "to": "ILS[2]",
+            "delta x": 0,
+            "delta y": -12
+        },
+        {
+            "from": "ZLW[2]",
+            "to": "ILW[2]",
+            "delta x": -10,
+            "delta y": 0
+        },
+        {
+            "from": "ZSEA[3]",
+            "to": "ISEA[3]",
+            "delta x": 1,
+            "delta y": 0
+        },
+        {
+            "from": "ZSEB[3]",
+            "to": "ISEB[3]",
+            "delta x": 1,
+            "delta y": 0
+        },
+        {
+            "from": "ZSNA[3]",
+            "to": "ISNA[3]",
+            "delta x": 0,
+            "delta y": 1
+        },
+        {
+            "from": "ZSNB[3]",
+            "to": "ISNB[3]",
+            "delta x": 0,
+            "delta y": 1
+        },
+        {
+            "from": "ZSSA[3]",
+            "to": "ISSA[3]",
+            "delta x": 0,
+            "delta y": -1
+        },
+        {
+            "from": "ZSSB[3]",
+            "to": "ISSB[3]",
+            "delta x": 0,
+            "delta y": -1
+        },
+        {
+            "from": "ZSWA[3]",
+            "to": "ISWA[3]",
+            "delta x": -1,
+            "delta y": 0
+        },
+        {
+            "from": "ZSWB[3]",
+            "to": "ISWB[3]",
+            "delta x": -1,
+            "delta y": 0
+        },
+        {
+            "from": "ZDE[3]",
+            "to": "IDE[3]",
+            "delta x": 2,
+            "delta y": 0
+        },
+        {
+            "from": "ZDN[3]",
+            "to": "IDN[3]",
+            "delta x": 0,
+            "delta y": 2
+        },
+        {
+            "from": "ZDS[3]",
+            "to": "IDS[3]",
+            "delta x": 0,
+            "delta y": -2
+        },
+        {
+            "from": "ZDW[3]",
+            "to": "IDW[3]",
+            "delta x": -2,
+            "delta y": 0
+        },
+        {
+            "from": "ZQE[3]",
+            "to": "IQE[3]",
+            "delta x": 4,
+            "delta y": 0
+        },
+        {
+            "from": "ZQN[3]",
+            "to": "IQN[3]",
+            "delta x": 0,
+            "delta y": 4
+        },
+        {
+            "from": "ZQS[3]",
+            "to": "IQS[3]",
+            "delta x": 0,
+            "delta y": -4
+        },
+        {
+            "from": "ZQW[3]",
+            "to": "IQW[3]",
+            "delta x": -4,
+            "delta y": 0
+        },
+        {
+            "from": "ZLE[3]",
+            "to": "ILE[3]",
+            "delta x": 10,
+            "delta y": 0
+        },
+        {
+            "from": "ZLN[3]",
+            "to": "ILN[3]",
+            "delta x": 0,
+            "delta y": 12
+        },
+        {
+            "from": "ZLS[3]",
+            "to": "ILS[3]",
+            "delta x": 0,
+            "delta y": -12
+        },
+        {
+            "from": "ZLW[3]",
+            "to": "ILW[3]",
+            "delta x": -10,
+            "delta y": 0
+        },
+        {
+            "from": "ZSEA[4]",
+            "to": "ISEA[4]",
+            "delta x": 1,
+            "delta y": 0
+        },
+        {
+            "from": "ZSEB[4]",
+            "to": "ISEB[4]",
+            "delta x": 1,
+            "delta y": 0
+        },
+        {
+            "from": "ZSNA[4]",
+            "to": "ISNA[4]",
+            "delta x": 0,
+            "delta y": 1
+        },
+        {
+            "from": "ZSNB[4]",
+            "to": "ISNB[4]",
+            "delta x": 0,
+            "delta y": 1
+        },
+        {
+            "from": "ZSSA[4]",
+            "to": "ISSA[4]",
+            "delta x": 0,
+            "delta y": -1
+        },
+        {
+            "from": "ZSSB[4]",
+            "to": "ISSB[4]",
+            "delta x": 0,
+            "delta y": -1
+        },
+        {
+            "from": "ZSWA[4]",
+            "to": "ISWA[4]",
+            "delta x": -1,
+            "delta y": 0
+        },
+        {
+            "from": "ZSWB[4]",
+            "to": "ISWB[4]",
+            "delta x": -1,
+            "delta y": 0
+        },
+        {
+            "from": "ZDE[4]",
+            "to": "IDE[4]",
+            "delta x": 2,
+            "delta y": 0
+        },
+        {
+            "from": "ZDN[4]",
+            "to": "IDN[4]",
+            "delta x": 0,
+            "delta y": 2
+        },
+        {
+            "from": "ZDS[4]",
+            "to": "IDS[4]",
+            "delta x": 0,
+            "delta y": -2
+        },
+        {
+            "from": "ZDW[4]",
+            "to": "IDW[4]",
+            "delta x": -2,
+            "delta y": 0
+        },
+        {
+            "from": "ZQE[4]",
+            "to": "IQE[4]",
+            "delta x": 4,
+            "delta y": 0
+        },
+        {
+            "from": "ZQN[4]",
+            "to": "IQN[4]",
+            "delta x": 0,
+            "delta y": 4
+        },
+        {
+            "from": "ZQS[4]",
+            "to": "IQS[4]",
+            "delta x": 0,
+            "delta y": -4
+        },
+        {
+            "from": "ZQW[4]",
+            "to": "IQW[4]",
+            "delta x": -4,
+            "delta y": 0
+        },
+        {
+            "from": "ZLE[4]",
+            "to": "ILE[4]",
+            "delta x": 10,
+            "delta y": 0
+        },
+        {
+            "from": "ZLN[4]",
+            "to": "ILN[4]",
+            "delta x": 0,
+            "delta y": 12
+        },
+        {
+            "from": "ZLS[4]",
+            "to": "ILS[4]",
+            "delta x": 0,
+            "delta y": -12
+        },
+        {
+            "from": "ZLW[4]",
+            "to": "ILW[4]",
+            "delta x": -10,
+            "delta y": 0
+        },
+        {
+            "from": "ZSEA[5]",
+            "to": "ISEA[5]",
+            "delta x": 1,
+            "delta y": 0
+        },
+        {
+            "from": "ZSEB[5]",
+            "to": "ISEB[5]",
+            "delta x": 1,
+            "delta y": 0
+        },
+        {
+            "from": "ZSNA[5]",
+            "to": "ISNA[5]",
+            "delta x": 0,
+            "delta y": 1
+        },
+        {
+            "from": "ZSNB[5]",
+            "to": "ISNB[5]",
+            "delta x": 0,
+            "delta y": 1
+        },
+        {
+            "from": "ZSSA[5]",
+            "to": "ISSA[5]",
+            "delta x": 0,
+            "delta y": -1
+        },
+        {
+            "from": "ZSSB[5]",
+            "to": "ISSB[5]",
+            "delta x": 0,
+            "delta y": -1
+        },
+        {
+            "from": "ZSWA[5]",
+            "to": "ISWA[5]",
+            "delta x": -1,
+            "delta y": 0
+        },
+        {
+            "from": "ZSWB[5]",
+            "to": "ISWB[5]",
+            "delta x": -1,
+            "delta y": 0
+        },
+        {
+            "from": "ZDE[5]",
+            "to": "IDE[5]",
+            "delta x": 2,
+            "delta y": 0
+        },
+        {
+            "from": "ZDN[5]",
+            "to": "IDN[5]",
+            "delta x": 0,
+            "delta y": 2
+        },
+        {
+            "from": "ZDS[5]",
+            "to": "IDS[5]",
+            "delta x": 0,
+            "delta y": -2
+        },
+        {
+            "from": "ZDW[5]",
+            "to": "IDW[5]",
+            "delta x": -2,
+            "delta y": 0
+        },
+        {
+            "from": "ZQE[5]",
+            "to": "IQE[5]",
+            "delta x": 4,
+            "delta y": 0
+        },
+        {
+            "from": "ZQN[5]",
+            "to": "IQN[5]",
+            "delta x": 0,
+            "delta y": 4
+        },
+        {
+            "from": "ZQS[5]",
+            "to": "IQS[5]",
+            "delta x": 0,
+            "delta y": -4
+        },
+        {
+            "from": "ZQW[5]",
+            "to": "IQW[5]",
+            "delta x": -4,
+            "delta y": 0
+        },
+        {
+            "from": "ZLE[5]",
+            "to": "ILE[5]",
+            "delta x": 10,
+            "delta y": 0
+        },
+        {
+            "from": "ZLN[5]",
+            "to": "ILN[5]",
+            "delta x": 0,
+            "delta y": 12
+        },
+        {
+            "from": "ZLS[5]",
+            "to": "ILS[5]",
+            "delta x": 0,
+            "delta y": -12
+        },
+        {
+            "from": "ZLW[5]",
+            "to": "ILW[5]",
+            "delta x": -10,
+            "delta y": 0
+        },
+        {
+            "from": "ZSEA[6]",
+            "to": "ISEA[6]",
+            "delta x": 1,
+            "delta y": 0
+        },
+        {
+            "from": "ZSEB[6]",
+            "to": "ISEB[6]",
+            "delta x": 1,
+            "delta y": 0
+        },
+        {
+            "from": "ZSNA[6]",
+            "to": "ISNA[6]",
+            "delta x": 0,
+            "delta y": 1
+        },
+        {
+            "from": "ZSNB[6]",
+            "to": "ISNB[6]",
+            "delta x": 0,
+            "delta y": 1
+        },
+        {
+            "from": "ZSSA[6]",
+            "to": "ISSA[6]",
+            "delta x": 0,
+            "delta y": -1
+        },
+        {
+            "from": "ZSSB[6]",
+            "to": "ISSB[6]",
+            "delta x": 0,
+            "delta y": -1
+        },
+        {
+            "from": "ZSWA[6]",
+            "to": "ISWA[6]",
+            "delta x": -1,
+            "delta y": 0
+        },
+        {
+            "from": "ZSWB[6]",
+            "to": "ISWB[6]",
+            "delta x": -1,
+            "delta y": 0
+        },
+        {
+            "from": "ZDE[6]",
+            "to": "IDE[6]",
+            "delta x": 2,
+            "delta y": 0
+        },
+        {
+            "from": "ZDN[6]",
+            "to": "IDN[6]",
+            "delta x": 0,
+            "delta y": 2
+        },
+        {
+            "from": "ZDS[6]",
+            "to": "IDS[6]",
+            "delta x": 0,
+            "delta y": -2
+        },
+        {
+            "from": "ZDW[6]",
+            "to": "IDW[6]",
+            "delta x": -2,
+            "delta y": 0
+        },
+        {
+            "from": "ZQE[6]",
+            "to": "IQE[6]",
+            "delta x": 4,
+            "delta y": 0
+        },
+        {
+            "from": "ZQN[6]",
+            "to": "IQN[6]",
+            "delta x": 0,
+            "delta y": 4
+        },
+        {
+            "from": "ZQS[6]",
+            "to": "IQS[6]",
+            "delta x": 0,
+            "delta y": -4
+        },
+        {
+            "from": "ZQW[6]",
+            "to": "IQW[6]",
+            "delta x": -4,
+            "delta y": 0
+        },
+        {
+            "from": "ZLE[6]",
+            "to": "ILE[6]",
+            "delta x": 10,
+            "delta y": 0
+        },
+        {
+            "from": "ZLN[6]",
+            "to": "ILN[6]",
+            "delta x": 0,
+            "delta y": 12
+        },
+        {
+            "from": "ZLS[6]",
+            "to": "ILS[6]",
+            "delta x": 0,
+            "delta y": -12
+        },
+        {
+            "from": "ZLW[6]",
+            "to": "ILW[6]",
+            "delta x": -10,
+            "delta y": 0
+        },
+        {
+            "from": "ZSEA[7]",
+            "to": "ISEA[7]",
+            "delta x": 1,
+            "delta y": 0
+        },
+        {
+            "from": "ZSEB[7]",
+            "to": "ISEB[7]",
+            "delta x": 1,
+            "delta y": 0
+        },
+        {
+            "from": "ZSNA[7]",
+            "to": "ISNA[7]",
+            "delta x": 0,
+            "delta y": 1
+        },
+        {
+            "from": "ZSNB[7]",
+            "to": "ISNB[7]",
+            "delta x": 0,
+            "delta y": 1
+        },
+        {
+            "from": "ZSSA[7]",
+            "to": "ISSA[7]",
+            "delta x": 0,
+            "delta y": -1
+        },
+        {
+            "from": "ZSSB[7]",
+            "to": "ISSB[7]",
+            "delta x": 0,
+            "delta y": -1
+        },
+        {
+            "from": "ZSWA[7]",
+            "to": "ISWA[7]",
+            "delta x": -1,
+            "delta y": 0
+        },
+        {
+            "from": "ZSWB[7]",
+            "to": "ISWB[7]",
+            "delta x": -1,
+            "delta y": 0
+        },
+        {
+            "from": "ZDE[7]",
+            "to": "IDE[7]",
+            "delta x": 2,
+            "delta y": 0
+        },
+        {
+            "from": "ZDN[7]",
+            "to": "IDN[7]",
+            "delta x": 0,
+            "delta y": 2
+        },
+        {
+            "from": "ZDS[7]",
+            "to": "IDS[7]",
+            "delta x": 0,
+            "delta y": -2
+        },
+        {
+            "from": "ZDW[7]",
+            "to": "IDW[7]",
+            "delta x": -2,
+            "delta y": 0
+        },
+        {
+            "from": "ZQE[7]",
+            "to": "IQE[7]",
+            "delta x": 4,
+            "delta y": 0
+        },
+        {
+            "from": "ZQN[7]",
+            "to": "IQN[7]",
+            "delta x": 0,
+            "delta y": 4
+        },
+        {
+            "from": "ZQS[7]",
+            "to": "IQS[7]",
+            "delta x": 0,
+            "delta y": -4
+        },
+        {
+            "from": "ZQW[7]",
+            "to": "IQW[7]",
+            "delta x": -4,
+            "delta y": 0
+        },
+        {
+            "from": "ZLE[7]",
+            "to": "ILE[7]",
+            "delta x": 10,
+            "delta y": 0
+        },
+        {
+            "from": "ZLN[7]",
+            "to": "ILN[7]",
+            "delta x": 0,
+            "delta y": 12
+        },
+        {
+            "from": "ZLS[7]",
+            "to": "ILS[7]",
+            "delta x": 0,
+            "delta y": -12
+        },
+        {
+            "from": "ZLW[7]",
+            "to": "ILW[7]",
+            "delta x": -10,
+            "delta y": 0
+        }
+    ]
+}

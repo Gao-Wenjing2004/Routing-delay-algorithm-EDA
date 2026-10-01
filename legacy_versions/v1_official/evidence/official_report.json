@@ -1,0 +1,38 @@
+{
+  "total_score": 93.79,
+  "accuracy_score": 95.27,
+  "time_score": 83.84,
+  "consistency_score": 100,
+  "task": [
+    {
+      "task_status": "success",
+      "task_cpu_time": 291073,
+      "task_peak_memory": 407832,
+      "task_result_checksum": "6c7e6cbb8ce3f19842d26f296190bf9f"
+    },
+    {
+      "task_status": "success",
+      "task_cpu_time": 290701,
+      "task_peak_memory": 407548,
+      "task_result_checksum": "6c7e6cbb8ce3f19842d26f296190bf9f"
+    },
+    {
+      "task_status": "success",
+      "task_cpu_time": 290405,
+      "task_peak_memory": 407352,
+      "task_result_checksum": "6c7e6cbb8ce3f19842d26f296190bf9f"
+    },
+    {
+      "task_status": "success",
+      "task_cpu_time": 291571,
+      "task_peak_memory": 407236,
+      "task_result_checksum": "6c7e6cbb8ce3f19842d26f296190bf9f"
+    },
+    {
+      "task_status": "success",
+      "task_cpu_time": 290932,
+      "task_peak_memory": 407412,
+      "task_result_checksum": "6c7e6cbb8ce3f19842d26f296190bf9f"
+    }
+  ]
+}

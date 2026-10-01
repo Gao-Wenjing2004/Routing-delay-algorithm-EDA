@@ -1,0 +1,115 @@
+{
+  "model_source": "official SRB JSON only; no Golden delay",
+  "rows": 1000000,
+  "prediction_seconds_python_reference": 278.6793658999959,
+  "metrics": {
+    "P0_no_atlas": {
+      "rows": 1000000,
+      "acc_score": 94.04809518580598,
+      "mean_relative_error": 0.015541950928111187,
+      "mae": 32.317931,
+      "rmse": 51.786053730710165,
+      "max_error": 809,
+      "within_1pct": 0.59118,
+      "within_5pct": 0.942486,
+      "within_10pct": 0.982279,
+      "p50_relative_error": 0.007735025783419278,
+      "p90_relative_error": 0.0340393343419062,
+      "p95_relative_error": 0.05477621910487642,
+      "p99_relative_error": 0.13295880149812733
+    },
+    "P1_primitive_base": {
+      "rows": 1000000,
+      "acc_score": 68.8177726006548,
+      "mean_relative_error": 0.09011200658344519,
+      "mae": 205.41721,
+      "rmse": 234.54236597681026,
+      "max_error": 1245,
+      "within_1pct": 0.024957,
+      "within_5pct": 0.348802,
+      "within_10pct": 0.707978,
+      "p50_relative_error": 0.06643658326143227,
+      "p90_relative_error": 0.17969379532634971,
+      "p95_relative_error": 0.24477611940298508,
+      "p99_relative_error": 0.4321475625823452
+    },
+    "V3": {
+      "rows": 1000000,
+      "acc_score": 95.30854863869301,
+      "mean_relative_error": 0.012125492928455812,
+      "mae": 29.955894,
+      "rmse": 51.97035489584423,
+      "max_error": 809,
+      "within_1pct": 0.654702,
+      "within_5pct": 0.964691,
+      "within_10pct": 0.989103,
+      "p50_relative_error": 0.006321419888159494,
+      "p90_relative_error": 0.026182206786000535,
+      "p95_relative_error": 0.040502793296089384,
+      "p99_relative_error": 0.10469798657718121
+    }
+  },
+  "validation_metrics": {
+    "P0_no_atlas": {
+      "rows": 200442,
+      "acc_score": 94.05314530678838,
+      "mean_relative_error": 0.015539405153499164,
+      "mae": 32.218102992386825,
+      "rmse": 51.65265406882881,
+      "max_error": 735,
+      "within_1pct": 0.5913780544995559,
+      "within_5pct": 0.9429361111942607,
+      "within_10pct": 0.982039692280061,
+      "p50_relative_error": 0.0077174929840972874,
+      "p90_relative_error": 0.03395843892549417,
+      "p95_relative_error": 0.05454545454545454,
+      "p99_relative_error": 0.13366336633663367
+    },
+    "P1_primitive_base": {
+      "rows": 200442,
+      "acc_score": 68.84663133484348,
+      "mean_relative_error": 0.09005417375296201,
+      "mae": 205.02983406671257,
+      "rmse": 233.98904664230258,
+      "max_error": 1245,
+      "within_1pct": 0.024994761576915017,
+      "within_5pct": 0.34914339310124626,
+      "within_10pct": 0.7086838087825905,
+      "p50_relative_error": 0.06639487478159581,
+      "p90_relative_error": 0.17899408284023668,
+      "p95_relative_error": 0.24424342105263158,
+      "p99_relative_error": 0.43441762854144805
+    },
+    "V3": {
+      "rows": 200442,
+      "acc_score": 95.31709268419539,
+      "mean_relative_error": 0.012112758202316023,
+      "mae": 29.860578122349608,
+      "rmse": 51.813984861712555,
+      "max_error": 780,
+      "within_1pct": 0.6551022240847727,
+      "within_5pct": 0.9649724109717525,
+      "within_10pct": 0.9889993115215374,
+      "p50_relative_error": 0.0062997347480106105,
+      "p90_relative_error": 0.026066350710900472,
+      "p95_relative_error": 0.04032997250229148,
+      "p99_relative_error": 0.1054897739504844
+    }
+  },
+  "coverage": {
+    "rows": 1000000,
+    "dual_small_remainder_pct": 99.9978,
+    "any_small_remainder_pct": 100.0,
+    "failure_pct": 0.0,
+    "selected_small_remainder_pct": 0.6035,
+    "candidate_types": {
+      "connector_remainder": 504196,
+      "direct_arc": 2,
+      "dual_primitive": 74418,
+      "identity": 1,
+      "single_primitive": 79227,
+      "unreachable_fallback": 342156
+    }
+  },
+  "prediction_path": "D:\\desk\\紫光同创\\Routing-delay-algorithm-EDA\\srb_prpr_v8\\analysis\\prpr\\p1_predictions_1m.csv"
+}

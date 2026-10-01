@@ -1,0 +1,76 @@
+{
+  "selected": "single_residual",
+  "selection_basis": "positive estimated total-score delta on all seven held-out splits under the largest observed 100M timing overhead; smaller model wins over unstable richer model",
+  "central_timing_source": "5x 5M repeated public queries; diagnostic linear projection",
+  "central_projected_100m_seconds": {
+    "v3": 63.6221588,
+    "v4": 66.2127294
+  },
+  "public_cpp_estimated_score": {
+    "v3": {
+      "acc_score": 95.30854947319631,
+      "time_score": 96.46543562222222,
+      "consistency_score": 100.0,
+      "estimated_total_score": 95.71665492189038,
+      "average_seconds": 63.6221588,
+      "consistent": true,
+      "invalid_runs": 0,
+      "disqualified": false
+    },
+    "v4": {
+      "acc_score": 95.35338520540225,
+      "time_score": 96.32151503333334,
+      "consistency_score": 100.0,
+      "estimated_total_score": 95.73093541932181,
+      "average_seconds": 66.2127294,
+      "consistent": true,
+      "invalid_runs": 0,
+      "disqualified": false
+    },
+    "delta_total_score": 0.014280497431428785,
+    "accuracy_scope": "public all rows; new residual fit uses 800,304 fixed training rows and holds out 199,696 rows; inherited V3 base was previously fit on all public rows"
+  },
+  "candidates": {
+    "single_residual": {
+      "parameter_count": 2784,
+      "accuracy_delta_across_splits": {
+        "mean": 0.05411671474770076,
+        "min": 0.04384151588804741,
+        "max": 0.07461169721887018
+      },
+      "timing": {
+        "100k_projection_delta_seconds": 1.6250446000000096,
+        "1m_projection_delta_seconds": 2.7584025999999824,
+        "5m_repeated_projection_delta_seconds": 2.5905705999999995,
+        "conservative_observed_delta_seconds": 2.7584025999999824
+      },
+      "worst_split_conservative_estimated_total_delta": 0.012086524377104745,
+      "decision": "production default"
+    },
+    "port_pair_residual": {
+      "parameter_count": 408512,
+      "accuracy_delta_across_splits": {
+        "mean": 0.08063190902204147,
+        "min": 0.05129745028641253,
+        "max": 0.1082098112814549
+      },
+      "timing": {
+        "100k_projection_delta_seconds": 3.0979734000000008,
+        "1m_projection_delta_seconds": 5.636909500000002,
+        "5m_repeated_projection_delta_seconds": 0.13912380000000724,
+        "conservative_observed_delta_seconds": 5.636909500000002
+      },
+      "worst_split_conservative_estimated_total_delta": -0.005936285604203319,
+      "decision": "research-only; timing evidence is not stably score-positive"
+    }
+  },
+  "validation_estimated_total": {
+    "minimum_delta": 0.013485124377098145,
+    "maximum_delta": 0.03810126944176773,
+    "all_positive": true,
+    "timing_assumption": {
+      "v3_projected_100m_seconds": 63.6221588,
+      "v4_projected_100m_seconds": 66.2127294
+    }
+  }
+}

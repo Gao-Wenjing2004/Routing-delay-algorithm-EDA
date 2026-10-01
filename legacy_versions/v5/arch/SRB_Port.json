@@ -1,0 +1,1988 @@
+{
+  "Port": [
+    {
+      "Name": "ZSEA[0]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZSEA[1]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZSEA[2]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZSEA[3]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZSEA[4]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZSEA[5]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZSEA[6]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZSEA[7]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZSEB[0]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZSEB[1]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZSEB[2]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZSEB[3]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZSEB[4]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZSEB[5]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZSEB[6]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZSEB[7]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZSNA[0]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZSNA[1]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZSNA[2]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZSNA[3]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZSNA[4]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZSNA[5]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZSNA[6]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZSNA[7]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZSNB[0]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZSNB[1]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZSNB[2]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZSNB[3]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZSNB[4]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZSNB[5]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZSNB[6]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZSNB[7]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZSSA[0]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZSSA[1]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZSSA[2]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZSSA[3]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZSSA[4]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZSSA[5]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZSSA[6]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZSSA[7]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZSSB[0]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZSSB[1]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZSSB[2]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZSSB[3]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZSSB[4]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZSSB[5]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZSSB[6]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZSSB[7]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZSWA[0]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZSWA[1]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZSWA[2]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZSWA[3]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZSWA[4]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZSWA[5]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZSWA[6]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZSWA[7]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZSWB[0]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZSWB[1]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZSWB[2]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZSWB[3]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZSWB[4]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZSWB[5]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZSWB[6]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZSWB[7]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ISEA[0]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "ISEA[1]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "ISEA[2]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "ISEA[3]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "ISEA[4]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "ISEA[5]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "ISEA[6]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "ISEA[7]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "ISEB[0]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "ISEB[1]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "ISEB[2]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "ISEB[3]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "ISEB[4]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "ISEB[5]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "ISEB[6]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "ISEB[7]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "ISNA[0]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "ISNA[1]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "ISNA[2]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "ISNA[3]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "ISNA[4]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "ISNA[5]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "ISNA[6]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "ISNA[7]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "ISNB[0]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "ISNB[1]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "ISNB[2]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "ISNB[3]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "ISNB[4]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "ISNB[5]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "ISNB[6]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "ISNB[7]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "ISSA[0]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "ISSA[1]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "ISSA[2]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "ISSA[3]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "ISSA[4]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "ISSA[5]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "ISSA[6]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "ISSA[7]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "ISSB[0]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "ISSB[1]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "ISSB[2]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "ISSB[3]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "ISSB[4]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "ISSB[5]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "ISSB[6]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "ISSB[7]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "ISWA[0]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "ISWA[1]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "ISWA[2]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "ISWA[3]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "ISWA[4]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "ISWA[5]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "ISWA[6]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "ISWA[7]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "ISWB[0]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "ISWB[1]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "ISWB[2]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "ISWB[3]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "ISWB[4]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "ISWB[5]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "ISWB[6]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "ISWB[7]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "ZDE[0]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZDE[1]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZDE[2]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZDE[3]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZDE[4]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZDE[5]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZDE[6]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZDE[7]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZDN[0]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZDN[1]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZDN[2]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZDN[3]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZDN[4]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZDN[5]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZDN[6]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZDN[7]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZDS[0]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZDS[1]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZDS[2]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZDS[3]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZDS[4]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZDS[5]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZDS[6]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZDS[7]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZDW[0]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZDW[1]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZDW[2]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZDW[3]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZDW[4]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZDW[5]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZDW[6]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZDW[7]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "IDE[0]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "IDE[1]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "IDE[2]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "IDE[3]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "IDE[4]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "IDE[5]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "IDE[6]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "IDE[7]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "IDN[0]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "IDN[1]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "IDN[2]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "IDN[3]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "IDN[4]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "IDN[5]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "IDN[6]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "IDN[7]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "IDS[0]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "IDS[1]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "IDS[2]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "IDS[3]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "IDS[4]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "IDS[5]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "IDS[6]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "IDS[7]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "IDW[0]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "IDW[1]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "IDW[2]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "IDW[3]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "IDW[4]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "IDW[5]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "IDW[6]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "IDW[7]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "ZQE[0]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZQE[1]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZQE[2]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZQE[3]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZQE[4]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZQE[5]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZQE[6]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZQE[7]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZQN[0]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZQN[1]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZQN[2]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZQN[3]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZQN[4]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZQN[5]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZQN[6]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZQN[7]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZQS[0]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZQS[1]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZQS[2]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZQS[3]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZQS[4]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZQS[5]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZQS[6]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZQS[7]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZQW[0]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZQW[1]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZQW[2]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZQW[3]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZQW[4]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZQW[5]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZQW[6]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZQW[7]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "IQE[0]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "IQE[1]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "IQE[2]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "IQE[3]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "IQE[4]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "IQE[5]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "IQE[6]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "IQE[7]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "IQN[0]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "IQN[1]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "IQN[2]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "IQN[3]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "IQN[4]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "IQN[5]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "IQN[6]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "IQN[7]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "IQS[0]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "IQS[1]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "IQS[2]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "IQS[3]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "IQS[4]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "IQS[5]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "IQS[6]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "IQS[7]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "IQW[0]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "IQW[1]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "IQW[2]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "IQW[3]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "IQW[4]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "IQW[5]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "IQW[6]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "IQW[7]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "ZLE[0]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZLE[1]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZLE[2]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZLE[3]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZLE[4]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZLE[5]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZLE[6]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZLE[7]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZLN[0]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZLN[1]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZLN[2]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZLN[3]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZLN[4]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZLN[5]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZLN[6]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZLN[7]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZLS[0]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZLS[1]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZLS[2]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZLS[3]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZLS[4]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZLS[5]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZLS[6]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZLS[7]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZLW[0]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZLW[1]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZLW[2]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZLW[3]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZLW[4]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZLW[5]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZLW[6]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ZLW[7]",
+      "Direction": "Output"
+    },
+    {
+      "Name": "ILE[0]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "ILE[1]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "ILE[2]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "ILE[3]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "ILE[4]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "ILE[5]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "ILE[6]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "ILE[7]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "ILN[0]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "ILN[1]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "ILN[2]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "ILN[3]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "ILN[4]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "ILN[5]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "ILN[6]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "ILN[7]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "ILS[0]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "ILS[1]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "ILS[2]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "ILS[3]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "ILS[4]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "ILS[5]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "ILS[6]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "ILS[7]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "ILW[0]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "ILW[1]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "ILW[2]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "ILW[3]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "ILW[4]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "ILW[5]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "ILW[6]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "ILW[7]",
+      "Direction": "Input"
+    },
+    {
+      "Name": "A_A0",
+      "Direction": "Output"
+    },
+    {
+      "Name": "A_A1",
+      "Direction": "Output"
+    },
+    {
+      "Name": "A_A2",
+      "Direction": "Output"
+    },
+    {
+      "Name": "A_A3",
+      "Direction": "Output"
+    },
+    {
+      "Name": "A_A4",
+      "Direction": "Output"
+    },
+    {
+      "Name": "A_A5",
+      "Direction": "Output"
+    },
+    {
+      "Name": "A_AD",
+      "Direction": "Output"
+    },
+    {
+      "Name": "A_AM",
+      "Direction": "Output"
+    },
+    {
+      "Name": "A_AQ0",
+      "Direction": "Input"
+    },
+    {
+      "Name": "A_AQ1",
+      "Direction": "Input"
+    },
+    {
+      "Name": "A_AY",
+      "Direction": "Input"
+    },
+    {
+      "Name": "A_B0",
+      "Direction": "Output"
+    },
+    {
+      "Name": "A_B1",
+      "Direction": "Output"
+    },
+    {
+      "Name": "A_B2",
+      "Direction": "Output"
+    },
+    {
+      "Name": "A_B3",
+      "Direction": "Output"
+    },
+    {
+      "Name": "A_B4",
+      "Direction": "Output"
+    },
+    {
+      "Name": "A_B5",
+      "Direction": "Output"
+    },
+    {
+      "Name": "A_BD",
+      "Direction": "Output"
+    },
+    {
+      "Name": "A_BM",
+      "Direction": "Output"
+    },
+    {
+      "Name": "A_BQ0",
+      "Direction": "Input"
+    },
+    {
+      "Name": "A_BQ1",
+      "Direction": "Input"
+    },
+    {
+      "Name": "A_BY",
+      "Direction": "Input"
+    },
+    {
+      "Name": "A_C0",
+      "Direction": "Output"
+    },
+    {
+      "Name": "A_C1",
+      "Direction": "Output"
+    },
+    {
+      "Name": "A_C2",
+      "Direction": "Output"
+    },
+    {
+      "Name": "A_C3",
+      "Direction": "Output"
+    },
+    {
+      "Name": "A_C4",
+      "Direction": "Output"
+    },
+    {
+      "Name": "A_C5",
+      "Direction": "Output"
+    },
+    {
+      "Name": "A_CD",
+      "Direction": "Output"
+    },
+    {
+      "Name": "A_CM",
+      "Direction": "Output"
+    },
+    {
+      "Name": "A_CQ0",
+      "Direction": "Input"
+    },
+    {
+      "Name": "A_CQ1",
+      "Direction": "Input"
+    },
+    {
+      "Name": "A_CY",
+      "Direction": "Input"
+    },
+    {
+      "Name": "A_D0",
+      "Direction": "Output"
+    },
+    {
+      "Name": "A_D1",
+      "Direction": "Output"
+    },
+    {
+      "Name": "A_D2",
+      "Direction": "Output"
+    },
+    {
+      "Name": "A_D3",
+      "Direction": "Output"
+    },
+    {
+      "Name": "A_D4",
+      "Direction": "Output"
+    },
+    {
+      "Name": "A_D5",
+      "Direction": "Output"
+    },
+    {
+      "Name": "A_DD",
+      "Direction": "Output"
+    },
+    {
+      "Name": "A_DM",
+      "Direction": "Output"
+    },
+    {
+      "Name": "A_DQ0",
+      "Direction": "Input"
+    },
+    {
+      "Name": "A_DQ1",
+      "Direction": "Input"
+    },
+    {
+      "Name": "A_DY",
+      "Direction": "Input"
+    },
+    {
+      "Name": "A_E0",
+      "Direction": "Output"
+    },
+    {
+      "Name": "A_E1",
+      "Direction": "Output"
+    },
+    {
+      "Name": "A_E2",
+      "Direction": "Output"
+    },
+    {
+      "Name": "A_E3",
+      "Direction": "Output"
+    },
+    {
+      "Name": "A_E4",
+      "Direction": "Output"
+    },
+    {
+      "Name": "A_E5",
+      "Direction": "Output"
+    },
+    {
+      "Name": "A_ED",
+      "Direction": "Output"
+    },
+    {
+      "Name": "A_EM",
+      "Direction": "Output"
+    },
+    {
+      "Name": "A_EQ0",
+      "Direction": "Input"
+    },
+    {
+      "Name": "A_EQ1",
+      "Direction": "Input"
+    },
+    {
+      "Name": "A_EY",
+      "Direction": "Input"
+    },
+    {
+      "Name": "A_F0",
+      "Direction": "Output"
+    },
+    {
+      "Name": "A_F1",
+      "Direction": "Output"
+    },
+    {
+      "Name": "A_F2",
+      "Direction": "Output"
+    },
+    {
+      "Name": "A_F3",
+      "Direction": "Output"
+    },
+    {
+      "Name": "A_F4",
+      "Direction": "Output"
+    },
+    {
+      "Name": "A_F5",
+      "Direction": "Output"
+    },
+    {
+      "Name": "A_FD",
+      "Direction": "Output"
+    },
+    {
+      "Name": "A_FM",
+      "Direction": "Output"
+    },
+    {
+      "Name": "A_FQ0",
+      "Direction": "Input"
+    },
+    {
+      "Name": "A_FQ1",
+      "Direction": "Input"
+    },
+    {
+      "Name": "A_FY",
+      "Direction": "Input"
+    },
+    {
+      "Name": "A_G0",
+      "Direction": "Output"
+    },
+    {
+      "Name": "A_G1",
+      "Direction": "Output"
+    },
+    {
+      "Name": "A_G2",
+      "Direction": "Output"
+    },
+    {
+      "Name": "A_G3",
+      "Direction": "Output"
+    },
+    {
+      "Name": "A_G4",
+      "Direction": "Output"
+    },
+    {
+      "Name": "A_G5",
+      "Direction": "Output"
+    },
+    {
+      "Name": "A_GD",
+      "Direction": "Output"
+    },
+    {
+      "Name": "A_GM",
+      "Direction": "Output"
+    },
+    {
+      "Name": "A_GQ0",
+      "Direction": "Input"
+    },
+    {
+      "Name": "A_GQ1",
+      "Direction": "Input"
+    },
+    {
+      "Name": "A_GY",
+      "Direction": "Input"
+    },
+    {
+      "Name": "A_H0",
+      "Direction": "Output"
+    },
+    {
+      "Name": "A_H1",
+      "Direction": "Output"
+    },
+    {
+      "Name": "A_H2",
+      "Direction": "Output"
+    },
+    {
+      "Name": "A_H3",
+      "Direction": "Output"
+    },
+    {
+      "Name": "A_H4",
+      "Direction": "Output"
+    },
+    {
+      "Name": "A_H5",
+      "Direction": "Output"
+    },
+    {
+      "Name": "A_HD",
+      "Direction": "Output"
+    },
+    {
+      "Name": "A_HM",
+      "Direction": "Output"
+    },
+    {
+      "Name": "A_HQ0",
+      "Direction": "Input"
+    },
+    {
+      "Name": "A_HQ1",
+      "Direction": "Input"
+    },
+    {
+      "Name": "A_HY",
+      "Direction": "Input"
+    },
+    {
+      "Name": "S_A0",
+      "Direction": "Output"
+    },
+    {
+      "Name": "S_A1",
+      "Direction": "Output"
+    },
+    {
+      "Name": "S_A2",
+      "Direction": "Output"
+    },
+    {
+      "Name": "S_A3",
+      "Direction": "Output"
+    },
+    {
+      "Name": "S_A4",
+      "Direction": "Output"
+    },
+    {
+      "Name": "S_A5",
+      "Direction": "Output"
+    },
+    {
+      "Name": "S_AD",
+      "Direction": "Output"
+    },
+    {
+      "Name": "S_AM",
+      "Direction": "Output"
+    },
+    {
+      "Name": "S_AQ0",
+      "Direction": "Input"
+    },
+    {
+      "Name": "S_AQ1",
+      "Direction": "Input"
+    },
+    {
+      "Name": "S_AY",
+      "Direction": "Input"
+    },
+    {
+      "Name": "S_B0",
+      "Direction": "Output"
+    },
+    {
+      "Name": "S_B1",
+      "Direction": "Output"
+    },
+    {
+      "Name": "S_B2",
+      "Direction": "Output"
+    },
+    {
+      "Name": "S_B3",
+      "Direction": "Output"
+    },
+    {
+      "Name": "S_B4",
+      "Direction": "Output"
+    },
+    {
+      "Name": "S_B5",
+      "Direction": "Output"
+    },
+    {
+      "Name": "S_BD",
+      "Direction": "Output"
+    },
+    {
+      "Name": "S_BM",
+      "Direction": "Output"
+    },
+    {
+      "Name": "S_BQ0",
+      "Direction": "Input"
+    },
+    {
+      "Name": "S_BQ1",
+      "Direction": "Input"
+    },
+    {
+      "Name": "S_BY",
+      "Direction": "Input"
+    },
+    {
+      "Name": "S_C0",
+      "Direction": "Output"
+    },
+    {
+      "Name": "S_C1",
+      "Direction": "Output"
+    },
+    {
+      "Name": "S_C2",
+      "Direction": "Output"
+    },
+    {
+      "Name": "S_C3",
+      "Direction": "Output"
+    },
+    {
+      "Name": "S_C4",
+      "Direction": "Output"
+    },
+    {
+      "Name": "S_C5",
+      "Direction": "Output"
+    },
+    {
+      "Name": "S_CD",
+      "Direction": "Output"
+    },
+    {
+      "Name": "S_CM",
+      "Direction": "Output"
+    },
+    {
+      "Name": "S_CQ0",
+      "Direction": "Input"
+    },
+    {
+      "Name": "S_CQ1",
+      "Direction": "Input"
+    },
+    {
+      "Name": "S_CY",
+      "Direction": "Input"
+    },
+    {
+      "Name": "S_D0",
+      "Direction": "Output"
+    },
+    {
+      "Name": "S_D1",
+      "Direction": "Output"
+    },
+    {
+      "Name": "S_D2",
+      "Direction": "Output"
+    },
+    {
+      "Name": "S_D3",
+      "Direction": "Output"
+    },
+    {
+      "Name": "S_D4",
+      "Direction": "Output"
+    },
+    {
+      "Name": "S_D5",
+      "Direction": "Output"
+    },
+    {
+      "Name": "S_DD",
+      "Direction": "Output"
+    },
+    {
+      "Name": "S_DM",
+      "Direction": "Output"
+    },
+    {
+      "Name": "S_DQ0",
+      "Direction": "Input"
+    },
+    {
+      "Name": "S_DQ1",
+      "Direction": "Input"
+    },
+    {
+      "Name": "S_DY",
+      "Direction": "Input"
+    },
+    {
+      "Name": "S_E0",
+      "Direction": "Output"
+    },
+    {
+      "Name": "S_E1",
+      "Direction": "Output"
+    },
+    {
+      "Name": "S_E2",
+      "Direction": "Output"
+    },
+    {
+      "Name": "S_E3",
+      "Direction": "Output"
+    },
+    {
+      "Name": "S_E4",
+      "Direction": "Output"
+    },
+    {
+      "Name": "S_E5",
+      "Direction": "Output"
+    },
+    {
+      "Name": "S_ED",
+      "Direction": "Output"
+    },
+    {
+      "Name": "S_EM",
+      "Direction": "Output"
+    },
+    {
+      "Name": "S_EQ0",
+      "Direction": "Input"
+    },
+    {
+      "Name": "S_EQ1",
+      "Direction": "Input"
+    },
+    {
+      "Name": "S_EY",
+      "Direction": "Input"
+    },
+    {
+      "Name": "S_F0",
+      "Direction": "Output"
+    },
+    {
+      "Name": "S_F1",
+      "Direction": "Output"
+    },
+    {
+      "Name": "S_F2",
+      "Direction": "Output"
+    },
+    {
+      "Name": "S_F3",
+      "Direction": "Output"
+    },
+    {
+      "Name": "S_F4",
+      "Direction": "Output"
+    },
+    {
+      "Name": "S_F5",
+      "Direction": "Output"
+    },
+    {
+      "Name": "S_FD",
+      "Direction": "Output"
+    },
+    {
+      "Name": "S_FM",
+      "Direction": "Output"
+    },
+    {
+      "Name": "S_FQ0",
+      "Direction": "Input"
+    },
+    {
+      "Name": "S_FQ1",
+      "Direction": "Input"
+    },
+    {
+      "Name": "S_FY",
+      "Direction": "Input"
+    },
+    {
+      "Name": "S_G0",
+      "Direction": "Output"
+    },
+    {
+      "Name": "S_G1",
+      "Direction": "Output"
+    },
+    {
+      "Name": "S_G2",
+      "Direction": "Output"
+    },
+    {
+      "Name": "S_G3",
+      "Direction": "Output"
+    },
+    {
+      "Name": "S_G4",
+      "Direction": "Output"
+    },
+    {
+      "Name": "S_G5",
+      "Direction": "Output"
+    },
+    {
+      "Name": "S_GD",
+      "Direction": "Output"
+    },
+    {
+      "Name": "S_GM",
+      "Direction": "Output"
+    },
+    {
+      "Name": "S_GQ0",
+      "Direction": "Input"
+    },
+    {
+      "Name": "S_GQ1",
+      "Direction": "Input"
+    },
+    {
+      "Name": "S_GY",
+      "Direction": "Input"
+    },
+    {
+      "Name": "S_H0",
+      "Direction": "Output"
+    },
+    {
+      "Name": "S_H1",
+      "Direction": "Output"
+    },
+    {
+      "Name": "S_H2",
+      "Direction": "Output"
+    },
+    {
+      "Name": "S_H3",
+      "Direction": "Output"
+    },
+    {
+      "Name": "S_H4",
+      "Direction": "Output"
+    },
+    {
+      "Name": "S_H5",
+      "Direction": "Output"
+    },
+    {
+      "Name": "S_HD",
+      "Direction": "Output"
+    },
+    {
+      "Name": "S_HM",
+      "Direction": "Output"
+    },
+    {
+      "Name": "S_HQ0",
+      "Direction": "Input"
+    },
+    {
+      "Name": "S_HQ1",
+      "Direction": "Input"
+    },
+    {
+      "Name": "S_HY",
+      "Direction": "Input"
+    }
+  ]
+}

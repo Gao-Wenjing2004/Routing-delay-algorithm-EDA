@@ -1,0 +1,36 @@
+CXX ?= g++
+CXXFLAGS ?= -std=c++17 -O3 -DNDEBUG -march=native
+
+ifeq ($(OS),Windows_NT)
+EXEEXT := .exe
+PYTHON ?= python
+else
+EXEEXT :=
+PYTHON ?= python3
+endif
+
+all: estimate$(EXEEXT)
+
+fast_model_data.hpp: train_fast_model.py arch/delay_estimate_ans.csv arch/SRB_Port.json arch/SRB_Gap.json
+	$(PYTHON) train_fast_model.py
+
+local_arch_data.hpp: prepare_local_arch.py arch/SRB_Port.json arch/SRB_Arc.json arch/SRB_Net.json
+	$(PYTHON) prepare_local_arch.py
+
+generate_local_atlas$(EXEEXT): generate_local_atlas.cpp local_arch_data.hpp
+	$(CXX) $(CXXFLAGS) generate_local_atlas.cpp -o $@
+
+local_atlas.bin: generate_local_atlas$(EXEEXT)
+	./generate_local_atlas$(EXEEXT) local_atlas.bin
+
+estimate$(EXEEXT): estimate.cpp srb_fast.hpp srb_hybrid.hpp fast_model_data.hpp local_arch_data.hpp local_atlas.bin
+	$(CXX) $(CXXFLAGS) estimate.cpp -o $@
+
+train-fast:
+	$(PYTHON) train_fast_model.py
+
+rebuild-atlas: generate_local_atlas$(EXEEXT)
+	./generate_local_atlas$(EXEEXT) local_atlas.bin
+
+clean:
+	rm -f estimate$(EXEEXT) generate_local_atlas$(EXEEXT)

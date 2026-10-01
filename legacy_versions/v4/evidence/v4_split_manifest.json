@@ -1,0 +1,50 @@
+{
+  "seed": 20260827,
+  "rows": 1000000,
+  "rules": {
+    "random_stratified": "splitmix64(line,stratum)%5==0; strata=distance,Block,Gap-count",
+    "spatial_region": "validation if Source or Target 16x32 region is in deterministic held-region set",
+    "long_distance": "Chebyshev >= public P90 threshold 368",
+    "block_holdout": "endpoint closed bounding box intersects any configured Block",
+    "gap_stratified": "splitmix64(line,clipped endpoint Gap count)%5==0",
+    "rare_port_pair": "full-port-pair public frequency <= 28, targeting at least 10% of rows",
+    "boundary_holdout": "minimum Source/Target distance to any chip side <= 8"
+  },
+  "splits": {
+    "random_stratified": {
+      "train_rows": 800304,
+      "validation_rows": 199696,
+      "validation_ratio": 0.199696
+    },
+    "spatial_region": {
+      "train_rows": 642095,
+      "validation_rows": 357905,
+      "validation_ratio": 0.357905
+    },
+    "long_distance": {
+      "train_rows": 899470,
+      "validation_rows": 100530,
+      "validation_ratio": 0.10053
+    },
+    "block_holdout": {
+      "train_rows": 522692,
+      "validation_rows": 477308,
+      "validation_ratio": 0.477308
+    },
+    "gap_stratified": {
+      "train_rows": 799507,
+      "validation_rows": 200493,
+      "validation_ratio": 0.200493
+    },
+    "rare_port_pair": {
+      "train_rows": 893273,
+      "validation_rows": 106727,
+      "validation_ratio": 0.106727
+    },
+    "boundary_holdout": {
+      "train_rows": 681112,
+      "validation_rows": 318888,
+      "validation_ratio": 0.318888
+    }
+  }
+}

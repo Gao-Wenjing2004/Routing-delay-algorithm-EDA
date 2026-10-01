@@ -1,0 +1,14 @@
+{
+  "reference": "C:\\Users\\yanggoo\\Desktop\\紫光同创\\analysis\\srb_fast_v6\\v6_final_predictions_1m.csv",
+  "candidate": "C:\\Users\\yanggoo\\Desktop\\紫光同创\\analysis\\srb_fast_v6\\v6_final_optimized_predictions_1m.csv",
+  "reference_sha256": "2cdf8a66373eca8e37ccac87086a8e7843d71e81a42742b470aef8ba000165dc",
+  "candidate_sha256": "2cdf8a66373eca8e37ccac87086a8e7843d71e81a42742b470aef8ba000165dc",
+  "byte_identical": true,
+  "rows": 1000000,
+  "prediction_identical": true,
+  "mismatches": 0,
+  "mismatch_rate": 0.0,
+  "max_absolute_delta": 0,
+  "signed_delta_counts": {},
+  "examples": []
+}

@@ -1,0 +1,52 @@
+{
+  "scope": "local Windows x86_64, 1M public request stream",
+  "rows_per_run": 1000000,
+  "runs": [
+    {
+      "run": 1,
+      "seconds": 1.0936412999872118,
+      "qps": 914376.5876541908,
+      "sha256": "861ca94568c79ee0b0447586bb1415b7710e54214365e4e68ea731dc2854364a",
+      "output_bytes": 40299276,
+      "stderr": "processed=1000000 invalid_rows=0 elapsed=0.960108 algorithm=PRP-R-P1"
+    },
+    {
+      "run": 2,
+      "seconds": 0.9987429000320844,
+      "qps": 1001258.6822573409,
+      "sha256": "861ca94568c79ee0b0447586bb1415b7710e54214365e4e68ea731dc2854364a",
+      "output_bytes": 40299276,
+      "stderr": "processed=1000000 invalid_rows=0 elapsed=0.9781 algorithm=PRP-R-P1"
+    },
+    {
+      "run": 3,
+      "seconds": 0.9660097999731079,
+      "qps": 1035186.1855105801,
+      "sha256": "861ca94568c79ee0b0447586bb1415b7710e54214365e4e68ea731dc2854364a",
+      "output_bytes": 40299276,
+      "stderr": "processed=1000000 invalid_rows=0 elapsed=0.94587 algorithm=PRP-R-P1"
+    },
+    {
+      "run": 4,
+      "seconds": 0.9812544999876991,
+      "qps": 1019103.6066713945,
+      "sha256": "861ca94568c79ee0b0447586bb1415b7710e54214365e4e68ea731dc2854364a",
+      "output_bytes": 40299276,
+      "stderr": "processed=1000000 invalid_rows=0 elapsed=0.959861 algorithm=PRP-R-P1"
+    },
+    {
+      "run": 5,
+      "seconds": 0.9724901000154205,
+      "qps": 1028288.1028651535,
+      "sha256": "861ca94568c79ee0b0447586bb1415b7710e54214365e4e68ea731dc2854364a",
+      "output_bytes": 40299276,
+      "stderr": "processed=1000000 invalid_rows=0 elapsed=0.951646 algorithm=PRP-R-P1"
+    }
+  ],
+  "mean_seconds": 1.0024277199991047,
+  "mean_qps": 997578.159551387,
+  "extrapolated_100m_seconds": 100.24277199991047,
+  "deterministic": true,
+  "executable_bytes": 1033216,
+  "note": "100M is a linear extrapolation, not an official-platform measurement."
+}

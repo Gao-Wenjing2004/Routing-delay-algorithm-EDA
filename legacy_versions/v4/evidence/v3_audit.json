@@ -1,0 +1,210 @@
+{
+  "architecture_fingerprint_sha256": "6510489f75c3b8b7168891bcae4f493e037c1cc228351dde4e6429dd28526541",
+  "architecture_file_sha256": {
+    "inst": "5b7dc880f67007b7fb10e33ac0864110a1c7604813a8730aedef60216000e277",
+    "port": "e45cce375c1e14253ff3bdb4839962a97a46b4ea996917b36b189efd823d6515",
+    "arc": "6c51e426b6820246151d903bf16d58ff9b857be5648243f10258055de8b19dff",
+    "net": "4231b9d315f9e27646aaae8d4fa35581825bbd07d4186d2f7f44813af6c22244",
+    "gap": "5e6a156373bcb8c1a653381d2a2cc7f16db1a2fec0e44362c936d99b66d9d6dd"
+  },
+  "atlas_file_sha256": "04fd3fba2f7ac48a09d7cccdab23cf4c7d6a33d313b75af8cfa85b93a4358750",
+  "atlas_metadata": {
+    "source": "plusone-srb_fast_v3\\srb_fast_v3\\local_atlas.bin",
+    "header": {
+      "version": 1,
+      "radius": 56,
+      "routes": 160,
+      "cells": 12769,
+      "values": 326886400,
+      "bytes": 653772840
+    },
+    "classification": "Python reproduction of unchanged HybridEstimator::predict_local reachability"
+  },
+  "atlas_public_golden_metrics": {
+    "rows": 90182,
+    "acc_score": 96.2264779452991,
+    "mae": 13.267658734559003,
+    "rmse": 62.99115166220948,
+    "mean_relative_error": 0.011912064237145966,
+    "median_relative_error": 0.0,
+    "p50_absolute_error": 0.0,
+    "p90_absolute_error": 5.0,
+    "p95_absolute_error": 133.0,
+    "p99_absolute_error": 312.0,
+    "max_absolute_error": 789.0,
+    "exact_matches": 80318,
+    "within_5pct": 0.9413956376620353,
+    "within_10pct": 0.9501114425433296
+  },
+  "atlas_public_golden_exact": false,
+  "atlas_public_golden_by_endpoint_boundary_clearance": {
+    "clearance_at_least_0": {
+      "rows": 90182,
+      "acc_score": 96.2264779452991,
+      "exact_matches": 80318,
+      "exact_ratio": 0.8906211882637334,
+      "mae": 13.267658734559003,
+      "p95_absolute_error": 133.0
+    },
+    "clearance_at_least_1": {
+      "rows": 87906,
+      "acc_score": 96.23577659412253,
+      "exact_matches": 78360,
+      "exact_ratio": 0.8914067299160466,
+      "mae": 13.24089368188747,
+      "p95_absolute_error": 142.0
+    },
+    "clearance_at_least_2": {
+      "rows": 85631,
+      "acc_score": 96.21459533863703,
+      "exact_matches": 76314,
+      "exact_ratio": 0.8911959453936075,
+      "mae": 13.314594013850124,
+      "p95_absolute_error": 156.0
+    },
+    "clearance_at_least_4": {
+      "rows": 81130,
+      "acc_score": 96.16987870918479,
+      "exact_matches": 72318,
+      "exact_ratio": 0.891384198200419,
+      "mae": 13.493171453223223,
+      "p95_absolute_error": 156.0
+    },
+    "clearance_at_least_8": {
+      "rows": 72410,
+      "acc_score": 95.98178475913318,
+      "exact_matches": 64213,
+      "exact_ratio": 0.8867974036735258,
+      "mae": 14.069672697141279,
+      "p95_absolute_error": 156.0
+    },
+    "clearance_at_least_12": {
+      "rows": 64173,
+      "acc_score": 96.04235698648333,
+      "exact_matches": 56989,
+      "exact_ratio": 0.8880526077945553,
+      "mae": 13.911333426830598,
+      "p95_absolute_error": 156.0
+    },
+    "clearance_at_least_16": {
+      "rows": 56381,
+      "acc_score": 95.97962115506714,
+      "exact_matches": 49985,
+      "exact_ratio": 0.8865575282453309,
+      "mae": 14.045724623543393,
+      "p95_absolute_error": 156.0
+    },
+    "clearance_at_least_24": {
+      "rows": 40719,
+      "acc_score": 95.90608797890765,
+      "exact_matches": 35998,
+      "exact_ratio": 0.8840590387779661,
+      "mae": 14.149979125224096,
+      "p95_absolute_error": 156.0
+    },
+    "clearance_at_least_32": {
+      "rows": 27465,
+      "acc_score": 95.61139790974366,
+      "exact_matches": 23969,
+      "exact_ratio": 0.8727107227380302,
+      "mae": 14.691134170762789,
+      "p95_absolute_error": 156.0
+    },
+    "clearance_at_least_48": {
+      "rows": 6546,
+      "acc_score": 93.70600134041463,
+      "exact_matches": 5462,
+      "exact_ratio": 0.8344026886648335,
+      "mae": 19.186220592728382,
+      "p95_absolute_error": 156.0
+    }
+  },
+  "atlas_public_golden_by_endpoint_gap_geometry": {
+    "no_endpoint_gap": {
+      "rows": 10424,
+      "acc_score": 91.79249908245225,
+      "exact_matches": 8324,
+      "exact_ratio": 0.7985418265541059,
+      "mae": 22.80046047582502,
+      "p95_absolute_error": 156.0
+    },
+    "endpoint_gap": {
+      "rows": 79758,
+      "acc_score": 96.80597837994284,
+      "exact_matches": 71994,
+      "exact_ratio": 0.9026555329872865,
+      "mae": 12.021765841671055,
+      "p95_absolute_error": 48.0
+    },
+    "horizontal_only": {
+      "rows": 2480,
+      "acc_score": 91.87483530533231,
+      "exact_matches": 1939,
+      "exact_ratio": 0.7818548387096774,
+      "mae": 25.059274193548386,
+      "p95_absolute_error": 156.0
+    },
+    "vertical_only": {
+      "rows": 61758,
+      "acc_score": 96.90263590455346,
+      "exact_matches": 55837,
+      "exact_ratio": 0.9041257812753004,
+      "mae": 11.70238673532174,
+      "p95_absolute_error": 35.0
+    },
+    "both": {
+      "rows": 15520,
+      "acc_score": 97.20931983742544,
+      "exact_matches": 14218,
+      "exact_ratio": 0.9161082474226804,
+      "mae": 11.209342783505155,
+      "p95_absolute_error": 28.0
+    }
+  },
+  "production_v3_metrics": {
+    "rows": 1000000,
+    "acc_score": 95.30854863869334,
+    "mae": 29.955894,
+    "rmse": 51.97035489584423,
+    "mean_relative_error": 0.012125505053961703,
+    "median_relative_error": 0.006321419888159494,
+    "p50_absolute_error": 20.0,
+    "p90_absolute_error": 61.0,
+    "p95_absolute_error": 87.0,
+    "p99_absolute_error": 214.0,
+    "max_absolute_error": 809.0,
+    "exact_matches": 91769,
+    "within_5pct": 0.9646909646909647,
+    "within_10pct": 0.9891029891029891
+  },
+  "branch_counts": {
+    "atlas": 90182,
+    "fallback_distance": 889982,
+    "fallback_block": 19525,
+    "fallback_other": 311
+  },
+  "fallback_other": {
+    "rows": 311,
+    "reasons": {
+      "seed_residual_outside_radius": 311
+    },
+    "seed_span_occurrences": {
+      "12": 230,
+      "10": 81
+    },
+    "note": "Reason labels reproduce V3 endpoint/Atlas logic; they do not change predictions."
+  },
+  "net_span": {
+    "configured_maximum": 12,
+    "v3_declared_maximum": 8,
+    "current_atlas_radius": 56,
+    "current_atlas_bytes": 653772840,
+    "radius_60_projected_bytes": 749619240
+  },
+  "v3_model": {
+    "formula": "11-term directional linear base plus 18 additive categorical tables and endpoint Gap prefixes",
+    "float_parameter_count": 996950,
+    "float_parameter_bytes": 3987800,
+    "training": "8-iteration residual back-fitting; public all-row final fit; raw-delay squared-error objective"
+  }
+}

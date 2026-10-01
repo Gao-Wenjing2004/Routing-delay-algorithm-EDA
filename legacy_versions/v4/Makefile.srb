@@ -1,0 +1,43 @@
+CXX ?= g++
+CXXFLAGS ?= -std=c++17 -O3 -DNDEBUG -Wall -Wextra -pedantic -static -static-libgcc -static-libstdc++
+
+ifeq ($(OS),Windows_NT)
+EXEEXT := .exe
+PYTHON ?= python
+else
+EXEEXT :=
+PYTHON ?= python3
+endif
+
+V3DIR := ../plusone-srb_fast_v3/srb_fast_v3
+
+.PHONY: all verify-assets train-model clean
+
+all: verify-assets estimate_v4$(EXEEXT)
+
+estimate_v4$(EXEEXT): estimate_v4.cpp srb_v4.hpp v4_residual_data.hpp \
+	$(V3DIR)/srb_fast.hpp $(V3DIR)/fast_model_data.hpp $(V3DIR)/local_arch_data.hpp
+	$(CXX) $(CXXFLAGS) estimate_v4.cpp -o $@
+
+estimate_v3_parity$(EXEEXT): $(V3DIR)/estimate.cpp
+	$(CXX) $(CXXFLAGS) $< -o $@
+
+verify-assets:
+	$(PYTHON) ../tools/verify_srb_v4_assets.py \
+		--manifest ./v4_model_manifest.json \
+		--residual-header ./v4_residual_data.hpp \
+		--arch-dir $(V3DIR)/arch \
+		--atlas-file $(V3DIR)/local_atlas.bin \
+		--v3-source-dir $(V3DIR) \
+		--fixed-splits ../analysis/srb_fast_v4/v4_fixed_splits.npz
+
+train-model:
+	$(PYTHON) train_v4_residual.py \
+		--golden ../plusone-srb_fast_v3/srb_fast_v3/arch/delay_estimate_ans.csv \
+		--v3-predictions ../plusone-srb_fast_v3/srb_fast_v3/output/v3_predictions_1m.csv \
+		--arch-dir ../plusone-srb_fast_v3/srb_fast_v3/arch \
+		--atlas-file ../plusone-srb_fast_v3/srb_fast_v3/local_atlas.bin \
+		--fixed-splits ../analysis/srb_fast_v4/v4_fixed_splits.npz
+
+clean:
+	rm -f estimate_v4$(EXEEXT) estimate_v3_parity$(EXEEXT)
