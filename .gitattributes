@@ -13,3 +13,4 @@
 /submission_v7_20260919/qa/external_reference_1m.csv filter=lfs diff=lfs merge=lfs -text
 /legacy_versions/v1_official/bin/estimate filter=lfs diff=lfs merge=lfs -text
 /legacy_versions/v3/local_atlas.bin filter=lfs diff=lfs merge=lfs -text
+/srb_hybrid_v9/submission/bin/estimate filter=lfs diff=lfs merge=lfs -text

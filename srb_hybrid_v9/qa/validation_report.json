@@ -1,0 +1,39 @@
+{
+  "version": "V9 compact bounded exact + V8 P2 fallback",
+  "generated_at": "2026-10-02",
+  "submission": {
+    "path": "submission/bin/estimate",
+    "bytes": 13472048,
+    "sha256": "0C5FBF8993204AB5573000A1D4C6E3941DCC0FD62FAE5AA0F3287396AE95F366",
+    "format": "ELF 64-bit x86-64 Linux musl",
+    "single_file": true,
+    "external_runtime_data": false
+  },
+  "public_1m": {
+    "rows": 1000000,
+    "v8_accuracy": 94.603473234,
+    "v9_accuracy": 94.604410091,
+    "accuracy_delta": 0.000936857,
+    "selected": 10,
+    "exact_completed": 10,
+    "fallback": 0,
+    "exact_expanded_states": 52
+  },
+  "correctness": {
+    "full_exact_known_rows_matching_previous_exact": "31/31",
+    "compact_vs_full_budget16_short_rows": "15611/15611",
+    "budget_exhaustion_returns_partial_path": false
+  },
+  "timing_windows_1m_seconds": {
+    "v8_median_5_runs": 0.940940,
+    "v9_median_5_runs": 0.942671,
+    "note": "Wall-time difference is within run noise; exact branch internal time was approximately 0.2-0.4 ms per 1M."
+  },
+  "compact_data": {
+    "generated_header": "src/compact_graph_data.hpp",
+    "generated_header_sha256": "48E841E546F06600C67B3422455E158AAA8C37018C9D4B31784B9965606CF0B5",
+    "source_graph_sha256": "10518747589F301A5B7C7384DC0D6B6B76B52143EE8CF793F7BC806A0BB40828",
+    "gap_json_sha256": "5E6A156373BCB8C1A653381D2A2CC7F16DB1A2FEC0E44362C936D99B66D9D6DD"
+  },
+  "decision": "Valid compact V9 research milestone; measured public gain is real but very small. Continue with graph contraction and portal/path-suffix reuse before claiming a material score improvement."
+}
