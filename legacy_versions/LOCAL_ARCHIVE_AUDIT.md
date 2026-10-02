@@ -51,3 +51,16 @@ git lfs pull
 ```
 
 若只研究 V8，可不下载历史大资产，使用 `GIT_LFS_SKIP_SMUDGE=1` 克隆，并直接构建 `srb_prpr_v8/`。
+
+## 清理执行结果
+
+远端 `v8-prpr` 分支确认指向归档提交 `b3aa57095d07deddd867c3b3f8bf4d92bcc670fd` 后，已删除工作区根目录下的六份旧本地副本：
+
+- `sub-thefirsttime/`
+- `plusone-srb_fast_v3/`
+- `srb_fast_v4/`
+- `srb_fast_v5/`
+- `srb_fast_v6/`
+- `submission_v7_20260919/`
+
+删除后逐项检查均为不存在。当前 Git 仓库、V8、`baseline-srb_solver/`、官方架构/Golden 以及尚未完整归档的分析目录未删除。
