@@ -11,9 +11,7 @@
 **/endpoint_packed.bin
 **/submission.zip
 
-# Million-row inputs/predictions are reproducible and should not bloat Git history.
-/submission_v7_20260919/qa/requests_1m.csv
-/submission_v7_20260919/qa/external_reference_1m.csv
+# V7 的百万条复现实验输入/参考结果由 Git LFS 保存，便于完整复盘。
 
 # Local experiment outputs
 /experiments/**/predictions*.csv
