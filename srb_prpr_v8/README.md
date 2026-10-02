@@ -2,7 +2,7 @@
 
 这是独立于 V3/V4/V7 的无 Atlas 研究分支。当前实现包含 P1 周期路由原语研究，以及可提交试测的 P2 小模型。
 
-P1 的体积和速度达标，但准确度只有 68.817773，不能直接提交。P2 改用无 Atlas V6 回退作为数值基线，用离线 Dijkstra Teacher 和 Golden 固定训练侧蒸馏出 8+8 棵小树；公开全量 C++ 准确度 94.581767，固定验证 94.471213，亿条本机线性投影 118.8444 秒。
+P1 的体积和速度达标，但准确度只有 68.817773，不能直接提交。P2 改用无 Atlas V6 回退作为数值基线，用离线 Dijkstra Teacher 和 Golden 固定训练侧蒸馏出 8+8 棵小树，再加三个 Q20 固定模板；公开全量 C++ 准确度 94.603474，固定验证 94.485992，亿条本机线性投影 101.591 秒。
 
 ## 目录
 
@@ -34,14 +34,17 @@ py -3.14 srb_prpr_v8/training/evaluate_first_stage.py `
   --p0 ../analysis/srb_fast_v4/atlas_disabled_v3_predictions.csv `
   --v3 ../plusone-srb_fast_v3/srb_fast_v3/output/v3_predictions_1m.csv
 
-# P2 训练需要 numpy、scikit-learn、lightgbm；8+8 正式候选参数如下
+# P2 训练需要 numpy、scikit-learn、lightgbm；正式候选参数如下
 py -3.14 srb_prpr_v8/training/train_p2_student.py `
   --golden ../baseline-srb_solver/srb_solver/arch/delay_estimate_ans.csv `
   --arch-dir ../plusone-srb_fast_v3/srb_fast_v3/arch `
   --base ../analysis/srb_fast_v6/atlas_radius_ablation/radius_0.csv `
   --teacher ../analysis/srb_fast_v6/atlas_radius_ablation/radius_56.csv `
   --trees 8 --lgb-learning-rate 0.5 `
-  --output-dir srb_prpr_v8/analysis/p2_8
+  --candidates port_family_macro10_family_phase `
+  --post-candidates port_family_macro10_family_phase `
+  --post-group-subset source_family_distance,source_family_macro8,macro8_direction `
+  --output-dir srb_prpr_v8/analysis/p2_memory_fast
 ```
 
 Linux 常规构建：
@@ -56,9 +59,9 @@ cd srb_prpr_v8
 
 ## 当前正式产物（P2 8+8）
 
-- Linux 静态二进制：`submission/bin/estimate`，12,850,040 bytes。
-- Windows 本地性能二进制：5,941,248 bytes（`build/` 被 Git 忽略）。
-- 8+8 树模型头：191,650 bytes；其余约 9.3 MB 是无 Atlas 回退参数头。
+- Linux 静态二进制：`submission/bin/estimate`，12,966,280 bytes。
+- Windows 本地性能二进制：6,056,448 bytes（`build/` 被 Git 忽略）。
+- 8+8 树加三表记忆头：404,160 bytes；其余约 9.3 MB 是无 Atlas 回退参数头。
 - 外部 Atlas：0 bytes。
 
-百万请求的五次本地输出 SHA-256 完全一致。详细数据见 `analysis/p2_8/runtime_benchmark.json` 和 `analysis/p2_8/p2_cpp_score.json`。P2 尚未达到固定验证 94.6 目标，当前定位是“可提交试测、继续优化”。
+百万请求的五次本地输出 SHA-256 完全一致。详细数据见 `analysis/p2_memory_fast/runtime_benchmark.json` 和 `analysis/p2_memory_fast/p2_cpp_score.json`。公开全量指标已经达线；固定验证仍未达到 94.6，当前定位是“可提交试测、继续优化”。

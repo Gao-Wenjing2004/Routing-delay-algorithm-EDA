@@ -229,6 +229,12 @@ public:
         if (!fallback_.parse_endpoint(from, source) || !fallback_.parse_endpoint(to, target)) {
             return false;
         }
+        return predict_endpoints(source, target, result);
+    }
+
+    bool predict_endpoints(const srb_fast::Endpoint& source,
+                           const srb_fast::Endpoint& target,
+                           Prediction& result) {
         if (source.x == target.x && source.y == target.y && source.port == target.port) {
             result.delay = 0;
             result.branch = Branch::SameEndpoint;

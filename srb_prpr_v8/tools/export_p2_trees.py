@@ -17,6 +17,8 @@ def parse_args() -> argparse.Namespace:
                         default=root / "analysis" / "p2" / "p2_lightgbm_model.json")
     parser.add_argument("--prpr-model", type=Path,
                         default=root / "analysis" / "prpr" / "prpr_model.json")
+    parser.add_argument("--post-memory", type=Path,
+                        help="optional compact post-tree residual memory JSON")
     parser.add_argument("--output", type=Path,
                         default=root / "p2_runtime" / "p2_student_data.hpp")
     return parser.parse_args()
@@ -109,6 +111,20 @@ def array_lines(values, width=16):
     return rows
 
 
+def float_array_lines(values, width=8):
+    rows = []
+    for start in range(0, len(values), width):
+        rows.append("    " + ", ".join(cpp_float(v) for v in values[start:start + width]) + ",")
+    return rows
+
+
+def int_array_lines(values, width=16):
+    rows = []
+    for start in range(0, len(values), width):
+        rows.append("    " + ", ".join(str(v) for v in values[start:start + width]) + ",")
+    return rows
+
+
 def main() -> int:
     opt = parse_args()
     teacher = json.loads(opt.teacher.read_text(encoding="utf-8"))
@@ -157,6 +173,42 @@ def main() -> int:
     emit_model("Teacher", teacher_nodes, teacher_roots, teacher_masks)
     emit_model("Student", student_nodes, student_roots, student_masks)
 
+    post_parameters = 0
+    if opt.post_memory:
+        post = json.loads(opt.post_memory.read_text(encoding="utf-8"))
+        expected = [
+            "source_family_distance", "macro8_direction", "source_family_macro8",
+        ]
+        actual = [str(group["name"]) for group in post["groups"]]
+        if actual != expected:
+            raise ValueError(f"unsupported post-memory groups/order: {actual}")
+        post_scale = 1 << 20
+        lines.append(f"inline constexpr float kPostAlpha = {cpp_float(post['alpha'])};")
+        lines.append(f"inline constexpr float kPostScale = {cpp_float(1.0 / post_scale)};")
+        post_quantized = {}
+        for group in post["groups"]:
+            values = group["values"]
+            name = "".join(part.title() for part in str(group["name"]).split("_"))
+            quantized = [int(round(float(value) * post_scale)) for value in values]
+            if min(quantized) < -32768 or max(quantized) > 32767:
+                raise ValueError(f"post-memory group {group['name']} exceeds int16 Q20 range")
+            post_quantized[str(group["name"])] = quantized
+            lines.append(f"inline constexpr int16_t kPost{name}[{len(values)}] = {{")
+            lines.extend(int_array_lines(quantized))
+            lines.append("};")
+            post_parameters += len(values)
+        distance_values = post_quantized["source_family_distance"]
+        macro_values = post_quantized["source_family_macro8"]
+        family_count = len(macro_values) // 100
+        active_families = [
+            int(any(distance_values[family * 162:(family + 1) * 162]) or
+                any(macro_values[family * 100:(family + 1) * 100]))
+            for family in range(family_count)
+        ]
+        lines.append(f"inline constexpr uint8_t kPostSourceFamilyActive[{family_count}] = {{")
+        lines.extend(array_lines(active_families))
+        lines.append("};")
+
     for name, values in (
         ("SourceRoute", source_routes), ("TargetRoute", target_routes),
         ("SourceClass", source_classes), ("TargetClass", target_classes),
@@ -193,6 +245,8 @@ def main() -> int:
         "student_nodes": len(student_nodes),
         "teacher_masks": len(teacher_masks),
         "student_masks": len(student_masks),
+        "post_parameters": post_parameters,
+        "post_active_families": sum(active_families) if opt.post_memory else 0,
         "bytes": opt.output.stat().st_size,
     }, indent=2))
     return 0

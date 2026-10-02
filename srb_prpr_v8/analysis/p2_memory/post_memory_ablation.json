@@ -1,0 +1,342 @@
+{
+  "model": "dijkstra_plus_golden_lgbm_plus_port_family_macro10_family_phase",
+  "alpha": 1.25,
+  "rows": 1000000,
+  "training_rows": 800304,
+  "validation_rows": 199696,
+  "baseline": {
+    "fixed_validation_acc": 94.47121255902272,
+    "full_public_acc": 94.581554662565
+  },
+  "all_groups": {
+    "fixed_validation_acc": 94.47585831385527,
+    "full_public_acc": 94.6293873836757,
+    "parameter_count": 205932
+  },
+  "leave_one_out": [
+    {
+      "removed": "prediction_bin",
+      "parameter_count_after_removal": 205864,
+      "fixed_validation_acc": 94.47592018195091,
+      "full_public_acc": 94.62919551052765
+    },
+    {
+      "removed": "distance_quad",
+      "parameter_count_after_removal": 205770,
+      "fixed_validation_acc": 94.47604466531368,
+      "full_public_acc": 94.62950035140324
+    },
+    {
+      "removed": "boundary",
+      "parameter_count_after_removal": 205922,
+      "fixed_validation_acc": 94.47595508154227,
+      "full_public_acc": 94.62939596283121
+    },
+    {
+      "removed": "gap_shape",
+      "parameter_count_after_removal": 205676,
+      "fixed_validation_acc": 94.47568559589733,
+      "full_public_acc": 94.62907844084579
+    },
+    {
+      "removed": "block_distance",
+      "parameter_count_after_removal": 204636,
+      "fixed_validation_acc": 94.47578465992639,
+      "full_public_acc": 94.6291591392849
+    },
+    {
+      "removed": "port_family_pair",
+      "parameter_count_after_removal": 159276,
+      "fixed_validation_acc": 94.47783210577876,
+      "full_public_acc": 94.62630685629308
+    },
+    {
+      "removed": "source_family_distance",
+      "parameter_count_after_removal": 170940,
+      "fixed_validation_acc": 94.46903724411068,
+      "full_public_acc": 94.61895961200648
+    },
+    {
+      "removed": "target_family_distance",
+      "parameter_count_after_removal": 170940,
+      "fixed_validation_acc": 94.47841625051548,
+      "full_public_acc": 94.62331956345116
+    },
+    {
+      "removed": "macro8_direction",
+      "parameter_count_after_removal": 205032,
+      "fixed_validation_acc": 94.47443097950016,
+      "full_public_acc": 94.62745649351909
+    },
+    {
+      "removed": "source_family_macro8",
+      "parameter_count_after_removal": 184332,
+      "fixed_validation_acc": 94.46988333006443,
+      "full_public_acc": 94.61927207568789
+    },
+    {
+      "removed": "target_family_macro8",
+      "parameter_count_after_removal": 184332,
+      "fixed_validation_acc": 94.47789197625276,
+      "full_public_acc": 94.62238215349304
+    },
+    {
+      "removed": "source_phase",
+      "parameter_count_after_removal": 205832,
+      "fixed_validation_acc": 94.47597345813543,
+      "full_public_acc": 94.62941265709274
+    },
+    {
+      "removed": "target_phase",
+      "parameter_count_after_removal": 205832,
+      "fixed_validation_acc": 94.4758380175135,
+      "full_public_acc": 94.62936988292716
+    },
+    {
+      "removed": "source_family_phase",
+      "parameter_count_after_removal": 184332,
+      "fixed_validation_acc": 94.47731830951221,
+      "full_public_acc": 94.62603550429425
+    },
+    {
+      "removed": "target_family_phase",
+      "parameter_count_after_removal": 184332,
+      "fixed_validation_acc": 94.47879486677964,
+      "full_public_acc": 94.62325875325983
+    }
+  ],
+  "single_group": [
+    {
+      "name": "prediction_bin",
+      "parameter_count": 68,
+      "nonzero_parameters": 66,
+      "fixed_validation_acc": 94.4713549844533,
+      "full_public_acc": 94.58166394080075
+    },
+    {
+      "name": "distance_quad",
+      "parameter_count": 162,
+      "nonzero_parameters": 116,
+      "fixed_validation_acc": 94.47124122720241,
+      "full_public_acc": 94.58155783818964
+    },
+    {
+      "name": "boundary",
+      "parameter_count": 10,
+      "nonzero_parameters": 7,
+      "fixed_validation_acc": 94.47121255902272,
+      "full_public_acc": 94.581554662565
+    },
+    {
+      "name": "gap_shape",
+      "parameter_count": 256,
+      "nonzero_parameters": 90,
+      "fixed_validation_acc": 94.47119460579549,
+      "full_public_acc": 94.58163612045868
+    },
+    {
+      "name": "block_distance",
+      "parameter_count": 1296,
+      "nonzero_parameters": 352,
+      "fixed_validation_acc": 94.47132178684164,
+      "full_public_acc": 94.58170714890491
+    },
+    {
+      "name": "port_family_pair",
+      "parameter_count": 46656,
+      "nonzero_parameters": 6463,
+      "fixed_validation_acc": 94.46951541234083,
+      "full_public_acc": 94.58381973803415
+    },
+    {
+      "name": "source_family_distance",
+      "parameter_count": 34992,
+      "nonzero_parameters": 4655,
+      "fixed_validation_acc": 94.47843043069845,
+      "full_public_acc": 94.59154341627287
+    },
+    {
+      "name": "target_family_distance",
+      "parameter_count": 34992,
+      "nonzero_parameters": 12341,
+      "fixed_validation_acc": 94.46864539750626,
+      "full_public_acc": 94.58682229622724
+    },
+    {
+      "name": "macro8_direction",
+      "parameter_count": 900,
+      "nonzero_parameters": 441,
+      "fixed_validation_acc": 94.4722365787177,
+      "full_public_acc": 94.58280081042804
+    },
+    {
+      "name": "source_family_macro8",
+      "parameter_count": 21600,
+      "nonzero_parameters": 4645,
+      "fixed_validation_acc": 94.47691152501928,
+      "full_public_acc": 94.59064357454785
+    },
+    {
+      "name": "target_family_macro8",
+      "parameter_count": 21600,
+      "nonzero_parameters": 14400,
+      "fixed_validation_acc": 94.46912546367602,
+      "full_public_acc": 94.58739294187939
+    },
+    {
+      "name": "source_phase",
+      "parameter_count": 100,
+      "nonzero_parameters": 100,
+      "fixed_validation_acc": 94.47121684034231,
+      "full_public_acc": 94.58155060924395
+    },
+    {
+      "name": "target_phase",
+      "parameter_count": 100,
+      "nonzero_parameters": 100,
+      "fixed_validation_acc": 94.47120832344264,
+      "full_public_acc": 94.58155437377495
+    },
+    {
+      "name": "source_family_phase",
+      "parameter_count": 21600,
+      "nonzero_parameters": 4500,
+      "fixed_validation_acc": 94.46953644516203,
+      "full_public_acc": 94.58407680319426
+    },
+    {
+      "name": "target_family_phase",
+      "parameter_count": 21600,
+      "nonzero_parameters": 14398,
+      "fixed_validation_acc": 94.46821533129956,
+      "full_public_acc": 94.58650258281261
+    }
+  ],
+  "split_manifest": {
+    "seed": 20260827,
+    "rows": 1000000,
+    "rules": {
+      "random_stratified": "splitmix64(line,stratum)%5==0; strata=distance,Block,Gap-count",
+      "spatial_region": "validation if Source or Target 16x32 region is in deterministic held-region set",
+      "long_distance": "Chebyshev >= public P90 threshold 368",
+      "block_holdout": "endpoint closed bounding box intersects any configured Block",
+      "gap_stratified": "splitmix64(line,clipped endpoint Gap count)%5==0",
+      "rare_port_pair": "full-port-pair public frequency <= 28, targeting at least 10% of rows",
+      "boundary_holdout": "minimum Source/Target distance to any chip side <= 8",
+      "macro8_remainder_holdout": "validation contains deterministic held-out (dx mod 8,dy mod 8) cells",
+      "macro8_phase_holdout": "validation if Source or Target absolute 8x8 phase is held out",
+      "macro10_remainder_holdout": "validation contains deterministic held-out (dx mod 10,dy mod 10) cells",
+      "macro10_phase_holdout": "validation if Source or Target absolute 10x10 phase is held out"
+    },
+    "splits": {
+      "random_stratified": {
+        "train_rows": 800304,
+        "validation_rows": 199696,
+        "validation_ratio": 0.199696
+      },
+      "spatial_region": {
+        "train_rows": 642095,
+        "validation_rows": 357905,
+        "validation_ratio": 0.357905
+      },
+      "long_distance": {
+        "train_rows": 899470,
+        "validation_rows": 100530,
+        "validation_ratio": 0.10053
+      },
+      "block_holdout": {
+        "train_rows": 522692,
+        "validation_rows": 477308,
+        "validation_ratio": 0.477308
+      },
+      "gap_stratified": {
+        "train_rows": 799507,
+        "validation_rows": 200493,
+        "validation_ratio": 0.200493
+      },
+      "rare_port_pair": {
+        "train_rows": 893273,
+        "validation_rows": 106727,
+        "validation_ratio": 0.106727
+      },
+      "boundary_holdout": {
+        "train_rows": 681112,
+        "validation_rows": 318888,
+        "validation_ratio": 0.318888
+      },
+      "macro8_remainder_holdout": {
+        "train_rows": 828126,
+        "validation_rows": 171874,
+        "validation_ratio": 0.171874
+      },
+      "macro8_phase_holdout": {
+        "train_rows": 686066,
+        "validation_rows": 313934,
+        "validation_ratio": 0.313934
+      },
+      "macro10_remainder_holdout": {
+        "train_rows": 819914,
+        "validation_rows": 180086,
+        "validation_ratio": 0.180086
+      },
+      "macro10_phase_holdout": {
+        "train_rows": 705999,
+        "validation_rows": 294001,
+        "validation_ratio": 0.294001
+      }
+    }
+  },
+  "greedy_forward": [
+    {
+      "added": "source_family_distance",
+      "fixed_validation_acc": 94.47843043069845,
+      "full_public_acc": 94.59154341627287,
+      "parameter_count": 34992
+    },
+    {
+      "added": "source_family_macro8",
+      "fixed_validation_acc": 94.484256244291,
+      "full_public_acc": 94.60122358185797,
+      "parameter_count": 56592
+    },
+    {
+      "added": "macro8_direction",
+      "fixed_validation_acc": 94.48566052354363,
+      "full_public_acc": 94.60316595873947,
+      "parameter_count": 57492
+    },
+    {
+      "added": "gap_shape",
+      "fixed_validation_acc": 94.4860118150244,
+      "full_public_acc": 94.60347676610351,
+      "parameter_count": 57748
+    },
+    {
+      "added": "prediction_bin",
+      "fixed_validation_acc": 94.48624984465972,
+      "full_public_acc": 94.60372780982053,
+      "parameter_count": 57816
+    },
+    {
+      "added": "block_distance",
+      "fixed_validation_acc": 94.48669676882572,
+      "full_public_acc": 94.60415882571189,
+      "parameter_count": 59112
+    },
+    {
+      "added": "source_phase",
+      "fixed_validation_acc": 94.48681842117261,
+      "full_public_acc": 94.60419641863285,
+      "parameter_count": 59212
+    }
+  ],
+  "selected_groups": [
+    "source_family_distance",
+    "source_family_macro8",
+    "macro8_direction",
+    "gap_shape",
+    "prediction_bin",
+    "block_distance",
+    "source_phase"
+  ]
+}

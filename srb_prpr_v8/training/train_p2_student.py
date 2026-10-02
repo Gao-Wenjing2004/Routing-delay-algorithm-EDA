@@ -53,6 +53,17 @@ def parse_args() -> argparse.Namespace:
                         help="number of shallow histogram-boosted Student trees; 0 disables")
     parser.add_argument("--lgb-learning-rate", type=float, default=0.12)
     parser.add_argument(
+        "--post-candidates",
+        default="",
+        help=("comma-separated fixed residual memories fitted after the "
+              "Dijkstra+Golden LightGBM composite"),
+    )
+    parser.add_argument(
+        "--post-group-subset",
+        default="",
+        help="optional comma-separated group names retained in every post candidate",
+    )
+    parser.add_argument(
         "--candidates",
         default=("global_calibration,single_residual,port_family_residual,"
                  "port_family_macro10_family_phase,port_pair_residual"),
@@ -473,6 +484,7 @@ def main() -> int:
     }
     models: dict[str, research.ResidualFit] = {}
     tree_models: dict[str, dict[str, object]] = {}
+    post_prefix: dict[str, str] = {}
     predictions: dict[str, np.ndarray] = {"base_no_atlas": base}
 
     teacher_fit = None
@@ -553,6 +565,34 @@ def main() -> int:
         predictions["golden_short_tree_student"] = short_prediction
         tree_models["golden_short_tree_student"] = short_meta
 
+    post_requested = [name.strip() for name in opt.post_candidates.split(",") if name.strip()]
+    if post_requested and "dijkstra_plus_golden_lgbm" not in predictions:
+        raise ValueError("--post-candidates requires --teacher and --trees > 0")
+    if not set(post_requested).issubset(allowed):
+        raise ValueError(f"unknown post candidates: {set(post_requested) - allowed}")
+    post_group_subset = {
+        name.strip() for name in opt.post_group_subset.split(",") if name.strip()
+    }
+    for candidate in post_requested:
+        composite = predictions["dijkstra_plus_golden_lgbm"]
+        name = f"dijkstra_plus_golden_lgbm_plus_{candidate}"
+        groups = research.make_residual_groups(
+            candidate, composite, static, env, rare, len(arch.port_names)
+        )
+        if post_group_subset:
+            available = {group.name for group in groups}
+            missing = post_group_subset - available
+            if missing:
+                raise ValueError(f"unknown post residual groups: {missing}")
+            groups = [group for group in groups if group.name in post_group_subset]
+        fit = research.fit_residual(
+            name, composite, golden, train, np.ones(base.size, dtype=np.bool_),
+            groups, opt.iterations,
+        )
+        models[name] = fit
+        predictions[name] = research.apply_correction(composite, fit)
+        post_prefix[name] = "dijkstra_plus_golden_lgbm"
+
     # Golden-calibrate the architecture-only teacher student on the training
     # side.  This tests whether teacher structure and Golden semantics compose.
     if "teacher_student" in predictions:
@@ -609,7 +649,34 @@ def main() -> int:
     (out / "p2_ablation.json").write_text(
         json.dumps(results, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
     )
-    if best_name in models:
+    if best_name in post_prefix:
+        (out / "p2_post_residual_model.json").write_text(
+            json.dumps(serialise_fit(models[best_name]), ensure_ascii=False,
+                       separators=(",", ":")) + "\n",
+            encoding="utf-8",
+        )
+        prefix_name = post_prefix[best_name]
+        (out / "p2_lightgbm_model.txt").write_text(
+            tree_models[prefix_name]["model"].booster_.model_to_string(),
+            encoding="utf-8",
+        )
+        (out / "p2_lightgbm_model.json").write_text(
+            json.dumps(tree_models[prefix_name]["model"].booster_.dump_model(),
+                       ensure_ascii=False, separators=(",", ":")) + "\n",
+            encoding="utf-8",
+        )
+        teacher_name = tree_models[prefix_name].get("prefix_model")
+        if teacher_name:
+            (out / "p2_teacher_lightgbm_model.txt").write_text(
+                tree_models[teacher_name]["model"].booster_.model_to_string(),
+                encoding="utf-8",
+            )
+            (out / "p2_teacher_lightgbm_model.json").write_text(
+                json.dumps(tree_models[teacher_name]["model"].booster_.dump_model(),
+                           ensure_ascii=False, separators=(",", ":")) + "\n",
+                encoding="utf-8",
+            )
+    elif best_name in models:
         (out / "p2_student_model.json").write_text(
             json.dumps(serialise_fit(models[best_name]), ensure_ascii=False,
                        separators=(",", ":")) + "\n",

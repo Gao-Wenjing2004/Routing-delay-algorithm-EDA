@@ -81,7 +81,7 @@ public:
             return false;
         }
         srb_v4::Prediction base_prediction;
-        if (!base_.predict_spec(from, to, base_prediction)) return false;
+        if (!base_.predict_endpoints(source, target, base_prediction)) return false;
         if (base_prediction.delay == 0) {
             delay = 0;
             return true;
@@ -106,7 +106,28 @@ public:
             p2_student_data::kStudentRoots,
             p2_student_data::kStudentMasks,
             features);
-        delay = rounded_delay(static_cast<double>(teacher_delay) * (1.0 + student_correction));
+        const uint32_t student_delay = rounded_delay(
+            static_cast<double>(teacher_delay) * (1.0 + student_correction));
+#ifdef P2_POST_MEMORY
+        const int source_family = static_cast<int>(features[18]);
+        const int direction = static_cast<int>(features[20]);
+        const int remainder10 = static_cast<int>(features[22]);
+        const int distance_bin = static_cast<int>(features[29]);
+        const int source_family_distance =
+            (source_family * 9 + direction) * 18 + distance_bin;
+        const int source_family_macro10 = source_family * 100 + remainder10;
+        const int direction_remainder10 = direction * 100 + remainder10;
+        int32_t post_sum = p2_student_data::kPostMacro8Direction[direction_remainder10];
+        if (p2_student_data::kPostSourceFamilyActive[source_family]) {
+            post_sum += p2_student_data::kPostSourceFamilyDistance[source_family_distance] +
+                        p2_student_data::kPostSourceFamilyMacro8[source_family_macro10];
+        }
+        const float post_correction = p2_student_data::kPostAlpha *
+                                      p2_student_data::kPostScale * post_sum;
+        delay = rounded_delay(static_cast<double>(student_delay) * (1.0 + post_correction));
+#else
+        delay = student_delay;
+#endif
         return true;
     }
 

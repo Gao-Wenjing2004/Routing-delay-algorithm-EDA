@@ -1,0 +1,13 @@
+{
+  "platform": "local Windows x86-64, single thread",
+  "rows": 1000000,
+  "runs_seconds": [1.02302, 1.01439, 1.01581, 1.00341, 1.02292],
+  "average_seconds": 1.01591,
+  "projected_100m_seconds": 101.591,
+  "unique_output_hashes": 1,
+  "output_sha256": "C520E870856A56FD09723F8BC8E8E1469728E844320631BCAE2CAE84DACABD29",
+  "windows_binary_bytes": 6056448,
+  "linux_static_binary_bytes": 12966280,
+  "linux_static_binary_sha256": "6819292C94AE1BE1ECB526EE51AA0635EF6B35A2CF8789B5ECBA876DC9497872",
+  "notes": "The 100M value is a linear projection, not an official-platform measurement. Endpoint parsing is shared between the P2 wrapper and the no-Atlas base."
+}
