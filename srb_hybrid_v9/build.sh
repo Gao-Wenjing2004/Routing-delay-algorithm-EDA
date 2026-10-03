@@ -4,7 +4,7 @@ cd "$(dirname "$0")"
 
 mkdir -p build submission/bin
 g++ -std=c++17 -O3 -DNDEBUG -march=x86-64 -mtune=generic \
-    -DP2_FAST_MODEL -DP2_POST_MEMORY -DV9_COMPACT_SUBMISSION -static-libgcc -static-libstdc++ \
+    -DP2_FAST_MODEL -DP2_POST_MEMORY -DV9_EXACT_MEMORY -DV9_COMPACT_LANDMARKS -DV9_COMPACT_SUBMISSION -static-libgcc -static-libstdc++ \
     src/estimate_v9.cpp -o build/estimate_v9_core
 strip build/estimate_v9_core
 cp build/estimate_v9_core submission/bin/estimate

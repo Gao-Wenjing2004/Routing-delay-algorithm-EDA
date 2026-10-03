@@ -1,6 +1,9 @@
 #pragma once
 
 #include "compact_graph_data.hpp"
+#ifdef V9_COMPACT_LANDMARKS
+#include "compact_landmark_data.hpp"
+#endif
 #include "srb_fast.hpp"
 
 #include <algorithm>
@@ -97,6 +100,9 @@ public:
         heap_.clear();
         table_overflow_ = false;
         target_port_ = target.port;
+#ifdef V9_COMPACT_LANDMARKS
+        select_landmarks(source.x, source.y, target.x, target.y);
+#endif
         uint32_t best = kInfinity;
         const bool target_is_input = kPortIsInput[target.port] != 0;
         int16_t target_route = -1;
@@ -184,6 +190,12 @@ private:
     uint16_t target_port_ = 0;
     bool table_overflow_ = false;
     TinyHeap heap_;
+#ifdef V9_COMPACT_LANDMARKS
+    static constexpr int kActiveLandmarks = 4;
+    uint8_t active_landmarks_[kActiveLandmarks]{};
+    uint16_t active_from_target_[kActiveLandmarks]{};
+    uint16_t active_to_target_[kActiveLandmarks]{};
+#endif
     void begin_query() {
         if (++generation_ == 0) {
             std::fill(std::begin(stamps_), std::end(stamps_), 0);
@@ -238,8 +250,64 @@ private:
         uint32_t lower = kPortRouteLower[static_cast<uint32_t>(target_port_) * kRouteCount +
                                          state % kRouteCount];
         if (lower == kNoU16) lower = 0;
+#ifdef V9_COMPACT_LANDMARKS
+        lower = std::max(lower, landmark_lower(state / kRouteCount));
+#endif
         heap_.push(HeapItem{value + lower, value, state});
     }
+
+#ifdef V9_COMPACT_LANDMARKS
+    void select_landmarks(int source_x, int source_y, int target_x, int target_y) {
+        struct Candidate { uint16_t score; uint8_t landmark; };
+        Candidate candidates[v9_compact_landmarks::kLandmarkCount]{};
+        const uint32_t source = static_cast<uint32_t>(source_y * kWidth + source_x);
+        const uint32_t target = static_cast<uint32_t>(target_y * kWidth + target_x);
+        for (uint8_t landmark = 0; landmark < v9_compact_landmarks::kLandmarkCount; ++landmark) {
+            const uint32_t base = static_cast<uint32_t>(landmark) *
+                                  v9_compact_landmarks::kDenseCellCount;
+            const uint16_t from_source = v9_compact_landmarks::kFrom[base + source];
+            const uint16_t from_target = v9_compact_landmarks::kFrom[base + target];
+            const uint16_t to_source = v9_compact_landmarks::kTo[base + source];
+            const uint16_t to_target = v9_compact_landmarks::kTo[base + target];
+            uint16_t score = 0;
+            if (from_source != kNoU16 && from_target != kNoU16 && from_target > from_source)
+                score = static_cast<uint16_t>(from_target - from_source);
+            if (to_source != kNoU16 && to_target != kNoU16 && to_source > to_target)
+                score = std::max<uint16_t>(score, static_cast<uint16_t>(to_source - to_target));
+            candidates[landmark] = Candidate{score, landmark};
+        }
+        std::sort(std::begin(candidates), std::end(candidates),
+                  [](const Candidate& first, const Candidate& second) {
+                      if (first.score != second.score) return first.score > second.score;
+                      return first.landmark < second.landmark;
+                  });
+        for (int index = 0; index < kActiveLandmarks; ++index) {
+            const uint8_t landmark = candidates[index].landmark;
+            const uint32_t base = static_cast<uint32_t>(landmark) *
+                                  v9_compact_landmarks::kDenseCellCount;
+            active_landmarks_[index] = landmark;
+            active_from_target_[index] = v9_compact_landmarks::kFrom[base + target];
+            active_to_target_[index] = v9_compact_landmarks::kTo[base + target];
+        }
+    }
+
+    uint32_t landmark_lower(uint32_t dense_cell) const {
+        uint32_t lower = 0;
+        for (int index = 0; index < kActiveLandmarks; ++index) {
+            const uint32_t base = static_cast<uint32_t>(active_landmarks_[index]) *
+                                  v9_compact_landmarks::kDenseCellCount;
+            const uint16_t from_cell = v9_compact_landmarks::kFrom[base + dense_cell];
+            const uint16_t to_cell = v9_compact_landmarks::kTo[base + dense_cell];
+            const uint16_t from_target = active_from_target_[index];
+            const uint16_t to_target = active_to_target_[index];
+            if (from_cell != kNoU16 && from_target != kNoU16 && from_target > from_cell)
+                lower = std::max<uint32_t>(lower, from_target - from_cell);
+            if (to_cell != kNoU16 && to_target != kNoU16 && to_cell > to_target)
+                lower = std::max<uint32_t>(lower, to_cell - to_target);
+        }
+        return lower;
+    }
+#endif
 
     template <class Function>
     static void for_each_transition(uint16_t input, Function&& function) {

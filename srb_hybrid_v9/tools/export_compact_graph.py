@@ -48,11 +48,33 @@ def format_array(name: str, ctype: str, data: list[int], per_line: int = 24) -> 
     return "\n".join(lines)
 
 
+def shortest_paths(source: int, adjacency: list[list[tuple[int, int]]]) -> list[int]:
+    infinity = 1 << 60
+    distance = [infinity] * len(adjacency)
+    distance[source] = 0
+    queue = [(0, source)]
+    while queue:
+        current, node = heapq.heappop(queue)
+        if current != distance[node]:
+            continue
+        for target, cost in adjacency[node]:
+            candidate = current + cost
+            if candidate < distance[target]:
+                distance[target] = candidate
+                heapq.heappush(queue, (candidate, target))
+    return distance
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--graph", type=Path, required=True)
     parser.add_argument("--gap", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument(
+        "--landmark-output",
+        type=Path,
+        help="optional uint16 ALT/Portal lower-bound header for compact A*",
+    )
     args = parser.parse_args()
 
     with args.graph.open("rb") as stream:
@@ -67,7 +89,7 @@ def main() -> int:
         input_count = scalar(stream, "H")
         route_count = scalar(stream, "H")
         _arc_count = scalar(stream, "Q")
-        _cells = vector(stream, "hh")
+        cells = vector(stream, "hh")
         ports = strings(stream)
         port_is_input = values(vector(stream, "B"))
         port_to_input = values(vector(stream, "h"))
@@ -78,6 +100,8 @@ def main() -> int:
         transition_group_count = scalar(stream, "Q")
         transitions_by_input = [vector(stream, "HHHH") for _ in range(transition_group_count)]
         arc_to_output = values(vector(stream, "H"))
+        spatial_next = values(vector(stream, "i"))
+        spatial_extra = values(vector(stream, "H"))
 
     transition_offsets = [0]
     transitions: list[tuple[int, ...]] = []
@@ -168,10 +192,136 @@ def main() -> int:
     body.extend(("};", "} // namespace v9_compact_data", ""))
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text("\n".join(body), encoding="utf-8")
+
+    landmark_summary = None
+    if args.landmark_output is not None:
+        min_arc_by_net = [65535] * len(nets)
+        for group in transitions_by_input:
+            for _output, _next_input, arc_delay, net_id in group:
+                min_arc_by_net[net_id] = min(min_arc_by_net[net_id], arc_delay)
+        geometric: dict[tuple[int, int], tuple[int, int]] = {}
+        for net_id, (_output, _input, dx, dy) in enumerate(nets):
+            if min_arc_by_net[net_id] == 65535:
+                continue
+            key = (dx, dy)
+            if key not in geometric:
+                geometric[key] = (net_id, min_arc_by_net[net_id])
+            elif min_arc_by_net[net_id] < geometric[key][1]:
+                # Spatial behavior is a function of dx/dy, so retain any
+                # representative net while updating the relaxed Arc cost.
+                geometric[key] = (geometric[key][0], min_arc_by_net[net_id])
+
+        cell_count = len(cells)
+        net_count = len(nets)
+        forward: list[list[tuple[int, int]]] = [[] for _ in range(cell_count)]
+        reverse: list[list[tuple[int, int]]] = [[] for _ in range(cell_count)]
+        for cell in range(cell_count):
+            base = cell * net_count
+            for representative, arc_delay in geometric.values():
+                target = spatial_next[base + representative]
+                if target < 0:
+                    continue
+                cost = arc_delay + spatial_extra[base + representative]
+                if cost >= 65535:
+                    raise ValueError("relaxed edge cost does not fit uint16")
+                forward[cell].append((target, cost))
+                reverse[target].append((cell, cost))
+
+        cell_at = {(x, y): index for index, (x, y) in enumerate(cells)}
+
+        def nearest(tx: int, ty: int) -> int:
+            return min(
+                range(cell_count),
+                key=lambda index: (abs(cells[index][0] - tx) + abs(cells[index][1] - ty), index),
+            )
+
+        landmarks: list[int] = []
+        for y in (0, (height - 1) // 2, height - 1):
+            for x in (0, (width - 1) // 3, 2 * (width - 1) // 3, width - 1):
+                cell = nearest(x, y)
+                if cell not in landmarks:
+                    landmarks.append(cell)
+        portal_candidates = []
+        for cell, (x, y) in enumerate(cells):
+            rim = False
+            for nx, ny in ((x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1)):
+                if nx <= 0 or nx >= width - 1 or ny <= 0 or ny >= height - 1:
+                    continue
+                if (nx, ny) not in cell_at:
+                    rim = True
+                    break
+            if rim:
+                portal_candidates.append(cell)
+        for _ in range(14):
+            remaining = [cell for cell in portal_candidates if cell not in landmarks]
+            if not remaining:
+                break
+            best = max(
+                remaining,
+                key=lambda cell: (
+                    min(
+                        abs(cells[cell][0] - cells[chosen][0]) +
+                        abs(cells[cell][1] - cells[chosen][1])
+                        for chosen in landmarks
+                    ),
+                    -cell,
+                ),
+            )
+            landmarks.append(best)
+
+        dense_count = width * height
+        landmark_from: list[int] = []
+        landmark_to: list[int] = []
+        maximum = 0
+        infinity = 1 << 60
+        for index, landmark in enumerate(landmarks):
+            print(f"landmark {index + 1}/{len(landmarks)} cell={landmark}", flush=True)
+            from_distance = shortest_paths(landmark, forward)
+            to_distance = shortest_paths(landmark, reverse)
+            dense_from = [65535] * dense_count
+            dense_to = [65535] * dense_count
+            for cell, (x, y) in enumerate(cells):
+                dense = y * width + x
+                if from_distance[cell] < infinity:
+                    if from_distance[cell] >= 65535:
+                        raise ValueError("landmark-from distance does not fit uint16")
+                    dense_from[dense] = from_distance[cell]
+                    maximum = max(maximum, from_distance[cell])
+                if to_distance[cell] < infinity:
+                    if to_distance[cell] >= 65535:
+                        raise ValueError("landmark-to distance does not fit uint16")
+                    dense_to[dense] = to_distance[cell]
+                    maximum = max(maximum, to_distance[cell])
+            landmark_from.extend(dense_from)
+            landmark_to.extend(dense_to)
+        landmark_body = [
+            "// Generated by tools/export_compact_graph.py. Do not edit.",
+            "#pragma once",
+            "#include <cstdint>",
+            "namespace v9_compact_landmarks {",
+            f"inline constexpr uint16_t kLandmarkCount = {len(landmarks)};",
+            f"inline constexpr uint32_t kDenseCellCount = {dense_count};",
+            format_array("kFrom", "uint16_t", landmark_from, per_line=24),
+            format_array("kTo", "uint16_t", landmark_to, per_line=24),
+            "}  // namespace v9_compact_landmarks",
+            "",
+        ]
+        args.landmark_output.parent.mkdir(parents=True, exist_ok=True)
+        args.landmark_output.write_text("\n".join(landmark_body), encoding="utf-8")
+        landmark_summary = {
+            "landmarks": len(landmarks),
+            "geometric_moves": len(geometric),
+            "dense_cells": dense_count,
+            "max_distance": maximum,
+            "output": str(args.landmark_output),
+            "bytes": args.landmark_output.stat().st_size,
+        }
     print(
         f"ports={len(ports)} inputs={input_count} routes={route_count} nets={len(nets)} "
         f"transitions={len(transitions)} arc_cells={len(arc_to_output)} output={args.output}"
     )
+    if landmark_summary is not None:
+        print(json.dumps(landmark_summary, indent=2))
     return 0
 
 

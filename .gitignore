@@ -23,4 +23,6 @@
 /srb_prpr_v8/.train_deps/
 /srb_hybrid_v9/analysis/*.csv
 /srb_hybrid_v9/analysis/*.json
+/srb_hybrid_v9/analysis/*.jsonl
+/srb_hybrid_v9/analysis/*/
 /srb_hybrid_v9/graph/*.bin

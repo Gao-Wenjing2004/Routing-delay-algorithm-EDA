@@ -8,6 +8,7 @@
 #include <iomanip>
 #include <limits>
 #include <memory>
+#include <queue>
 #include <stdexcept>
 #include <sstream>
 #include <string>
@@ -384,6 +385,191 @@ public:
         auto from = split_spec(from_spec);
         auto to = split_spec(to_spec);
         return query_bidirectional(from.first, from.second, to.first, to.second, max_expanded);
+    }
+
+    // One Dijkstra traversal answers many destinations sharing an identical source.
+    // A finite group budget is safe: only destinations whose shortest distance is
+    // proven are returned; unresolved destinations are marked budget_exhausted so
+    // an offline caller can finish them with the ordinary unbounded A* query.
+    std::vector<QueryResult> query_delays_same_source_spec(
+        const std::string& from_spec,
+        const std::vector<std::string>& to_specs,
+        uint64_t max_group_expanded = std::numeric_limits<uint64_t>::max()) {
+        query_need_path_ = false;
+        const auto from = split_spec(from_spec);
+        const auto source_cell_it = inst_name_to_cell_.find(from.first);
+        const auto source_port_it = port_name_to_id_.find(from.second);
+        if (source_cell_it == inst_name_to_cell_.end())
+            throw std::runtime_error("unknown source instance: " + from.first);
+        if (source_port_it == port_name_to_id_.end())
+            throw std::runtime_error("unknown source port: " + from.second);
+        const int32_t source_cell = source_cell_it->second;
+        const uint16_t source_pid = source_port_it->second;
+
+        struct BatchTarget {
+            int32_t cell = -1;
+            uint16_t pid = NO_U16;
+            int16_t route = -1;
+            bool input = false;
+            bool pending = true;
+            uint32_t candidate = INF32;
+        };
+        std::vector<QueryResult> results(to_specs.size());
+        std::vector<BatchTarget> targets(to_specs.size());
+        std::unordered_map<int32_t, std::vector<size_t>> targets_by_cell;
+        size_t pending = 0;
+        for (size_t index = 0; index < to_specs.size(); ++index) {
+            const auto to = split_spec(to_specs[index]);
+            const auto cell_it = inst_name_to_cell_.find(to.first);
+            const auto port_it = port_name_to_id_.find(to.second);
+            if (cell_it == inst_name_to_cell_.end())
+                throw std::runtime_error("unknown target instance: " + to.first);
+            if (port_it == port_name_to_id_.end())
+                throw std::runtime_error("unknown target port: " + to.second);
+            BatchTarget& target = targets[index];
+            target.cell = cell_it->second;
+            target.pid = port_it->second;
+            target.input = port_is_input_[target.pid] != 0;
+            if (target.cell == source_cell && target.pid == source_pid) {
+                target.pending = false;
+                results[index].reachable = true;
+                results[index].delay = 0;
+                continue;
+            }
+            if (target.input) {
+                const uint16_t full_input = static_cast<uint16_t>(port_to_input_[target.pid]);
+                target.route = input_to_route_[full_input];
+                if (target.route < 0) {
+                    // Query-only Inputs can never be reached by a Net.
+                    target.pending = false;
+                    continue;
+                }
+            }
+            ++pending;
+            targets_by_cell[target.cell].push_back(index);
+        }
+        if (pending == 0) return results;
+
+        begin_query();
+        heap_.clear();
+        auto relax = [&](uint32_t state, uint32_t distance) {
+            if (stamp_[state] != generation_ || distance < dist_[state]) {
+                stamp_[state] = generation_;
+                dist_[state] = distance;
+                heap_.push(HeapItem{distance, distance, state});
+            }
+        };
+        using Candidate = std::pair<uint32_t, size_t>;
+        std::priority_queue<Candidate, std::vector<Candidate>, std::greater<Candidate>> candidates;
+        auto offer = [&](size_t index, uint32_t distance) {
+            BatchTarget& target = targets[index];
+            if (target.pending && distance < target.candidate) {
+                target.candidate = distance;
+                candidates.push(Candidate{distance, index});
+            }
+        };
+        auto finish_candidates = [&](uint32_t lower_bound) {
+            while (!candidates.empty() && candidates.top().first <= lower_bound) {
+                const auto [distance, index] = candidates.top();
+                candidates.pop();
+                BatchTarget& target = targets[index];
+                if (!target.pending || target.candidate != distance) continue;
+                target.pending = false;
+                --pending;
+                results[index].reachable = true;
+                results[index].delay = distance;
+            }
+        };
+
+        if (port_is_input_[source_pid]) {
+            const uint16_t full_input = static_cast<uint16_t>(port_to_input_[source_pid]);
+            const int16_t route = input_to_route_[full_input];
+            if (route >= 0) {
+                relax(state_id(source_cell, static_cast<uint16_t>(route)), 0);
+            } else {
+                const auto local = targets_by_cell.find(source_cell);
+                if (local != targets_by_cell.end()) {
+                    for (size_t index : local->second) {
+                        if (targets[index].input) continue;
+                        const uint16_t direct = arc_delay_to_output(full_input, targets[index].pid);
+                        if (direct != NO_U16) offer(index, direct);
+                    }
+                }
+                for (const MacroEdge& edge : transitions_[full_input]) {
+                    const size_t si = spatial_index(source_cell, edge.net_id);
+                    const int32_t next_cell = spatial_next_[si];
+                    if (next_cell < 0) continue;
+                    relax(state_id(next_cell, edge.next_input),
+                          static_cast<uint32_t>(edge.arc_delay) + spatial_extra_[si]);
+                }
+            }
+        } else {
+            const int16_t net = net_id_by_output_[source_pid];
+            if (net >= 0) {
+                const size_t si = spatial_index(source_cell, static_cast<uint16_t>(net));
+                const int32_t next_cell = spatial_next_[si];
+                if (next_cell >= 0) {
+                    relax(state_id(next_cell, nets_[static_cast<uint16_t>(net)].dst_input),
+                          spatial_extra_[si]);
+                }
+            }
+        }
+
+        uint64_t expanded = 0;
+        bool exhausted = false;
+        while (pending) {
+            while (!heap_.empty()) {
+                const HeapItem& top = heap_.top();
+                if (stamp_[top.state] == generation_ && dist_[top.state] == top.g) break;
+                heap_.pop();
+            }
+            const uint32_t lower_bound = heap_.empty() ? INF32 : heap_.top().g;
+            finish_candidates(lower_bound);
+            if (!pending || heap_.empty()) break;
+            if (expanded >= max_group_expanded) {
+                exhausted = true;
+                break;
+            }
+
+            const HeapItem item = heap_.pop();
+            const int32_t cell = static_cast<int32_t>(item.state / routing_input_count_);
+            const uint16_t route = static_cast<uint16_t>(item.state % routing_input_count_);
+            const uint16_t full_input = route_to_input_[route];
+            ++expanded;
+
+            const auto local = targets_by_cell.find(cell);
+            if (local != targets_by_cell.end()) {
+                for (size_t index : local->second) {
+                    BatchTarget& target = targets[index];
+                    if (!target.pending) continue;
+                    if (target.input) {
+                        if (target.route == static_cast<int16_t>(route)) {
+                            target.pending = false;
+                            --pending;
+                            results[index].reachable = true;
+                            results[index].delay = item.g;
+                        }
+                    } else {
+                        const uint16_t arc = arc_delay_to_output(full_input, target.pid);
+                        if (arc != NO_U16) offer(index, item.g + arc);
+                    }
+                }
+            }
+
+            for (const MacroEdge& edge : transitions_[full_input]) {
+                const size_t si = spatial_index(cell, edge.net_id);
+                const int32_t next_cell = spatial_next_[si];
+                if (next_cell < 0) continue;
+                relax(state_id(next_cell, edge.next_input),
+                      item.g + edge.arc_delay + spatial_extra_[si]);
+            }
+        }
+        if (!exhausted) finish_candidates(INF32);
+        for (size_t index = 0; index < results.size(); ++index) {
+            results[index].expanded = expanded;
+            if (exhausted && targets[index].pending) results[index].budget_exhausted = true;
+        }
+        return results;
     }
 
     void enable_bidirectional() {

@@ -7,6 +7,9 @@
 #else
 #include "p2_student_data.hpp"
 #endif
+#ifdef V9_EXACT_MEMORY
+#include "exact_memory_data.hpp"
+#endif
 
 #include <algorithm>
 #include <cmath>
@@ -54,6 +57,37 @@ inline uint32_t rounded_delay(double value) {
     if (rounded >= static_cast<double>(UINT32_MAX)) return UINT32_MAX;
     return static_cast<uint32_t>(rounded);
 }
+
+#ifdef V9_EXACT_MEMORY
+#if defined(_MSC_VER)
+#define V9_NOINLINE __declspec(noinline)
+#else
+#define V9_NOINLINE __attribute__((noinline))
+#endif
+V9_NOINLINE inline uint32_t apply_exact_memory(
+    uint32_t delay,
+    const srb_fast::Endpoint& source,
+    const srb_fast::Endpoint& target,
+    const Environment& environment,
+    int source_class,
+    int target_class,
+    int source_route,
+    int target_route) {
+    const int displacement = (environment.dx + 8) * 17 + environment.dy + 8;
+    const int source_family = srb_v4_family_data::kPortToFamily[source.port];
+    const int target_family = srb_v4_family_data::kPortToFamily[target.port];
+    const int class_pair = source_class * 17 + target_class;
+    const int family_pair = source_family * 216 + target_family;
+    const int route_pair = source_route * 161 + target_route;
+    const int correction_q15 =
+        v9_exact_memory::kClassDisplacement[class_pair * 289 + displacement] +
+        v9_exact_memory::kFamilyPair[family_pair] +
+        v9_exact_memory::kRoutePair[route_pair];
+    return rounded_delay(
+        static_cast<double>(delay) * (1.0 + v9_exact_memory::kScale * correction_q15));
+}
+#undef V9_NOINLINE
+#endif
 
 template <std::size_t NodeCount, std::size_t TreeCount, std::size_t MaskCount>
 inline float evaluate_forest(
@@ -169,6 +203,17 @@ public:
         prediction.delay = rounded_delay(static_cast<double>(student_delay) * (1.0 + post_correction));
 #else
         prediction.delay = student_delay;
+#endif
+#ifdef V9_EXACT_MEMORY
+        // Three additive tables distilled from independently generated exact
+        // Dijkstra labels.  Training/validation is split by the complete source
+        // endpoint, so translations from a held-out source must generalize.
+        if (environment.cheb <= 8) {
+            prediction.delay = apply_exact_memory(
+                prediction.delay, source, target, environment,
+                prediction.source_class, prediction.target_class,
+                prediction.source_route, prediction.target_route);
+        }
 #endif
         const float scale = static_cast<float>(std::max<uint32_t>(prediction.delay, 1));
         prediction.uncertainty =

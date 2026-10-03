@@ -1,55 +1,62 @@
-# V9：紧凑精确搜索 + V8 回退
+# V9：精确数据记忆 + Portal/Landmark 有界搜索 + V8 回退
 
-V9 已实现为可提交的单文件程序：少量由消融选中的请求进入确定性、最多
-16 次状态展开的精确 A*；只有在预算内证明最短路时才采用精确值，否则立即
-回退 V8 P2。长距离仍全部走 V8。
+V9 是满足 100 MB 限制的单文件提交程序。当前提交版包含三条路径：
 
-提交程序不携带 65 MB 全图，也不进行每查询反向 Dijkstra。`compact_graph_data.hpp`
-只保存由官方图导出的端口、Arc、Net、Block/Gap 规则和端口状态下界；运行时
-按规则生成邻边，并只记忆本次微型搜索访问的状态。
+1. `Chebyshev <= 8` 时，用离线精确 Dijkstra 数据蒸馏出的 3 张小表修正 V8；
+2. 极少数固定结构请求进入最大 16 次展开的精确 A*；
+3. 未被覆盖或搜索预算耗尽的请求立即使用 V8，不输出未完成的候选路径。
 
-## 已测结果
+提交版不携带 65 MB 外部全图，也不执行每查询一次的反向 Dijkstra。Arc+Net 已收缩为宏边，Block/Gap
+语义在紧凑图中按规则生成；26 个 Grid/Block-Portal Landmark 为 A* 提供有向可采纳下界。
 
-- Linux 提交二进制：约 13.5 MB，低于 100 MB；
-- 公开 1,000,000 条：V8 `94.603473234`，V9 `94.604410091`；
-- 默认选择 10 条，10 条均在预算内精确完成，共展开 52 个状态；
-- Windows 五轮百万条中位数：V8 `0.940940 s`，V9 `0.942671 s`；精确分支内部计时约 `0.2~0.4 ms / 1M`；
-- 完整图 exact solver 对已知 31 条结果与旧 exact 基准 `31/31` 相同；
-- 紧凑内核与完整图的“端口下界 + 16 展开”在全部 15,611 条公开短距离请求上，完成标志、展开数和精确值 `15,611/15,611` 相同。
+## 当前结果
 
-准确度提升很小，V9 应视为“精确分支基础设施已成立”，不是已经达到 98% 的
-终点。完整消融与下一步路径见 [V9_DESIGN_AND_FINDINGS.md](docs/V9_DESIGN_AND_FINDINGS.md)。
+- 公开 1,000,000 条：V8 `94.603473961`，当前 V9 `94.613722680`；
+- 默认精确分支：选择 10 条、完成 10 条、总展开 34 个状态；
+- `Chebyshev <= 16` 全选审计：cap=16 完成 225 条，225/225 与 Golden 一致；
+- Windows 等价程序连续三次百万条输出 SHA-256 完全相同；
+- Linux 静态提交文件：20,733,408 字节，小于 100,000,000 字节。
 
-## 构建
+完整实验、哪些设想已经实现以及尚未完成的 Portal overlay，见
+[V9_P3_EXACT_DATA_AND_PORTAL_RESULTS.md](docs/V9_P3_EXACT_DATA_AND_PORTAL_RESULTS.md)。
+
+## 构建与运行
 
 Linux：
 
 ```bash
 cd srb_hybrid_v9
 ./build.sh
+./submission/bin/estimate -in request.csv -out result.csv -threads 1
 ```
 
-Windows 上用 Zig 交叉编译：
+Windows 上用 Zig 交叉编译 Linux 静态文件：
 
 ```powershell
 .\build_linux_with_zig.ps1 -ZigExe C:\path\to\zig.exe
 ```
 
-产物是 `submission/bin/estimate`，调用方式仍为：
+## 生成精确训练数据
 
-```bash
-./estimate -in request.csv -out result.csv -threads 1
-```
-
-## 生成额外训练请求
-
-只能组合官方存在的 SRB 单元和 496 种合法端口，不能发明新端口语义：
+先生成按完整源端点分组的合法请求：
 
 ```bash
 python3 tools/generate_extra_queries.py \
-  --inst arch/SRB_Inst.json --port arch/SRB_Port.json \
-  --count 100000 --max-cheb 32 --output extra_requests.csv
+  --inst arch/SRB_Inst.json \
+  --port arch/SRB_Port.json \
+  --template-requests public_requests.csv \
+  --count 1000000 --source-count 200 --max-cheb 64 \
+  --output exact_requests.csv --manifest exact_manifest.json
 ```
 
-再用完整图研究版的无界 exact 模式离线标注；只有通过已知 Golden 一致性验证的
-求解器才可充当 teacher。生成数据与公开验证集必须隔离。
+再用共享源的一对多 Dijkstra 标注：
+
+```bash
+./offline_grouped_labeler \
+  --graph srb_graph.bin --input exact_requests.csv \
+  --labels exact_labels.csv --statistics exact_stats.csv \
+  --max-group-expanded 10000000
+```
+
+需要路径本身与 Portal 摘要时，使用 `offline_exact_labeler.cpp`；大规模训练只需要延时标签时，优先使用
+`offline_grouped_labeler.cpp`。训练/验证必须按完整源端点隔离，不能把相同源端点随机拆到两侧。
