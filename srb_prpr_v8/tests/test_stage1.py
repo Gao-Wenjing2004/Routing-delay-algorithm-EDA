@@ -4,11 +4,15 @@ from __future__ import annotations
 import csv
 import json
 from pathlib import Path
+import sys
 import unittest
 
 
 ROOT = Path(__file__).resolve().parents[1]
 ANALYSIS = ROOT / "analysis" / "prpr"
+sys.path.insert(0, str(ROOT / "tools"))
+
+from prpr_arch import load_architecture
 
 
 class StageOneArtifactsTest(unittest.TestCase):
@@ -45,6 +49,18 @@ class StageOneArtifactsTest(unittest.TestCase):
             ANALYSIS / "first_stage_conclusion.md",
         ]
         self.assertEqual([str(path) for path in required if not path.is_file()], [])
+
+    def test_every_output_has_a_terminal_connector(self) -> None:
+        architecture = load_architecture(ROOT.parent / "legacy_versions" / "v5" / "arch")
+        outputs = [
+            port for port, direction in enumerate(architecture.port_directions)
+            if direction == "output"
+        ]
+        self.assertEqual(len(outputs), 288)
+        self.assertEqual(
+            [architecture.port_names[port] for port in outputs if not architecture.target_arcs[port]],
+            [],
+        )
 
     def test_submission_size(self) -> None:
         executable = ROOT / "submission" / "bin" / "estimate"

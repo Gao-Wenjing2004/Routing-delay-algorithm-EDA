@@ -394,8 +394,10 @@ public:
     std::vector<QueryResult> query_delays_same_source_spec(
         const std::string& from_spec,
         const std::vector<std::string>& to_specs,
-        uint64_t max_group_expanded = std::numeric_limits<uint64_t>::max()) {
-        query_need_path_ = false;
+        uint64_t max_group_expanded = std::numeric_limits<uint64_t>::max(),
+        bool include_paths = false) {
+        query_need_path_ = include_paths;
+        if (include_paths) ensure_parent_storage();
         const auto from = split_spec(from_spec);
         const auto source_cell_it = inst_name_to_cell_.find(from.first);
         const auto source_port_it = port_name_to_id_.find(from.second);
@@ -405,6 +407,8 @@ public:
             throw std::runtime_error("unknown source port: " + from.second);
         const int32_t source_cell = source_cell_it->second;
         const uint16_t source_pid = source_port_it->second;
+        query_src_cell_ = source_cell;
+        query_src_pid_ = source_pid;
 
         struct BatchTarget {
             int32_t cell = -1;
@@ -413,6 +417,9 @@ public:
             bool input = false;
             bool pending = true;
             uint32_t candidate = INF32;
+            uint32_t terminal_state = PARENT_ROOT_INPUT;
+            uint16_t terminal_out = NO_U16;
+            bool direct = false;
         };
         std::vector<QueryResult> results(to_specs.size());
         std::vector<BatchTarget> targets(to_specs.size());
@@ -434,6 +441,7 @@ public:
                 target.pending = false;
                 results[index].reachable = true;
                 results[index].delay = 0;
+                if (include_paths) results[index].path.push_back(from_spec);
                 continue;
             }
             if (target.input) {
@@ -452,19 +460,29 @@ public:
 
         begin_query();
         heap_.clear();
-        auto relax = [&](uint32_t state, uint32_t distance) {
+        auto relax = [&](uint32_t state, uint32_t distance,
+                         uint32_t parent, uint16_t via_output) {
             if (stamp_[state] != generation_ || distance < dist_[state]) {
                 stamp_[state] = generation_;
                 dist_[state] = distance;
+                if (include_paths) {
+                    parent_state_[state] = parent;
+                    parent_out_[state] = via_output;
+                }
                 heap_.push(HeapItem{distance, distance, state});
             }
         };
         using Candidate = std::pair<uint32_t, size_t>;
         std::priority_queue<Candidate, std::vector<Candidate>, std::greater<Candidate>> candidates;
-        auto offer = [&](size_t index, uint32_t distance) {
+        auto offer = [&](size_t index, uint32_t distance,
+                         uint32_t terminal_state, uint16_t terminal_out,
+                         bool direct) {
             BatchTarget& target = targets[index];
             if (target.pending && distance < target.candidate) {
                 target.candidate = distance;
+                target.terminal_state = terminal_state;
+                target.terminal_out = terminal_out;
+                target.direct = direct;
                 candidates.push(Candidate{distance, index});
             }
         };
@@ -478,6 +496,15 @@ public:
                 --pending;
                 results[index].reachable = true;
                 results[index].delay = distance;
+                if (include_paths) {
+                    if (target.direct) {
+                        results[index].path = {from_spec, to_specs[index]};
+                    } else {
+                        results[index].path = reconstruct(target.terminal_state);
+                        if (target.terminal_out != NO_U16)
+                            results[index].path.push_back(to_specs[index]);
+                    }
+                }
             }
         };
 
@@ -485,14 +512,16 @@ public:
             const uint16_t full_input = static_cast<uint16_t>(port_to_input_[source_pid]);
             const int16_t route = input_to_route_[full_input];
             if (route >= 0) {
-                relax(state_id(source_cell, static_cast<uint16_t>(route)), 0);
+                relax(state_id(source_cell, static_cast<uint16_t>(route)), 0,
+                      PARENT_ROOT_INPUT, NO_U16);
             } else {
                 const auto local = targets_by_cell.find(source_cell);
                 if (local != targets_by_cell.end()) {
                     for (size_t index : local->second) {
                         if (targets[index].input) continue;
                         const uint16_t direct = arc_delay_to_output(full_input, targets[index].pid);
-                        if (direct != NO_U16) offer(index, direct);
+                        if (direct != NO_U16)
+                            offer(index, direct, PARENT_ROOT_INPUT, NO_U16, true);
                     }
                 }
                 for (const MacroEdge& edge : transitions_[full_input]) {
@@ -500,7 +529,8 @@ public:
                     const int32_t next_cell = spatial_next_[si];
                     if (next_cell < 0) continue;
                     relax(state_id(next_cell, edge.next_input),
-                          static_cast<uint32_t>(edge.arc_delay) + spatial_extra_[si]);
+                          static_cast<uint32_t>(edge.arc_delay) + spatial_extra_[si],
+                          PARENT_ROOT_NONROUTING_INPUT, edge.out_port);
                 }
             }
         } else {
@@ -510,7 +540,7 @@ public:
                 const int32_t next_cell = spatial_next_[si];
                 if (next_cell >= 0) {
                     relax(state_id(next_cell, nets_[static_cast<uint16_t>(net)].dst_input),
-                          spatial_extra_[si]);
+                          spatial_extra_[si], PARENT_ROOT_OUTPUT, source_pid);
                 }
             }
         }
@@ -548,10 +578,12 @@ public:
                             --pending;
                             results[index].reachable = true;
                             results[index].delay = item.g;
+                            if (include_paths) results[index].path = reconstruct(item.state);
                         }
                     } else {
                         const uint16_t arc = arc_delay_to_output(full_input, target.pid);
-                        if (arc != NO_U16) offer(index, item.g + arc);
+                        if (arc != NO_U16)
+                            offer(index, item.g + arc, item.state, target.pid, false);
                     }
                 }
             }
@@ -561,7 +593,7 @@ public:
                 const int32_t next_cell = spatial_next_[si];
                 if (next_cell < 0) continue;
                 relax(state_id(next_cell, edge.next_input),
-                      item.g + edge.arc_delay + spatial_extra_[si]);
+                      item.g + edge.arc_delay + spatial_extra_[si], item.state, edge.out_port);
             }
         }
         if (!exhausted) finish_candidates(INF32);

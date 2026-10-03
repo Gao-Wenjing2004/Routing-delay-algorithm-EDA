@@ -266,7 +266,13 @@ def load_architecture(arch_dir: Path) -> Architecture:
                 edges.append(
                     Edge(from_state, next_state, dx, dy, cost, from_pid, output_pid)
                 )
-            target_arcs[output_pid].append((input_to_state[iid], cost))
+        # Reaching a query target stops at the Output port.  Whether that
+        # Output also owns a Net is irrelevant to this final local Arc.  The
+        # previous indentation dropped all 128 logic-output exits (A_*/B_*),
+        # even though every one is reachable from routing Inputs in SRB_Arc.
+        target_state = input_to_state[iid]
+        if target_state >= 0:
+            target_arcs[output_pid].append((target_state, cost))
 
     for rows in direct_arcs:
         rows.sort()

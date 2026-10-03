@@ -86,12 +86,15 @@ def ranked_library(
 
 def recall(
     training: list[dict[str, object]], validation: list[dict[str, object]], label: str,
+    observable_only: bool = False,
 ) -> dict[str, object]:
-    levels = (
+    route_levels = (
         ("first_route", "last_route", "direction", "band"),
         ("first_route", "last_route", "direction"),
         ("first_route", "direction", "band"),
         ("last_route", "direction", "band"),
+    )
+    endpoint_levels = (
         ("source_port", "target_port", "direction", "band"),
         ("source_port", "target_port", "direction"),
         ("source_port", "target_stem", "direction", "band"),
@@ -105,6 +108,7 @@ def recall(
         ("direction", "band"),
         ("direction",),
     )
+    levels = endpoint_levels if observable_only else route_levels + endpoint_levels
     libraries = [(names, ranked_library(training, names, label)) for names in levels]
     limits = (1, 4, 8, 16, 32, 64, 128)
     max_candidates = limits[-1]
@@ -130,6 +134,7 @@ def recall(
             hits[limit] += actual in candidates[:limit]
     return {
         "label": label,
+        "observable_only": observable_only,
         "training_rows": len(training),
         "validation_rows": len(validation),
         "unique_training_labels": len({str(row[label]) for row in training}),
@@ -194,6 +199,12 @@ def main() -> int:
         "net_step_distribution": {str(key): value for key, value in sorted(net_steps.items())},
         "selector_recall": [
             recall(training, validation, label)
+            for label in (
+                "turn_skeleton", "symbolic_skeleton", "arc_turn_skeleton", "vector_skeleton"
+            )
+        ],
+        "observable_selector_recall": [
+            recall(training, validation, label, observable_only=True)
             for label in (
                 "turn_skeleton", "symbolic_skeleton", "arc_turn_skeleton", "vector_skeleton"
             )

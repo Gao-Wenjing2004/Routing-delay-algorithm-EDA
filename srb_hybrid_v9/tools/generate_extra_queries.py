@@ -30,6 +30,12 @@ def main() -> int:
         help="reuse this many source endpoints so a future one-to-many exact labeler can amortize search",
     )
     parser.add_argument(
+        "--minimum-sources-per-port",
+        type=int,
+        default=0,
+        help="with template requests, seed at least this many grouped sources for every observed source port",
+    )
+    parser.add_argument(
         "--portal-source-ratio",
         type=float,
         default=0.35,
@@ -56,6 +62,8 @@ def main() -> int:
         raise ValueError("count must be positive and max-cheb must be non-negative")
     if args.source_count < 0 or args.source_count > args.count:
         raise ValueError("source-count must be in [0, count]")
+    if args.minimum_sources_per_port < 0:
+        raise ValueError("minimum-sources-per-port must be non-negative")
     if not 0.0 <= args.portal_source_ratio <= 1.0:
         raise ValueError("portal-source-ratio must be in [0, 1]")
     if not 0.0 <= args.source_input_probability <= 1.0:
@@ -123,18 +131,34 @@ def main() -> int:
 
     grouped_sources: list[tuple[int, int, str]] = []
     source_keys: set[tuple[int, int, str]] = set()
-    while len(grouped_sources) < args.source_count:
-        source_pool = (
-            portal_cells
-            if portal_cells and rng.random() < args.portal_source_ratio
-            else cells
+
+    required_source_ports = sorted(template_source_counts) if template_source_counts else []
+    required_count = args.minimum_sources_per_port * len(required_source_ports)
+    if required_count > args.source_count:
+        raise ValueError(
+            "source-count is too small for minimum-sources-per-port: "
+            f"need at least {required_count}"
         )
-        sx, sy = rng.choice(source_pool)
-        item = (sx, sy, choose_source_port())
-        if item in source_keys:
-            continue
-        source_keys.add(item)
-        grouped_sources.append(item)
+
+    def add_grouped_source(source_port: str) -> None:
+        while True:
+            source_pool = (
+                portal_cells
+                if portal_cells and rng.random() < args.portal_source_ratio
+                else cells
+            )
+            sx, sy = rng.choice(source_pool)
+            item = (sx, sy, source_port)
+            if item not in source_keys:
+                source_keys.add(item)
+                grouped_sources.append(item)
+                return
+
+    for _ in range(args.minimum_sources_per_port):
+        for source_port in required_source_ports:
+            add_grouped_source(source_port)
+    while len(grouped_sources) < args.source_count:
+        add_grouped_source(choose_source_port())
 
     def choose_radius() -> int:
         # Oversample the public high-loss short-distance bands.  The final band
@@ -204,6 +228,7 @@ def main() -> int:
         "seed": args.seed,
         "max_cheb": args.max_cheb,
         "source_count_requested": args.source_count,
+        "minimum_sources_per_port": args.minimum_sources_per_port,
         "unique_sources": len({source for source, _ in rows}),
         "portal_cell_count": len(portal_cells),
         "source_direction": args.source_direction,

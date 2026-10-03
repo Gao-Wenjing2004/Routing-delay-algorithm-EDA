@@ -25,6 +25,10 @@ V9 是满足 100 MB 限制的单文件提交程序。当前提交版包含三条
 160 状态周期原语 + 逐段 Gap 计费”可以精确复现审计 Golden，但当前骨架生成和部分目标端口连接尚未达到
 Go/No-Go 指标，因此正式提交二进制仍保持 P3。
 
+目标端连接修复、17 类骨架、弹性 Dijkstra 模板、Beam 32 与逐段 Gap 的 P5 结果见
+[V9_P5_STRUCTURED_GENERATOR_RESULTS.md](docs/V9_P5_STRUCTURED_GENERATOR_RESULTS.md)。P5 已把端到端结构链路打通，
+但结构候选数尚未通过 C++ 微秒成本门槛，因此也没有替换正式提交二进制。
+
 ## 构建与运行
 
 Linux：
@@ -50,7 +54,7 @@ python3 tools/generate_extra_queries.py \
   --inst arch/SRB_Inst.json \
   --port arch/SRB_Port.json \
   --template-requests public_requests.csv \
-  --count 1000000 --source-count 200 --max-cheb 64 \
+  --count 1000000 --source-count 226 --minimum-sources-per-port 2 --max-cheb 64 \
   --output exact_requests.csv --manifest exact_manifest.json
 ```
 

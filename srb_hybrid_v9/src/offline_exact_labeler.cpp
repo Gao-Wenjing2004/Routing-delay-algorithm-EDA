@@ -24,7 +24,9 @@ struct Options {
     std::string paths;
     uint64_t offset = 0;
     uint64_t limit = 0;
+    uint64_t max_group_expanded = 10000000;
     bool delay_only = false;
+    bool grouped = false;
 };
 
 struct PathNode {
@@ -89,7 +91,10 @@ Options parse_options(int argc, char** argv) {
         else if (argument == "--paths") options.paths = option_value(index, argc, argv, argument);
         else if (argument == "--offset") options.offset = std::stoull(option_value(index, argc, argv, argument));
         else if (argument == "--limit") options.limit = std::stoull(option_value(index, argc, argv, argument));
+        else if (argument == "--max-group-expanded")
+            options.max_group_expanded = std::stoull(option_value(index, argc, argv, argument));
         else if (argument == "--delay-only") options.delay_only = true;
+        else if (argument == "--grouped") options.grouped = true;
         else throw std::runtime_error("unknown argument: " + argument);
     }
     if (options.graph.empty() || options.gap.empty() || options.input.empty() ||
@@ -97,7 +102,8 @@ Options parse_options(int argc, char** argv) {
         throw std::runtime_error(
             "usage: offline_exact_labeler --graph graph.bin --gap SRB_Gap.json "
             "--input requests.csv --labels labels.csv --summaries summaries.csv "
-            "[--paths paths.jsonl] [--offset N] [--limit N] [--delay-only]");
+            "[--paths paths.jsonl] [--offset N] [--limit N] [--delay-only] "
+            "[--grouped] [--max-group-expanded N]");
     }
     return options;
 }
@@ -344,44 +350,33 @@ int main(int argc, char** argv) {
         uint64_t expanded_total = 0;
         double elapsed_us_total = 0.0;
         const auto all_started = Clock::now();
-        while (std::getline(input, line)) {
-            ++source_row;
-            if (source_row <= options.offset) continue;
-            if (options.limit && written >= options.limit) break;
-            line = trim_cr(line);
-            if (line.empty()) continue;
-            const auto fields = parse_csv_pair(line);
+
+        auto write_result = [&](uint64_t row, const std::pair<std::string, std::string>& fields,
+                                const QueryResult& result, double elapsed_us) {
             const PathNode source = parse_path_node(fields.first);
             const PathNode target = parse_path_node(fields.second);
-
-            const auto started = Clock::now();
-            QueryResult result = options.delay_only
-                ? solver.query_delay_spec(fields.first, fields.second)
-                : solver.query_spec(fields.first, fields.second);
-            const double elapsed_us =
-                std::chrono::duration<double, std::micro>(Clock::now() - started).count();
             const int chebyshev = std::max(std::abs(target.x - source.x), std::abs(target.y - source.y));
             if (result.budget_exhausted)
-                throw std::runtime_error("unbounded exact query exhausted a budget at row " +
-                                         std::to_string(source_row));
+                throw std::runtime_error("exact query exhausted a budget at row " +
+                                         std::to_string(row));
             if (!result.reachable) {
                 ++unreachable;
-                summaries << source_row << ',' << fields.first << ',' << fields.second
+                summaries << row << ',' << fields.first << ',' << fields.second
                           << ",0,," << result.expanded << ',' << std::fixed << std::setprecision(3)
                           << elapsed_us << ',' << chebyshev
                           << ",0,0,0,0,0,0,0,0,0,none,none,none,none,0,,,,,\n";
-                if (paths) write_json_path(paths, source_row, fields.first, fields.second, result);
+                if (paths) write_json_path(paths, row, fields.first, fields.second, result);
                 ++written;
                 expanded_total += result.expanded;
                 elapsed_us_total += elapsed_us;
-                continue;
+                return;
             }
             const PathSummary summary = options.delay_only
                 ? PathSummary{}
                 : summarize_path(result.path, architecture);
 
             labels << fields.first << ',' << fields.second << ',' << result.delay << '\n';
-            summaries << source_row << ',' << fields.first << ',' << fields.second << ",1," << result.delay
+            summaries << row << ',' << fields.first << ',' << fields.second << ",1," << result.delay
                       << ',' << result.expanded << ',' << std::fixed << std::setprecision(3) << elapsed_us
                       << ',' << chebyshev << ',' << summary.path_nodes << ',' << summary.arc_steps
                       << ',' << summary.net_steps << ',' << summary.turns << ',' << summary.horizontal_steps
@@ -392,7 +387,7 @@ int main(int argc, char** argv) {
                       << summary.routing_state_sequence << ',' << summary.primitive_sequence << ','
                       << summary.turn_sequence << ',' << summary.move_signature << ','
                       << summary.portal_signature << '\n';
-            if (paths) write_json_path(paths, source_row, fields.first, fields.second, result);
+            if (paths) write_json_path(paths, row, fields.first, fields.second, result);
 
             ++written;
             expanded_total += result.expanded;
@@ -401,9 +396,72 @@ int main(int argc, char** argv) {
                 labels.flush();
                 summaries.flush();
                 if (paths) paths.flush();
-                std::cerr << "labeled=" << written << " source_row=" << source_row
+                std::cerr << "labeled=" << written << " source_row=" << row
                           << " mean_expanded=" << (expanded_total / written)
                           << " mean_ms=" << (elapsed_us_total / written / 1000.0) << '\n';
+            }
+        };
+
+        if (!options.grouped) {
+            while (std::getline(input, line)) {
+                ++source_row;
+                if (source_row <= options.offset) continue;
+                if (options.limit && written >= options.limit) break;
+                line = trim_cr(line);
+                if (line.empty()) continue;
+                const auto fields = parse_csv_pair(line);
+                const auto started = Clock::now();
+                QueryResult result = options.delay_only
+                    ? solver.query_delay_spec(fields.first, fields.second)
+                    : solver.query_spec(fields.first, fields.second);
+                const double elapsed_us =
+                    std::chrono::duration<double, std::micro>(Clock::now() - started).count();
+                write_result(source_row, fields, result, elapsed_us);
+            }
+        } else {
+            struct Request {
+                uint64_t row = 0;
+                std::pair<std::string, std::string> fields;
+            };
+            std::vector<Request> requests;
+            while (std::getline(input, line)) {
+                ++source_row;
+                if (source_row <= options.offset) continue;
+                if (options.limit && requests.size() >= options.limit) break;
+                line = trim_cr(line);
+                if (line.empty()) continue;
+                requests.push_back(Request{source_row, parse_csv_pair(line)});
+            }
+            for (std::size_t begin = 0; begin < requests.size();) {
+                std::size_t end = begin + 1;
+                while (end < requests.size() &&
+                       requests[end].fields.first == requests[begin].fields.first) ++end;
+                std::vector<std::string> destinations;
+                destinations.reserve(end - begin);
+                for (std::size_t index = begin; index < end; ++index)
+                    destinations.push_back(requests[index].fields.second);
+                const auto started = Clock::now();
+                std::vector<QueryResult> results = solver.query_delays_same_source_spec(
+                    requests[begin].fields.first, destinations,
+                    options.max_group_expanded, !options.delay_only);
+                const double group_us =
+                    std::chrono::duration<double, std::micro>(Clock::now() - started).count();
+                for (std::size_t index = begin; index < end; ++index) {
+                    QueryResult result = std::move(results[index - begin]);
+                    double elapsed_us = group_us / static_cast<double>(end - begin);
+                    if (result.budget_exhausted) {
+                        const auto fallback_started = Clock::now();
+                        result = options.delay_only
+                            ? solver.query_delay_spec(requests[index].fields.first,
+                                                      requests[index].fields.second)
+                            : solver.query_spec(requests[index].fields.first,
+                                                requests[index].fields.second);
+                        elapsed_us += std::chrono::duration<double, std::micro>(
+                            Clock::now() - fallback_started).count();
+                    }
+                    write_result(requests[index].row, requests[index].fields, result, elapsed_us);
+                }
+                begin = end;
             }
         }
         const double wall_seconds =
