@@ -63,6 +63,11 @@ struct PathSummary {
     uint64_t path_hash = 1469598103934665603ull;
     std::string first_direction = "none";
     std::string last_direction = "none";
+    std::string first_arc = "none";
+    std::string last_arc = "none";
+    std::string routing_state_sequence;
+    std::string primitive_sequence;
+    std::string turn_sequence;
     std::string move_signature;
     std::string portal_signature;
 };
@@ -191,8 +196,14 @@ PathSummary summarize_path(const std::vector<std::string>& path,
     char previous_direction = 0;
     std::ostringstream moves;
     std::ostringstream portals;
+    std::ostringstream route_states;
+    std::ostringstream primitives;
+    std::ostringstream turns;
     bool first_move = true;
     bool first_portal = true;
+    bool first_route_state = true;
+    bool first_primitive = true;
+    bool first_turn = true;
     for (std::size_t index = 1; index < nodes.size(); ++index) {
         const PathNode& first = nodes[index - 1];
         const PathNode& second = nodes[index];
@@ -200,6 +211,9 @@ PathSummary summarize_path(const std::vector<std::string>& path,
         const int dy = second.y - first.y;
         if (dx == 0 && dy == 0) {
             ++result.arc_steps;
+            const std::string arc = first.port + ">" + second.port;
+            if (result.first_arc == "none") result.first_arc = arc;
+            result.last_arc = arc;
             continue;
         }
         if (dx != 0 && dy != 0) throw std::runtime_error("non-axis-aligned Net in reconstructed path");
@@ -207,10 +221,25 @@ PathSummary summarize_path(const std::vector<std::string>& path,
         const char direction = dx != 0 ? 'H' : 'V';
         if (direction == 'H') ++result.horizontal_steps;
         else ++result.vertical_steps;
-        if (!previous_direction) result.first_direction = std::string(1, direction);
-        else if (direction != previous_direction) ++result.turns;
+        if (!previous_direction) {
+            result.first_direction = std::string(1, direction);
+            turns << direction;
+            first_turn = false;
+        } else if (direction != previous_direction) {
+            ++result.turns;
+            if (!first_turn) turns << '>';
+            turns << direction;
+        }
         previous_direction = direction;
         result.last_direction = std::string(1, direction);
+
+        if (!first_route_state) route_states << '>';
+        first_route_state = false;
+        route_states << second.port;
+        if (!first_primitive) primitives << '|';
+        first_primitive = false;
+        primitives << direction << ':' << (direction == 'H' ? dx : dy)
+                   << '@' << first.port << '>' << second.port;
 
         if (!first_move) moves << '|';
         first_move = false;
@@ -243,6 +272,9 @@ PathSummary summarize_path(const std::vector<std::string>& path,
     }
     result.move_signature = moves.str();
     result.portal_signature = portals.str();
+    result.routing_state_sequence = route_states.str();
+    result.primitive_sequence = primitives.str();
+    result.turn_sequence = turns.str();
     return result;
 }
 
@@ -303,7 +335,8 @@ int main(int argc, char** argv) {
         labels << "From,To,Delay\n";
         summaries << "row,From,To,Reachable,Delay,Expanded,ElapsedUs,Chebyshev,PathNodes,ArcSteps,NetSteps,Turns,"
                      "HorizontalSteps,VerticalSteps,GapCrossings,BlockSegments,PortalEvents,"
-                     "FirstDirection,LastDirection,PathHash,MoveSignature,PortalSignature\n";
+                     "FirstDirection,LastDirection,FirstArc,LastArc,PathHash,RoutingStateSequence,"
+                     "PrimitiveSequence,TurnSequence,MoveSignature,PortalSignature\n";
 
         uint64_t source_row = 0;
         uint64_t written = 0;
@@ -335,7 +368,8 @@ int main(int argc, char** argv) {
                 ++unreachable;
                 summaries << source_row << ',' << fields.first << ',' << fields.second
                           << ",0,," << result.expanded << ',' << std::fixed << std::setprecision(3)
-                          << elapsed_us << ',' << chebyshev << ",0,0,0,0,0,0,0,0,0,none,none,0,,\n";
+                          << elapsed_us << ',' << chebyshev
+                          << ",0,0,0,0,0,0,0,0,0,none,none,none,none,0,,,,,\n";
                 if (paths) write_json_path(paths, source_row, fields.first, fields.second, result);
                 ++written;
                 expanded_total += result.expanded;
@@ -354,14 +388,16 @@ int main(int argc, char** argv) {
                       << ',' << summary.vertical_steps << ',' << summary.gap_crossings << ','
                       << summary.block_segments << ',' << summary.portal_events << ','
                       << summary.first_direction << ',' << summary.last_direction << ','
-                      << summary.path_hash << ',' << summary.move_signature << ','
+                      << summary.first_arc << ',' << summary.last_arc << ',' << summary.path_hash << ','
+                      << summary.routing_state_sequence << ',' << summary.primitive_sequence << ','
+                      << summary.turn_sequence << ',' << summary.move_signature << ','
                       << summary.portal_signature << '\n';
             if (paths) write_json_path(paths, source_row, fields.first, fields.second, result);
 
             ++written;
             expanded_total += result.expanded;
             elapsed_us_total += elapsed_us;
-            if ((written % 10) == 0) {
+            if ((written % 1000) == 0) {
                 labels.flush();
                 summaries.flush();
                 if (paths) paths.flush();

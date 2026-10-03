@@ -55,15 +55,22 @@ def key_for(row: dict[str, float], scheme: str) -> tuple[int, ...]:
     return tuple(values[name] for name in scheme.split("+"))
 
 
-def load_rows(trace_path: Path, golden_path: Path) -> list[dict[str, float]]:
+def load_rows(trace_path: Path, golden_path: Path) -> tuple[list[dict[str, float]], int]:
     with golden_path.open("r", encoding="utf-8-sig", newline="") as stream:
         reader = csv.DictReader(stream)
         delay_key = next(name for name in reader.fieldnames or [] if name.lower() == "delay")
         golden = [float(row[delay_key]) for row in reader]
     rows: list[dict[str, float]] = []
+    trace_count = 0
     with trace_path.open("r", encoding="utf-8-sig", newline="") as stream:
         for index, raw in enumerate(csv.DictReader(stream)):
+            trace_count += 1
             row = {name: float(value) for name, value in raw.items()}
+            # A max-budget trace may contain the complete public input.  Only
+            # rows actually sent to exact search have measured cost/completion
+            # and are valid for selector learning.
+            if row.get("selected", 1.0) <= 0:
+                continue
             gain = 0.0
             if row["exact_completed"] > 0:
                 gain = point_score(golden[index], row["output_delay"]) - point_score(
@@ -73,18 +80,20 @@ def load_rows(trace_path: Path, golden_path: Path) -> list[dict[str, float]]:
             # one mean microsecond per input row costs 100/120 total-score points.
             row["gain"] = gain
             row["utility"] = 80.0 * gain - (100.0 / 120.0) * row["exact_us"]
+            row["source_row"] = float(index)
             rows.append(row)
-    if len(rows) != len(golden):
+    if trace_count != len(golden):
         raise ValueError("trace/Golden length mismatch")
-    return rows
+    return rows, trace_count
 
 
 def evaluate(
-    rows: list[dict[str, float]], scheme: str, minimum_count: int, margin: float
+    rows: list[dict[str, float]], total_rows: int,
+    scheme: str, minimum_count: int, margin: float
 ) -> dict[str, object]:
     train_groups: dict[tuple[int, ...], list[dict[str, float]]] = defaultdict(list)
-    for index, row in enumerate(rows):
-        if index % 2 == 0:
+    for row in rows:
+        if int(row["source_row"]) % 2 == 0:
             train_groups[key_for(row, scheme)].append(row)
     accepted = {
         key
@@ -92,7 +101,7 @@ def evaluate(
         if len(group) >= minimum_count and fmean(item["utility"] for item in group) > margin
     }
 
-    test = [row for index, row in enumerate(rows) if index % 2 == 1]
+    test = [row for row in rows if int(row["source_row"]) % 2 == 1]
     selected = [row for row in test if key_for(row, scheme) in accepted]
     exact = [row for row in selected if row["exact_completed"] > 0]
     mean_utility_all_short = sum(row["utility"] for row in selected) / max(len(test), 1)
@@ -108,8 +117,8 @@ def evaluate(
         "mean_gain_selected": fmean((row["gain"] for row in selected)) if selected else 0.0,
         "mean_us_selected": fmean((row["exact_us"] for row in selected)) if selected else 0.0,
         "mean_utility_all_short": mean_utility_all_short,
-        # Short<=16 has measured prevalence 15,611 / 1,000,000.
-        "projected_total_score_delta": mean_utility_all_short * 0.015611,
+        "candidate_prevalence": len(rows) / total_rows,
+        "projected_total_score_delta": mean_utility_all_short * len(rows) / total_rows,
         "accepted": [list(key) for key in sorted(accepted)],
     }
 
@@ -120,7 +129,7 @@ def main() -> int:
     parser.add_argument("--trace", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
-    rows = load_rows(args.trace, args.golden)
+    rows, total_rows = load_rows(args.trace, args.golden)
     schemes = (
         "sc+tc",
         "sc+tc+db",
@@ -134,7 +143,7 @@ def main() -> int:
         "sc+tc+dx+dy",
     )
     results = [
-        evaluate(rows, scheme, minimum_count, margin)
+        evaluate(rows, total_rows, scheme, minimum_count, margin)
         for scheme in schemes
         for minimum_count in (2, 3, 5, 10, 20, 40)
         for margin in (0.0, 2.0, 5.0)

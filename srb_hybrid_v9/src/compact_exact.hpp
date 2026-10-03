@@ -182,7 +182,13 @@ public:
     }
 
 private:
+#ifdef V9_COMPACT_TABLE_SIZE
+    static constexpr uint32_t kTableSize = V9_COMPACT_TABLE_SIZE;
+#else
     static constexpr uint32_t kTableSize = 4096;
+#endif
+    static_assert(kTableSize >= 4096 && (kTableSize & (kTableSize - 1)) == 0,
+                  "compact exact hash table size must be a power of two");
     uint32_t keys_[kTableSize]{};
     uint32_t distances_[kTableSize]{};
     uint32_t stamps_[kTableSize]{};

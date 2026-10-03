@@ -20,6 +20,11 @@ V9 是满足 100 MB 限制的单文件提交程序。当前提交版包含三条
 完整实验、哪些设想已经实现以及尚未完成的 Portal overlay，见
 [V9_P3_EXACT_DATA_AND_PORTAL_RESULTS.md](docs/V9_P3_EXACT_DATA_AND_PORTAL_RESULTS.md)。
 
+附件路线收紧后的短距离 PRP-R P0/P1 实验见
+[V9_P4_PRPR_SHORT_PATH_FINDINGS.md](docs/V9_P4_PRPR_SHORT_PATH_FINDINGS.md)。P4 已证明“正确骨架 +
+160 状态周期原语 + 逐段 Gap 计费”可以精确复现审计 Golden，但当前骨架生成和部分目标端口连接尚未达到
+Go/No-Go 指标，因此正式提交二进制仍保持 P3。
+
 ## 构建与运行
 
 Linux：
