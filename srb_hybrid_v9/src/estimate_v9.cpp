@@ -4,6 +4,9 @@
 #else
 #include "srb_core_v9.hpp"
 #endif
+#ifdef V9_STRUCTURED_P6
+#include "p6_structured.hpp"
+#endif
 
 #include <chrono>
 #include <cstdio>
@@ -141,6 +144,9 @@ int main(int argc, char** argv) {
             exact->print_stats();
         }
 #endif
+#ifdef V9_STRUCTURED_P6
+        p6_runtime::Solver structured;
+#endif
 
         using File = std::unique_ptr<FILE, decltype(&std::fclose)>;
         File input(std::fopen(options.input.c_str(), "rb"), &std::fclose);
@@ -167,6 +173,11 @@ int main(int argc, char** argv) {
         uint64_t processed = 0, invalid = 0, selected_count = 0;
         uint64_t exact_count = 0, fallback_count = 0, expanded_total = 0;
         double exact_us_total = 0.0;
+#ifdef V9_STRUCTURED_P6
+        uint64_t structured_selected = 0, structured_completed = 0;
+        uint64_t structured_candidates = 0, structured_valid = 0, structured_transitions = 0;
+        double structured_us_total = 0.0;
+#endif
         while (true) {
             const std::size_t read = std::fread(buffer.data() + carry, 1, block_size, input.get());
             if (std::ferror(input.get())) throw std::runtime_error("input read failed");
@@ -251,6 +262,23 @@ int main(int argc, char** argv) {
                     }
                 }
 
+#ifdef V9_STRUCTURED_P6
+                if (options.mode == "hybrid" && structured.selected(prediction)) {
+                    ++structured_selected;
+                    const auto p6_started = Clock::now();
+                    const p6_runtime::Result p6 = structured.query(prediction);
+                    structured_us_total += std::chrono::duration<double, std::micro>(
+                        Clock::now() - p6_started).count();
+                    structured_candidates += p6.candidates;
+                    structured_valid += p6.valid_candidates;
+                    structured_transitions += p6.transitions;
+                    if (p6.reachable) {
+                        answer = p6.delay;
+                        ++structured_completed;
+                    }
+                }
+#endif
+
                 rendered.append(from.data, from.size);
                 rendered.push_back(',');
                 rendered.append(to.data, to.size);
@@ -282,8 +310,21 @@ int main(int argc, char** argv) {
         std::cerr << "processed=" << processed << " invalid_rows=" << invalid
                   << " selected=" << selected_count << " exact=" << exact_count
                   << " fallback=" << fallback_count << " expanded=" << expanded_total
-                  << " exact_us=" << exact_us_total << " elapsed=" << elapsed
+                  << " exact_us=" << exact_us_total
+#ifdef V9_STRUCTURED_P6
+                  << " p6_selected=" << structured_selected
+                  << " p6_completed=" << structured_completed
+                  << " p6_candidates=" << structured_candidates
+                  << " p6_valid=" << structured_valid
+                  << " p6_transitions=" << structured_transitions
+                  << " p6_us=" << structured_us_total
+#endif
+                  << " elapsed=" << elapsed
+#ifdef V9_STRUCTURED_P6
+                  << " algorithm=V9-P6-structured+bounded-Astar+V8\n";
+#else
                   << " algorithm=V9-bounded-Astar+V8\n";
+#endif
         return invalid ? 1 : 0;
     } catch (const std::exception& error) {
         std::cerr << "error: " << error.what() << '\n';

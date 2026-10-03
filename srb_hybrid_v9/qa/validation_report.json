@@ -1,39 +1,63 @@
 {
-  "version": "V9 compact bounded exact + V8 P2 fallback",
-  "generated_at": "2026-10-02",
+  "version": "V9 P7 static Beam5 structured pricer + P3 fallback",
+  "generated_at": "2026-10-04",
   "submission": {
     "path": "submission/bin/estimate",
-    "bytes": 13472048,
-    "sha256": "0C5FBF8993204AB5573000A1D4C6E3941DCC0FD62FAE5AA0F3287396AE95F366",
-    "format": "ELF 64-bit x86-64 Linux musl",
+    "bytes": 28780968,
+    "sha256": "899C55EE98916F7466B62A8E78F813A56FF1BD9E5A3B63BA8AE12B9D7C449136",
+    "format": "ELF 64-bit x86-64 Linux musl, statically linked",
     "single_file": true,
-    "external_runtime_data": false
+    "external_runtime_data": false,
+    "under_100mb": true
   },
   "public_1m": {
     "rows": 1000000,
-    "v8_accuracy": 94.603473234,
-    "v9_accuracy": 94.604410091,
-    "accuracy_delta": 0.000936857,
-    "selected": 10,
-    "exact_completed": 10,
-    "fallback": 0,
-    "exact_expanded_states": 52
+    "p3_accuracy": 94.61372268017809,
+    "p7_accuracy": 94.74055580495343,
+    "accuracy_delta": 0.12683312477533473,
+    "bounded_exact_selected": 10,
+    "bounded_exact_completed": 10,
+    "structured_selected": 7860,
+    "structured_completed": 6833,
+    "structured_candidates": 39300,
+    "structured_valid_candidates": 14275,
+    "structured_transitions": 10255362,
+    "offline_overlay_mismatches": 0,
+    "output_sha256": "0260A77ACE67928A2052A3435817BD3169C741E1F2444002F3E839E622055079"
   },
   "correctness": {
-    "full_exact_known_rows_matching_previous_exact": "31/31",
-    "compact_vs_full_budget16_short_rows": "15611/15611",
-    "budget_exhaustion_returns_partial_path": false
+    "structured_ablation_rows": 1838,
+    "structured_ablation_mismatches": 0,
+    "full_public_rows": 1000000,
+    "full_public_mismatches_vs_p6_offline_overlay": 0,
+    "five_output_hashes_identical": true,
+    "invalid_rows": 0
   },
-  "timing_windows_1m_seconds": {
-    "v8_median_5_runs": 0.940940,
-    "v9_median_5_runs": 0.942671,
-    "note": "Wall-time difference is within run noise; exact branch internal time was approximately 0.2-0.4 ms per 1M."
+  "timing_windows_equivalent_1m": {
+    "seconds": [1.16028, 1.14057, 1.15396, 1.16997, 1.18631],
+    "mean_seconds": 1.162218,
+    "median_seconds": 1.16028,
+    "structured_us": [52711.4, 50792.7, 51632.3, 53403.9, 53623.3],
+    "mean_structured_us": 52432.72,
+    "mean_us_per_selected_request": 6.67082951653944
   },
-  "compact_data": {
-    "generated_header": "src/compact_graph_data.hpp",
-    "generated_header_sha256": "48E841E546F06600C67B3422455E158AAA8C37018C9D4B31784B9965606CF0B5",
-    "source_graph_sha256": "10518747589F301A5B7C7384DC0D6B6B76B52143EE8CF793F7BC806A0BB40828",
-    "gap_json_sha256": "5E6A156373BCB8C1A653381D2A2CC7F16DB1A2FEC0E44362C936D99B66D9D6DD"
+  "projection": {
+    "p3_100m_seconds": 107.176,
+    "p7_added_100m_seconds": 5.243272,
+    "p7_100m_seconds": 112.419272,
+    "p7_estimated_total_score": 94.85561737729608,
+    "estimated_total_gain_vs_p3": 0.057772566486946175,
+    "note": "Accuracy is measured on the full public 1M. The 100M runtime and total score are projections; final timing depends on the official Linux host."
   },
-  "decision": "Valid compact V9 research milestone; measured public gain is real but very small. Continue with graph contraction and portal/path-suffix reuse before claiming a material score improvement."
+  "static_data": {
+    "axis_bytes": 6656000,
+    "axis_sha256": "88229E9452D2F729A7A6F60C077288705AA50409A24532761241F0A4A0B0762B",
+    "top_edges_bytes": 665600,
+    "top_edges_sha256": "0AEF923974FB251DB26F4BDBE10D56B734B01CB78FCC47E1FCB14ACE740CDAAB",
+    "beam5_bytes": 563948,
+    "beam5_sha256": "1CA617FEF3750A6E521D200D81AC2D5F71D308F921A6B529DA76C4359090D252",
+    "beam_groups": 203,
+    "template_count": 7586
+  },
+  "decision": "Go for submission under the known 100 MB and projected 120 second limits. Run one native Linux smoke test on the evaluation-like host before final upload if available."
 }
