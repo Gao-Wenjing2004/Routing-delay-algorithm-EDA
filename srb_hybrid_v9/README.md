@@ -29,6 +29,11 @@ Go/No-Go 指标，因此正式提交二进制仍保持 P3。
 [V9_P5_STRUCTURED_GENERATOR_RESULTS.md](docs/V9_P5_STRUCTURED_GENERATOR_RESULTS.md)。P5 已把端到端结构链路打通，
 但结构候选数尚未通过 C++ 微秒成本门槛，因此也没有替换正式提交二进制。
 
+支持度统一评分、全局 Beam32、单段变体、C++ 表驱动定价和 1,838 条留出消融见
+[V9_P6_GLOBAL_BEAM_PRICER_RESULTS.md](docs/V9_P6_GLOBAL_BEAM_PRICER_RESULTS.md)。P6 又把生成器压成 4.28 MB
+六层表和 Beam5：完整公开 1M Accuracy 为 `94.740555805`，预计总分约 `94.823–94.831`。正式静态单文件和
+五次端到端 QA 尚未完成，因此提交版仍保持 P3。
+
 ## 构建与运行
 
 Linux：

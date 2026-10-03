@@ -121,3 +121,6 @@ Python 时间只用于相对比较，不能外推 C++。不过候选数本身已
 5. 只有 P5 相对 V8 的总分收益为正，才处理少量真实单 Block 路径。
 
 正式提交版在上述门槛通过前保持不变。
+
+上述五项已在 P6 完成第一轮实现和消融；结果与新的 Go/No-Go 结论见
+[`V9_P6_GLOBAL_BEAM_PRICER_RESULTS.md`](V9_P6_GLOBAL_BEAM_PRICER_RESULTS.md)。
