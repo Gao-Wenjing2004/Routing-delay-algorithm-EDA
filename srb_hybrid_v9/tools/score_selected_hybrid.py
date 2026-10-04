@@ -21,6 +21,10 @@ def main() -> int:
     parser.add_argument("--golden", type=Path, required=True)
     parser.add_argument("--baseline", type=Path, required=True)
     parser.add_argument("--selected", type=Path, required=True)
+    parser.add_argument(
+        "--sparse", action="store_true",
+        help="selected CSV contains only chosen rows rather than one row per baseline request",
+    )
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
 
@@ -30,16 +34,38 @@ def main() -> int:
         "elapsed_us": 0.0, "selected_elapsed_us": 0.0,
         "unselected_elapsed_us": 0.0, "generate_us": 0.0,
     }
+    sparse_rows = None
+    if args.sparse:
+        with args.selected.open("r", encoding="utf-8-sig", newline="") as ss:
+            sparse_rows = {
+                (row["From"], row["To"]): row for row in csv.DictReader(ss)
+            }
     with args.golden.open("r", encoding="utf-8-sig", newline="") as gs, \
-            args.baseline.open("r", encoding="utf-8-sig", newline="") as bs, \
-            args.selected.open("r", encoding="utf-8-sig", newline="") as ss:
+            args.baseline.open("r", encoding="utf-8-sig", newline="") as bs:
         golden_rows = csv.DictReader(gs)
         baseline_rows = csv.DictReader(bs)
-        selected_rows = csv.DictReader(ss)
-        for golden, baseline, selected in zip(golden_rows, baseline_rows, selected_rows, strict=True):
+        selected_stream = None if args.sparse else args.selected.open(
+            "r", encoding="utf-8-sig", newline="")
+        selected_rows = None if selected_stream is None else csv.DictReader(selected_stream)
+        matched_sparse = 0
+        for golden, baseline in zip(golden_rows, baseline_rows, strict=True):
             key = (golden["From"], golden["To"])
-            if key != (baseline["From"], baseline["To"]) or key != (selected["From"], selected["To"]):
+            if key != (baseline["From"], baseline["To"]):
                 raise ValueError(f"row alignment mismatch at {key}")
+            if sparse_rows is not None:
+                selected = sparse_rows.get(key)
+                if selected is None:
+                    selected = {
+                        "Predicted": "-1", "Candidates": "0", "ElapsedUs": "0",
+                        "GenerateUs": "0",
+                    }
+                else:
+                    matched_sparse += 1
+            else:
+                assert selected_rows is not None
+                selected = next(selected_rows)
+                if key != (selected["From"], selected["To"]):
+                    raise ValueError(f"selected row alignment mismatch at {key}")
             golden_delay = int(golden.get("delay", golden.get("Delay", "")))
             baseline_delay = int(baseline["Delay"])
             structured_delay = int(selected["Predicted"])
@@ -54,6 +80,12 @@ def main() -> int:
             totals["elapsed_us"] += elapsed
             totals["selected_elapsed_us" if is_selected else "unselected_elapsed_us"] += elapsed
             totals["generate_us"] += float(selected.get("GenerateUs", 0.0))
+        if selected_stream is not None:
+            if next(selected_rows, None) is not None:
+                raise ValueError("selected row count mismatch")
+            selected_stream.close()
+        if sparse_rows is not None and matched_sparse != len(sparse_rows):
+            raise ValueError("one or more sparse selected rows were not found in the baseline")
 
     rows = int(totals["rows"])
     selected_count = int(totals["selected"])

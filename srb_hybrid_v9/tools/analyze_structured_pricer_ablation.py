@@ -120,13 +120,17 @@ def enrich(raw: dict[str, str], v8: int, candidates: list[str]) -> dict[str, obj
     runs = [run_count(item) for item in candidates]
     direction = ("E" if dx > 0 else "W" if dx < 0 else "0") + \
         ("N" if dy > 0 else "S" if dy < 0 else "0")
+    distance = max(abs(dx), abs(dy))
+    macro_band = "0-16" if distance <= 16 else "17-32" if distance <= 32 else \
+        "33-64" if distance <= 64 else "65-128" if distance <= 128 else "129+"
     return {
         "source_stem": BUS.sub("[]", source_port),
         "target_stem": BUS.sub("[]", target_port),
         "source_port": source_port,
         "target_port": target_port,
         "direction": direction,
-        "band": displacement_band(max(abs(dx), abs(dy))),
+        "band": displacement_band(distance),
+        "macro_band": macro_band,
         "dx": dx,
         "dy": dy,
         "x10": sx % 10,
@@ -146,6 +150,7 @@ SCHEMES = (
     ("first_runs", "mean_runs_half", "band"),
     ("direction", "band", "first_pattern"),
     ("source_stem", "direction", "band"),
+    ("source_stem", "direction", "macro_band"),
     ("target_stem", "direction", "band"),
     ("source_stem", "target_stem", "direction"),
     ("source_stem", "target_stem", "direction", "band"),
@@ -263,7 +268,10 @@ def load_audit_rows(
                 "elapsed_us": elapsed_us,
                 "generate_us": generate_us,
                 "utility": 80.0 * gain - (100.0 / 120.0) * elapsed_us,
-                "fold": fnv1a(raw["From"] + "\0" + raw["To"]) % 5,
+                # Keep every query sharing a complete source endpoint in one
+                # fold.  This matches the Dijkstra Teacher split and avoids
+                # leaking source-local path regularities across selector folds.
+                "fold": fnv1a(raw["From"]) % 5,
             })
             rows.append(row)
     return rows
@@ -283,7 +291,10 @@ def audit_one(
     # is both faster for repeated timing passes and avoids mining unrelated
     # feature families on the final public holdout.
     selectors = selector_audits(
-        rows, (("source_stem", "direction", "band"),))
+        rows, (
+            ("source_stem", "direction", "macro_band"),
+            ("source_stem", "direction", "band"),
+        ))
     best_selector = selectors[0]
     report = {
         "label": label,

@@ -114,8 +114,11 @@ TEMPLATE_LEVELS = tuple(
 )
 
 
-def selector(rows: list[dict[str, object]]):
-    return [(names, ranked_library(rows, names)) for names in SELECTOR_LEVELS]
+def selector(
+    rows: list[dict[str, object]],
+    levels: tuple[tuple[str, ...], ...] = SELECTOR_LEVELS,
+):
+    return [(names, ranked_library(rows, names)) for names in levels]
 
 
 def selected_skeletons(
@@ -594,12 +597,15 @@ def load_summary_rows(path: Path, model, port_id) -> list[dict[str, object]]:
             sx, sy, source_port = endpoint(raw["From"])
             tx, ty, target_port = endpoint(raw["To"])
             dx, dy = tx - sx, ty - sy
+            cheb = max(abs(dx), abs(dy))
+            macro_band = "0-16" if cheb <= 16 else "17-32" if cheb <= 32 else \
+                "33-64" if cheb <= 64 else "65-128" if cheb <= 128 else "129+"
             rows.append({
                 "from": raw["From"], "to": raw["To"], "golden": int(raw["Delay"]),
                 "source_endpoint": raw["From"], "source_port": source_port,
                 "target_port": target_port, "source_stem": stem(source_port),
                 "target_stem": stem(target_port), "direction": direction(dx, dy),
-                "band": band(max(abs(dx), abs(dy))), "dx": dx, "dy": dy,
+                "band": band(cheb), "macro_band": macro_band, "dx": dx, "dy": dy,
                 "skeleton": raw["TurnSequence"] or "identity",
                 "block": int(raw["BlockSegments"]) > 0,
                 "gap": int(raw["GapCrossings"]) > 0,

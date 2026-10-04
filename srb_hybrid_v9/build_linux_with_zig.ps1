@@ -18,8 +18,8 @@ $Core = Join-Path $Build 'estimate_v9_core'
 Push-Location $Root
 try {
     & $ZigExe c++ -target x86_64-linux-musl -std=c++17 -O3 -DNDEBUG `
-        -DP2_FAST_MODEL -DP2_POST_MEMORY -DV9_EXACT_MEMORY -DV9_COMPACT_LANDMARKS -DV9_COMPACT_SUBMISSION -DV9_STRUCTURED_P6 -static -w `
-        'src\estimate_v9.cpp' 'src\p6_embedded_data.S' -o $Core
+        -DP2_FAST_MODEL -DP2_POST_MEMORY -DV9_EXACT_MEMORY -DV9_COMPACT_LANDMARKS -DV9_COMPACT_SUBMISSION -DV9_STRUCTURED_P6 -DV9_STRUCTURED_P8 -static -w `
+        'src\estimate_v9.cpp' 'src\p6_embedded_data.S' 'src\p8_embedded_data.S' -o $Core
     if ($LASTEXITCODE -ne 0) { throw "Zig C++ build failed: $LASTEXITCODE" }
 } finally {
     Pop-Location

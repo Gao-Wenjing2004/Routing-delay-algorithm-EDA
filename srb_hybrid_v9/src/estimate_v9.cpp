@@ -7,6 +7,9 @@
 #ifdef V9_STRUCTURED_P6
 #include "p6_structured.hpp"
 #endif
+#ifdef V9_STRUCTURED_P8
+#include "p8_macro.hpp"
+#endif
 
 #include <chrono>
 #include <cstdio>
@@ -147,6 +150,9 @@ int main(int argc, char** argv) {
 #ifdef V9_STRUCTURED_P6
         p6_runtime::Solver structured;
 #endif
+#ifdef V9_STRUCTURED_P8
+        p8_runtime::Solver macro_solver;
+#endif
 
         using File = std::unique_ptr<FILE, decltype(&std::fclose)>;
         File input(std::fopen(options.input.c_str(), "rb"), &std::fclose);
@@ -177,6 +183,11 @@ int main(int argc, char** argv) {
         uint64_t structured_selected = 0, structured_completed = 0;
         uint64_t structured_candidates = 0, structured_valid = 0, structured_transitions = 0;
         double structured_us_total = 0.0;
+#endif
+#ifdef V9_STRUCTURED_P8
+        uint64_t macro_selected = 0, macro_completed = 0;
+        uint64_t macro_candidates = 0, macro_valid = 0, macro_transitions = 0;
+        double macro_us_total = 0.0;
 #endif
         while (true) {
             const std::size_t read = std::fread(buffer.data() + carry, 1, block_size, input.get());
@@ -234,6 +245,7 @@ int main(int argc, char** argv) {
                 QueryResult result;
 #endif
                 double exact_us = 0.0;
+                bool exact_solved = false;
                 if (selected) {
                     ++selected_count;
 #ifndef V9_COMPACT_SUBMISSION
@@ -256,6 +268,7 @@ int main(int argc, char** argv) {
                     expanded_total += result.expanded;
                     if (result.reachable && !result.budget_exhausted) {
                         answer = result.delay;
+                        exact_solved = true;
                         ++exact_count;
                     } else {
                         ++fallback_count;
@@ -275,6 +288,23 @@ int main(int argc, char** argv) {
                     if (p6.reachable) {
                         answer = p6.delay;
                         ++structured_completed;
+                    }
+                }
+#endif
+
+#ifdef V9_STRUCTURED_P8
+                if (options.mode == "hybrid" && !exact_solved && macro_solver.selected(prediction)) {
+                    ++macro_selected;
+                    const auto p8_started = Clock::now();
+                    const p8_runtime::Result p8 = macro_solver.query(prediction);
+                    macro_us_total += std::chrono::duration<double, std::micro>(
+                        Clock::now() - p8_started).count();
+                    macro_candidates += p8.candidates;
+                    macro_valid += p8.valid_candidates;
+                    macro_transitions += p8.transitions;
+                    if (p8.reachable) {
+                        answer = p8.delay;
+                        ++macro_completed;
                     }
                 }
 #endif
@@ -319,9 +349,19 @@ int main(int argc, char** argv) {
                   << " p6_transitions=" << structured_transitions
                   << " p6_us=" << structured_us_total
 #endif
+#ifdef V9_STRUCTURED_P8
+                  << " p8_selected=" << macro_selected
+                  << " p8_completed=" << macro_completed
+                  << " p8_candidates=" << macro_candidates
+                  << " p8_valid=" << macro_valid
+                  << " p8_transitions=" << macro_transitions
+                  << " p8_us=" << macro_us_total
+#endif
                   << " elapsed=" << elapsed
-#ifdef V9_STRUCTURED_P6
-                  << " algorithm=V9-P6-structured+bounded-Astar+V8\n";
+#ifdef V9_STRUCTURED_P8
+                  << " algorithm=V9-P8-macro+P7-short+bounded-Astar+V8\n";
+#elif defined(V9_STRUCTURED_P6)
+                  << " algorithm=V9-P7-short+bounded-Astar+V8\n";
 #else
                   << " algorithm=V9-bounded-Astar+V8\n";
 #endif

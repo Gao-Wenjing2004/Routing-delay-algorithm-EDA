@@ -1,10 +1,10 @@
 {
-  "version": "V9 P7 static Beam5 structured pricer + P3 fallback",
+  "version": "V9 P8 medium-distance macro Beam2 + P7 short + bounded A* + P3 fallback",
   "generated_at": "2026-10-04",
   "submission": {
     "path": "submission/bin/estimate",
-    "bytes": 28780968,
-    "sha256": "899C55EE98916F7466B62A8E78F813A56FF1BD9E5A3B63BA8AE12B9D7C449136",
+    "bytes": 43826696,
+    "sha256": "996F6214BBFA217ADFA7E65D70656253BF4CAF3D7EB11351D144A6316FBAAF02",
     "format": "ELF 64-bit x86-64 Linux musl, statically linked",
     "single_file": true,
     "external_runtime_data": false,
@@ -14,50 +14,65 @@
     "rows": 1000000,
     "p3_accuracy": 94.61372268017809,
     "p7_accuracy": 94.74055580495343,
-    "accuracy_delta": 0.12683312477533473,
+    "p8_accuracy": 94.82575473041273,
+    "accuracy_delta_vs_p7": 0.08519892545929508,
     "bounded_exact_selected": 10,
     "bounded_exact_completed": 10,
-    "structured_selected": 7860,
-    "structured_completed": 6833,
-    "structured_candidates": 39300,
-    "structured_valid_candidates": 14275,
-    "structured_transitions": 10255362,
-    "offline_overlay_mismatches": 0,
-    "output_sha256": "0260A77ACE67928A2052A3435817BD3169C741E1F2444002F3E839E622055079"
+    "bounded_exact_expanded": 34,
+    "p7_selected": 7860,
+    "p7_completed": 6833,
+    "p8_selected": 7540,
+    "p8_completed": 6120,
+    "p8_candidates": 15080,
+    "p8_valid_candidates": 7757,
+    "p8_transitions": 5546974,
+    "offline_completed_mismatches": 0,
+    "output_sha256": "4400BF398CB2D72BF782265B0DC76C30E408AB8114007072BD8BF295AEE1B296"
+  },
+  "teacher": {
+    "rows": 120000,
+    "reachable": 118910,
+    "unreachable": 1090,
+    "distance_range": "17-64",
+    "unique_source_endpoints": 226,
+    "cross_validation": "five folds by complete source endpoint",
+    "selector": "source_stem+direction+macro_band, minimum_count=4, mean_utility_margin=5",
+    "candidate_limit": 2
   },
   "correctness": {
-    "structured_ablation_rows": 1838,
-    "structured_ablation_mismatches": 0,
     "full_public_rows": 1000000,
-    "full_public_mismatches_vs_p6_offline_overlay": 0,
-    "five_output_hashes_identical": true,
+    "completed_rows_checked_against_offline_pricer": 6120,
+    "completed_row_mismatches": 0,
+    "three_output_hashes_identical": true,
     "invalid_rows": 0
   },
-  "timing_windows_equivalent_1m": {
-    "seconds": [1.16028, 1.14057, 1.15396, 1.16997, 1.18631],
-    "mean_seconds": 1.162218,
-    "median_seconds": 1.16028,
-    "structured_us": [52711.4, 50792.7, 51632.3, 53403.9, 53623.3],
-    "mean_structured_us": 52432.72,
-    "mean_us_per_selected_request": 6.67082951653944
+  "timing": {
+    "p8_branch_us_public_1m": 43443.4,
+    "offline_conservative_branch_us_public_1m": 51312.8,
+    "windows_equivalent_2m_median_p7_seconds": 2.5843003,
+    "windows_equivalent_2m_median_p8_seconds": 2.6158873,
+    "note": "The official projection uses the slower standalone branch timing rather than the noisy paired end-to-end delta."
   },
   "projection": {
-    "p3_100m_seconds": 107.176,
-    "p7_added_100m_seconds": 5.243272,
     "p7_100m_seconds": 112.419272,
-    "p7_estimated_total_score": 94.85561737729608,
-    "estimated_total_gain_vs_p3": 0.057772566486946175,
-    "note": "Accuracy is measured on the full public 1M. The 100M runtime and total score are projections; final timing depends on the official Linux host."
+    "p8_added_100m_seconds_conservative": 5.13128,
+    "p8_100m_seconds_conservative": 117.550552,
+    "p8_estimated_total_score": 94.88101585099685,
+    "note": "Accuracy is measured on the full public 1M. Runtime and total score are projections; final timing depends on the official Linux host."
   },
   "static_data": {
-    "axis_bytes": 6656000,
-    "axis_sha256": "88229E9452D2F729A7A6F60C077288705AA50409A24532761241F0A4A0B0762B",
-    "top_edges_bytes": 665600,
-    "top_edges_sha256": "0AEF923974FB251DB26F4BDBE10D56B734B01CB78FCC47E1FCB14ACE740CDAAB",
-    "beam5_bytes": 563948,
-    "beam5_sha256": "1CA617FEF3750A6E521D200D81AC2D5F71D308F921A6B529DA76C4359090D252",
-    "beam_groups": 203,
-    "template_count": 7586
+    "axis_bytes": 13209600,
+    "axis_sha256": "E65B7079FBAF96A5E3411ED2038C0704D474C6F4B69E9C19BC0954E4399FAC92",
+    "top_edges_bytes": 1320960,
+    "top_edges_sha256": "924E7E0E18C6B46A6894EE1DEE6A68FE3A24498AB04A90EAD136ED00B3FD092E",
+    "beam2_bytes": 415489,
+    "beam2_sha256": "0EBA6998F69D31140350CEB4D7AE7936C2AE0818CAEF5A890946D4FB0866BA2A"
   },
-  "decision": "Go for submission under the known 100 MB and projected 120 second limits. Run one native Linux smoke test on the evaluation-like host before final upload if available."
+  "astar_ablation": {
+    "extra_uncertainty_selected": 99,
+    "budgets": [16, 64, 256, 1024],
+    "accuracy_for_all_budgets": 94.82575473041273,
+    "decision": "Do not enable a generic uncertainty threshold; retain only the original 10-row structural selector with cap 16."
+  },
+  "decision": "Go for submission under the known 100 MB and projected 120 second limits. Native Linux smoke test remains recommended."
 }

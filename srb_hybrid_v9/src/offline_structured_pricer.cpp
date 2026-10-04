@@ -20,8 +20,11 @@
 namespace {
 
 constexpr int kStates = 160;
-constexpr int kRadius = 32;
-constexpr int kWidth = 65;
+#ifndef P8_AXIS_RADIUS
+#define P8_AXIS_RADIUS 32
+#endif
+constexpr int kRadius = P8_AXIS_RADIUS;
+constexpr int kWidth = 2 * kRadius + 1;
 constexpr uint16_t kInf16 = 65535;
 constexpr uint32_t kBig = 1000000000u;
 

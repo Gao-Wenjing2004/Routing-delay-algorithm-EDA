@@ -7,8 +7,16 @@ import argparse
 import csv
 import json
 import random
+import re
 from collections import Counter, defaultdict
 from pathlib import Path
+
+
+BUS = re.compile(r"\[\d+\]")
+
+
+def port_stem(port: str) -> str:
+    return BUS.sub("[*]", port)
 
 
 def main() -> int:
@@ -22,6 +30,7 @@ def main() -> int:
         help="optional public-style requests used only to reproduce source/target port-pair frequencies",
     )
     parser.add_argument("--count", type=int, required=True)
+    parser.add_argument("--min-cheb", type=int, default=0)
     parser.add_argument("--max-cheb", type=int, default=32)
     parser.add_argument(
         "--source-count",
@@ -47,6 +56,22 @@ def main() -> int:
         default=0.32672,
         help="when source-direction=any, match the public Input/Output source mixture",
     )
+    parser.add_argument(
+        "--priority-source-stems",
+        default="",
+        help="comma-separated bus-normalized stems (for example ZLW[*],ZLE[*])",
+    )
+    parser.add_argument(
+        "--priority-target-stems",
+        default="",
+        help="comma-separated bus-normalized target stems",
+    )
+    parser.add_argument(
+        "--priority-port-ratio",
+        type=float,
+        default=0.0,
+        help="probability of sampling from the priority source/target stem pools",
+    )
     parser.add_argument("--seed", type=int, default=20261002)
     parser.add_argument("--source-direction", choices=("Input", "Output", "any"), default="any")
     parser.add_argument(
@@ -58,8 +83,8 @@ def main() -> int:
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--manifest", type=Path, default=None)
     args = parser.parse_args()
-    if args.count <= 0 or args.max_cheb < 0:
-        raise ValueError("count must be positive and max-cheb must be non-negative")
+    if args.count <= 0 or args.min_cheb < 0 or args.max_cheb < args.min_cheb:
+        raise ValueError("count must be positive and 0 <= min-cheb <= max-cheb")
     if args.source_count < 0 or args.source_count > args.count:
         raise ValueError("source-count must be in [0, count]")
     if args.minimum_sources_per_port < 0:
@@ -68,6 +93,8 @@ def main() -> int:
         raise ValueError("portal-source-ratio must be in [0, 1]")
     if not 0.0 <= args.source_input_probability <= 1.0:
         raise ValueError("source-input-probability must be in [0, 1]")
+    if not 0.0 <= args.priority_port_ratio <= 1.0:
+        raise ValueError("priority-port-ratio must be in [0, 1]")
     rng = random.Random(args.seed)
 
     instances = json.loads(args.inst.read_text(encoding="utf-8"))["Inst"]
@@ -104,8 +131,29 @@ def main() -> int:
     output_ports = names("Output")
     source_ports = names(args.source_direction)
     target_ports = names(args.target_direction)
+    priority_source_stems = {
+        value.strip() for value in args.priority_source_stems.split(",") if value.strip()
+    }
+    priority_target_stems = {
+        value.strip() for value in args.priority_target_stems.split(",") if value.strip()
+    }
+    priority_source_ports = [
+        port for port in source_ports if port_stem(port) in priority_source_stems
+    ]
+    priority_target_ports = [
+        port for port in target_ports if port_stem(port) in priority_target_stems
+    ]
+    if priority_source_stems and not priority_source_ports:
+        raise ValueError("priority-source-stems did not match any source port")
+    if priority_target_stems and not priority_target_ports:
+        raise ValueError("priority-target-stems did not match any target port")
 
     def choose_source_port() -> str:
+        if priority_source_ports and rng.random() < args.priority_port_ratio:
+            if template_source_counts:
+                weights = [template_source_counts.get(port, 0) + 1 for port in priority_source_ports]
+                return rng.choices(priority_source_ports, weights=weights, k=1)[0]
+            return rng.choice(priority_source_ports)
         if template_source_counts:
             return rng.choices(
                 list(template_source_counts), weights=list(template_source_counts.values()), k=1
@@ -116,6 +164,11 @@ def main() -> int:
 
     def choose_target_port(source_port: str) -> str:
         conditional = template_pair_counts.get(source_port)
+        if priority_target_ports and rng.random() < args.priority_port_ratio:
+            if conditional:
+                weights = [conditional.get(port, 0) + 1 for port in priority_target_ports]
+                return rng.choices(priority_target_ports, weights=weights, k=1)[0]
+            return rng.choice(priority_target_ports)
         if conditional:
             return rng.choices(list(conditional), weights=list(conditional.values()), k=1)[0]
         return rng.choice(target_ports)
@@ -169,7 +222,11 @@ def main() -> int:
             (33, min(64, args.max_cheb), 0.20),
             (65, args.max_cheb, 0.10),
         ]
-        valid = [(lo, hi, weight) for lo, hi, weight in boundaries if lo <= hi]
+        valid = [
+            (max(lo, args.min_cheb), hi, weight)
+            for lo, hi, weight in boundaries
+            if max(lo, args.min_cheb) <= hi
+        ]
         pick = rng.random() * sum(weight for _, _, weight in valid)
         for lo, hi, weight in valid:
             if pick <= weight:
@@ -193,10 +250,12 @@ def main() -> int:
         # Log-like distance mixture deliberately over-samples the very short cases
         # that are rare in a uniform whole-device draw.
         radius = choose_radius()
-        dx = rng.randint(-radius, radius)
-        dy = rng.choice((-radius, radius)) if rng.random() < 0.5 else rng.randint(-radius, radius)
         if rng.random() < 0.5:
-            dx, dy = dy, dx
+            dx = rng.choice((-radius, radius))
+            dy = rng.randint(-radius, radius)
+        else:
+            dx = rng.randint(-radius, radius)
+            dy = rng.choice((-radius, radius))
         target = (sx + dx, sy + dy)
         if target not in coord_to_name:
             continue
@@ -226,6 +285,7 @@ def main() -> int:
     manifest = {
         "rows": len(rows),
         "seed": args.seed,
+        "min_cheb": args.min_cheb,
         "max_cheb": args.max_cheb,
         "source_count_requested": args.source_count,
         "minimum_sources_per_port": args.minimum_sources_per_port,
@@ -236,6 +296,9 @@ def main() -> int:
         "template_requests": str(args.template_requests) if args.template_requests is not None else None,
         "template_source_ports": len(template_source_counts),
         "template_port_pairs": sum(len(values) for values in template_pair_counts.values()),
+        "priority_source_stems": sorted(priority_source_stems),
+        "priority_target_stems": sorted(priority_target_stems),
+        "priority_port_ratio": args.priority_port_ratio,
         "source_direction_counts": dict(sorted(source_direction_counts.items())),
         "distance_counts": dict(sorted(distance_counts.items())),
     }
@@ -243,7 +306,7 @@ def main() -> int:
         args.manifest.parent.mkdir(parents=True, exist_ok=True)
         args.manifest.write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print(
-        f"wrote {len(rows)} legal queries; max_cheb={args.max_cheb}; "
+        f"wrote {len(rows)} legal queries; cheb={args.min_cheb}-{args.max_cheb}; "
         f"portal_cells={len(portal_cells)}; unique_sources={manifest['unique_sources']}; seed={args.seed}"
     )
     return 0

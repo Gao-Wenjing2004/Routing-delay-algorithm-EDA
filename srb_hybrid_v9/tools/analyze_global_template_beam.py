@@ -114,23 +114,26 @@ def skeleton_model(rows: list[dict[str, object]]) -> SupportModel:
     )
 
 
-def template_model(rows: list[dict[str, object]]) -> SupportModel:
+def template_model(
+    rows: list[dict[str, object]],
+    levels: tuple[tuple[str, ...], ...] = TEMPLATE_LEVELS,
+) -> SupportModel:
     return build_support_model(
         rows,
-        TEMPLATE_LEVELS,
+        levels,
         lambda row: normalized_template(
             str(row["skeleton"]), tuple(row["continuation_deltas"])),
         lambda row: str(row["skeleton"]),
     )
 
 
-def delta_model(rows: list[dict[str, object]]) -> SupportModel:
+def delta_model(rows: list[dict[str, object]], band_name: str = "band") -> SupportModel:
     base_levels = (
-        ("source_port", "target_port", "direction", "band"),
-        ("source_stem", "target_stem", "direction", "band"),
-        ("source_port", "direction", "band"),
-        ("target_port", "direction", "band"),
-        ("direction", "band"),
+        ("source_port", "target_port", "direction", band_name),
+        ("source_stem", "target_stem", "direction", band_name),
+        ("source_port", "direction", band_name),
+        ("target_port", "direction", band_name),
+        ("direction", band_name),
         ("direction",),
     )
     levels = tuple(names + ("skeleton", "run_index") for names in base_levels)
@@ -248,6 +251,27 @@ def propose(
     return result
 
 
+def cap_rows_per_source(
+    rows: list[dict[str, object]], limit: int,
+) -> list[dict[str, object]]:
+    if limit <= 0:
+        return rows
+    groups: dict[str, list[dict[str, object]]] = defaultdict(list)
+    for row in rows:
+        groups[str(row["source_endpoint"])].append(row)
+    result = []
+    for source in sorted(groups):
+        ranked = sorted(
+            groups[source],
+            key=lambda row: (
+                fnv1a(str(row["from"]) + "\0" + str(row["to"])),
+                str(row["to"]),
+            ),
+        )
+        result.extend(ranked[:limit])
+    return result
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--model", type=Path, required=True)
@@ -258,6 +282,8 @@ def main() -> int:
     parser.add_argument("--requests-output", type=Path, default=None)
     parser.add_argument("--transitions", type=Path, default=None)
     parser.add_argument("--axis-output", type=Path, default=None)
+    parser.add_argument("--axis-radius", type=int, default=32)
+    parser.add_argument("--axis-search-radius", type=int, default=64)
     parser.add_argument("--pricer-model-output", type=Path, default=None)
     parser.add_argument("--beam", type=int, default=32)
     parser.add_argument("--skeleton-limit", type=int, default=8)
@@ -271,12 +297,22 @@ def main() -> int:
     parser.add_argument("--validation-modulus", type=int, default=5)
     parser.add_argument("--validation-fold", type=int, default=0)
     parser.add_argument("--exclude-validation-fold-from-training", action="store_true")
+    parser.add_argument(
+        "--coarse-only", action="store_true",
+        help="drop exact dx/dy lookup levels and use macro distance bands",
+    )
+    parser.add_argument(
+        "--max-rows-per-source", type=int, default=0,
+        help="deterministically cap each complete source endpoint for fast ablations",
+    )
     args = parser.parse_args()
 
     if args.validation_modulus <= 1:
         parser.error("--validation-modulus must be greater than one")
     if not 0 <= args.validation_fold < args.validation_modulus:
         parser.error("--validation-fold must be in [0, validation-modulus)")
+    if args.axis_radius <= 0 or args.axis_search_radius < args.axis_radius:
+        parser.error("--axis-search-radius must cover a positive --axis-radius")
 
     model = json.loads(args.model.read_text(encoding="utf-8-sig"))
     if args.pricer_model_output is not None:
@@ -291,6 +327,8 @@ def main() -> int:
     port_id = {name: index for index, name in enumerate(model["port_names"])}
     training = load_summary_rows(args.training_summaries, model, port_id)
     all_rows = load_summary_rows(args.summaries, model, port_id)
+    training = cap_rows_per_source(training, args.max_rows_per_source)
+    all_rows = cap_rows_per_source(all_rows, args.max_rows_per_source)
     if args.exclude_validation_fold_from_training:
         training = [
             row for row in training
@@ -302,15 +340,32 @@ def main() -> int:
         if fnv1a(str(row["source_endpoint"])) % args.validation_modulus ==
         args.validation_fold and not row["block"]
     ]
-    skeleton_libraries = selector(training)
-    template_support = template_model(training)
-    delta_support = delta_model(training)
+    if args.coarse_only:
+        selector_levels = (
+            ("source_port", "target_port", "direction", "macro_band"),
+            ("source_stem", "target_stem", "direction", "macro_band"),
+            ("source_port", "direction", "macro_band"),
+            ("target_port", "direction", "macro_band"),
+            ("source_stem", "direction", "macro_band"),
+            ("target_stem", "direction", "macro_band"),
+            ("direction", "macro_band"),
+            ("direction",),
+        )
+        template_levels = tuple(names + ("skeleton",) for names in selector_levels)
+    else:
+        selector_levels = SELECTOR_LEVELS
+        template_levels = TEMPLATE_LEVELS
+    skeleton_libraries = selector(training, selector_levels)
+    template_support = template_model(training, template_levels)
+    delta_support = delta_model(training, "macro_band" if args.coarse_only else "band")
 
     if (args.transitions is None) != (args.axis_output is None):
         parser.error("--transitions and --axis-output must be supplied together")
     if args.axis_output is not None:
-        horizontal = build_axis_table(args.transitions, "H", 32, 64)
-        vertical = build_axis_table(args.transitions, "V", 32, 64)
+        horizontal = build_axis_table(
+            args.transitions, "H", args.axis_radius, args.axis_search_radius)
+        vertical = build_axis_table(
+            args.transitions, "V", args.axis_radius, args.axis_search_radius)
         args.axis_output.parent.mkdir(parents=True, exist_ok=True)
         with args.axis_output.open("wb") as stream:
             horizontal.tofile(stream)
@@ -369,6 +424,8 @@ def main() -> int:
         "validation_modulus": args.validation_modulus,
         "validation_fold": args.validation_fold,
         "excluded_validation_fold_from_training": args.exclude_validation_fold_from_training,
+        "coarse_only": args.coarse_only,
+        "max_rows_per_source": args.max_rows_per_source,
         "mean_candidates": candidate_total / denominator,
         "mean_mutations": mutation_total / denominator,
         "skeleton_covered_by_global_beam": skeleton_hits / denominator,
