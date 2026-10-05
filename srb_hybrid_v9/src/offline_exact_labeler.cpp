@@ -25,6 +25,10 @@ struct Options {
     uint64_t offset = 0;
     uint64_t limit = 0;
     uint64_t max_group_expanded = 10000000;
+    int min_x = std::numeric_limits<int>::min();
+    int max_x = std::numeric_limits<int>::max();
+    int min_y = std::numeric_limits<int>::min();
+    int max_y = std::numeric_limits<int>::max();
     bool delay_only = false;
     bool grouped = false;
 };
@@ -93,6 +97,14 @@ Options parse_options(int argc, char** argv) {
         else if (argument == "--limit") options.limit = std::stoull(option_value(index, argc, argv, argument));
         else if (argument == "--max-group-expanded")
             options.max_group_expanded = std::stoull(option_value(index, argc, argv, argument));
+        else if (argument == "--min-x")
+            options.min_x = std::stoi(option_value(index, argc, argv, argument));
+        else if (argument == "--max-x")
+            options.max_x = std::stoi(option_value(index, argc, argv, argument));
+        else if (argument == "--min-y")
+            options.min_y = std::stoi(option_value(index, argc, argv, argument));
+        else if (argument == "--max-y")
+            options.max_y = std::stoi(option_value(index, argc, argv, argument));
         else if (argument == "--delay-only") options.delay_only = true;
         else if (argument == "--grouped") options.grouped = true;
         else throw std::runtime_error("unknown argument: " + argument);
@@ -103,7 +115,8 @@ Options parse_options(int argc, char** argv) {
             "usage: offline_exact_labeler --graph graph.bin --gap SRB_Gap.json "
             "--input requests.csv --labels labels.csv --summaries summaries.csv "
             "[--paths paths.jsonl] [--offset N] [--limit N] [--delay-only] "
-            "[--grouped] [--max-group-expanded N]");
+            "[--grouped] [--max-group-expanded N] "
+            "[--min-x N --max-x N --min-y N --max-y N]");
     }
     return options;
 }
@@ -443,7 +456,8 @@ int main(int argc, char** argv) {
                 const auto started = Clock::now();
                 std::vector<QueryResult> results = solver.query_delays_same_source_spec(
                     requests[begin].fields.first, destinations,
-                    options.max_group_expanded, !options.delay_only);
+                    options.max_group_expanded, !options.delay_only,
+                    options.min_x, options.max_x, options.min_y, options.max_y);
                 const double group_us =
                     std::chrono::duration<double, std::micro>(Clock::now() - started).count();
                 for (std::size_t index = begin; index < end; ++index) {

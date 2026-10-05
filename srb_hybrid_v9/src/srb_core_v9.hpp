@@ -395,7 +395,11 @@ public:
         const std::string& from_spec,
         const std::vector<std::string>& to_specs,
         uint64_t max_group_expanded = std::numeric_limits<uint64_t>::max(),
-        bool include_paths = false) {
+        bool include_paths = false,
+        int min_x = std::numeric_limits<int>::min(),
+        int max_x = std::numeric_limits<int>::max(),
+        int min_y = std::numeric_limits<int>::min(),
+        int max_y = std::numeric_limits<int>::max()) {
         query_need_path_ = include_paths;
         if (include_paths) ensure_parent_storage();
         const auto from = split_spec(from_spec);
@@ -460,8 +464,15 @@ public:
 
         begin_query();
         heap_.clear();
+        auto inside_box = [&](int32_t cell) {
+            const Coord& value = cells_[cell];
+            return value.x >= min_x && value.x <= max_x &&
+                   value.y >= min_y && value.y <= max_y;
+        };
         auto relax = [&](uint32_t state, uint32_t distance,
                          uint32_t parent, uint16_t via_output) {
+            const int32_t cell = static_cast<int32_t>(state / routing_input_count_);
+            if (!inside_box(cell)) return;
             if (stamp_[state] != generation_ || distance < dist_[state]) {
                 stamp_[state] = generation_;
                 dist_[state] = distance;
