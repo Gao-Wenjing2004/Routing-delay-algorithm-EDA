@@ -13,7 +13,8 @@ from pathlib import Path
 
 
 BANDS = ((0, 8, "0-8"), (9, 16, "9-16"), (17, 32, "17-32"),
-         (33, 64, "33-64"), (65, 10**9, "65+"))
+         (33, 64, "33-64"), (65, 128, "65-128"),
+         (129, 10**9, "129+"))
 
 
 @dataclass
@@ -92,7 +93,9 @@ def main() -> int:
         golden_rows = csv.DictReader(golden_stream)
         trace_rows = csv.DictReader(trace_stream)
         golden_delay = delay_column(golden_rows.fieldnames)
-        for index, (golden, trace) in enumerate(zip(golden_rows, trace_rows), 1):
+        for index, (golden, trace) in enumerate(
+            zip(golden_rows, trace_rows, strict=True), 1
+        ):
             if (golden["From"], golden["To"]) != (trace["From"], trace["To"]):
                 raise ValueError(f"endpoint mismatch at data row {index}")
             value = int(golden[golden_delay])
@@ -111,9 +114,6 @@ def main() -> int:
                     "obstacle_proxy": key[1],
                     "expanded": int(trace["expanded"]),
                 })
-        if next(golden_rows, None) is not None or next(trace_rows, None) is not None:
-            raise ValueError("row count mismatch")
-
     args.report.parent.mkdir(parents=True, exist_ok=True)
     args.mismatches.parent.mkdir(parents=True, exist_ok=True)
     report = {

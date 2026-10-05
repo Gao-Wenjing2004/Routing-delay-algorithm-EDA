@@ -66,7 +66,9 @@ def main() -> int:
                 selected = next(selected_rows)
                 if key != (selected["From"], selected["To"]):
                     raise ValueError(f"selected row alignment mismatch at {key}")
-            golden_delay = int(golden.get("delay", golden.get("Delay", "")))
+            golden_delay = int(
+                golden.get("delay", golden.get("Delay", golden.get("Golden", "")))
+            )
             baseline_delay = int(baseline["Delay"])
             structured_delay = int(selected["Predicted"])
             chosen = structured_delay if structured_delay >= 0 else baseline_delay

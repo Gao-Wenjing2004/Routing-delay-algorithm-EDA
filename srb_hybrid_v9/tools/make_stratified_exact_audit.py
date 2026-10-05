@@ -14,7 +14,8 @@ from pathlib import Path
 
 ENDPOINT = re.compile(r"^SRB_(\d+)_(\d+)/")
 BANDS = ((0, 8, "0-8"), (9, 16, "9-16"), (17, 32, "17-32"),
-         (33, 64, "33-64"), (65, 10**9, "65+"))
+         (33, 64, "33-64"), (65, 128, "65-128"),
+         (129, 10**9, "129+"))
 
 
 def coordinates(specification: str) -> tuple[int, int]:
@@ -84,7 +85,7 @@ def main() -> int:
     ):
         requests = csv.DictReader(request_stream)
         golden = csv.DictReader(golden_stream)
-        for row_index, (request, answer) in enumerate(zip(requests, golden)):
+        for row_index, (request, answer) in enumerate(zip(requests, golden, strict=True)):
             if request["From"] != answer["From"] or request["To"] != answer["To"]:
                 raise ValueError(f"request/Golden mismatch at row {row_index}")
             sx, sy = coordinates(request["From"])
