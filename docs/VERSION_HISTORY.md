@@ -106,6 +106,22 @@ Beam2，只覆盖无 Block 且经 OOF 证明有收益的请求。公开 1M 选�
 Accuracy 增益，因此只保留原有 10 条固定结构、cap=16 的 A*。详见
 [`../srb_hybrid_v9/docs/V9_P8_MACRO_TEACHER_RESULTS.md`](../srb_hybrid_v9/docs/V9_P8_MACRO_TEACHER_RESULTS.md)。
 
+### V9 P9～P10：精确图证明与周期 Portal 核心
+
+P9 在官方 1M 的 4,962 条分层留样上验证无界 Dijkstra 与 Golden `4,962/4,962` 完全一致，并把全距离
+轴向转移无损压缩为 18,108,294 bytes。P10 把跨周期 Block 的状态降为每方向 1,920 个 Portal 事件，
+生成双方向 1～5 周期精确闭包；独立 Dijkstra 验证 `2,048/2,048` 精确，闭包查表约 15.77 ns，双方向
+压缩表 46,156,860 bytes。P8 加闭包粗估 89,983,556 bytes，但局部连接器仍未解决，因此没有替换正式版。
+
+### V9 P11～P12：局部连接器与有证书剪枝
+
+P11 修复 Routing Input 作为零代价目标终止状态，并加入周期核心行/列下界。局部候选数 16 时，190 条
+定向 Block Teacher 的全 Portal 组合研究上限为 `99.087925%`，但逐事件生成两端连接器不能在线提交。
+P12 用有证书分支限界保持同一 Accuracy，平均组合对由最多 3,686,400 降为 772,319.51；条件出口小表
+进一步以平均 1,527.53 对取得 `98.451288%`。机械的 80 类资源分组最高仅 `96.457452%`，已否决。
+下一阶段改为一次前向/反向批量 DP 输出全部 Portal 局部代价。详见
+[`../srb_hybrid_v9/docs/V9_P12_CERTIFIED_PORTAL_PRUNING_AND_PAPER_FINDINGS.md`](../srb_hybrid_v9/docs/V9_P12_CERTIFIED_PORTAL_PRUNING_AND_PAPER_FINDINGS.md)。
+
 ## 大文件资产登记
 
 | 资产 | 字节数 | SHA-256 | Git 策略 |

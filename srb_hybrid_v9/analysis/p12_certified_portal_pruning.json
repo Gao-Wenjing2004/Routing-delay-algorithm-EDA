@@ -1,0 +1,64 @@
+{
+  "version": "V9 P12 certified Portal pruning and conditional exits",
+  "generated_at": "2026-10-07",
+  "status": "research_no_go_for_submission",
+  "evaluation": {
+    "teacher_rows": 190,
+    "candidate_limit": 16,
+    "portal_events_per_direction": 1920,
+    "periods": "1-5",
+    "labels_used_for_selection": false,
+    "underestimates_in_all_reported_strategies": 0
+  },
+  "independent_beam": {
+    "beam32_accuracy": 94.491998,
+    "beam64_accuracy": 96.441917
+  },
+  "joint_source_full_target": {
+    "source32_accuracy": 98.258958,
+    "source64_accuracy": 98.658770
+  },
+  "typed_resource_groups": {
+    "groups": 80,
+    "best_configuration": "sources=32, per_type=4",
+    "best_accuracy": 96.457452,
+    "decision": "reject_as_formal_strategy"
+  },
+  "conditional_exit_index": {
+    "stored_targets_per_entry": 16,
+    "maximum_index_bytes_for_two_directions_five_periods": 614400,
+    "configurations": [
+      {"sources": 16, "global_targets": 16, "core_targets": 4, "mean_pairs": 319.136842, "accuracy": 96.983095, "exact": 71},
+      {"sources": 16, "global_targets": 16, "core_targets": 8, "mean_pairs": 382.105263, "accuracy": 97.358048, "exact": 80},
+      {"sources": 32, "global_targets": 16, "core_targets": 4, "mean_pairs": 638.063158, "accuracy": 97.702671, "exact": 77},
+      {"sources": 32, "global_targets": 16, "core_targets": 8, "mean_pairs": 763.984211, "accuracy": 97.990434, "exact": 86},
+      {"sources": 32, "global_targets": 16, "core_targets": 16, "mean_pairs": 1016.347368, "accuracy": 98.047441, "exact": 86},
+      {"sources": 64, "global_targets": 16, "core_targets": 8, "mean_pairs": 1527.526316, "accuracy": 98.451288, "exact": 97}
+    ]
+  },
+  "certified_branch_and_bound": {
+    "seed": "16x16",
+    "accuracy": 99.087925,
+    "exact": 121,
+    "under": 0,
+    "mae": 6.763158,
+    "mean_expanded_rows": 405.542105,
+    "p50_expanded_rows": 341,
+    "p95_expanded_rows": 1021,
+    "max_expanded_rows": 1361,
+    "mean_pairs": 772319.510526,
+    "p95_pairs": 1960320,
+    "rowwise_mismatches_vs_full_1920_event_combination": 0
+  },
+  "formal_submission": {
+    "version": "V9 P8",
+    "public_1m_accuracy": 94.82575473041273,
+    "projected_100m_seconds": 117.550552,
+    "projected_time_score": 93.4694137777778,
+    "consistency_score": 100.0,
+    "projected_total_score": 94.8810158509968,
+    "accuracy_needed_for_total_98_at_same_time": 98.7244849166667,
+    "projected_score_at_accuracy_99": 98.2204120666667
+  },
+  "next_step": "batch forward/reverse local DP producing all Portal connector costs in one pass"
+}

@@ -1,4 +1,5 @@
 #include "srb_core_v9.hpp"
+#include "p10_periodic_portal.hpp"
 
 #include <algorithm>
 #include <array>
@@ -10,9 +11,11 @@
 #include <iomanip>
 #include <iostream>
 #include <memory>
+#include <sstream>
 #include <stdexcept>
 #include <string>
 #include <string_view>
+#include <tuple>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
@@ -42,6 +45,11 @@ struct Options {
     bool warm_cache = false;
     bool block_portals = false;
     int block_portal_band = 1;
+    std::string portal_decomposition;
+    std::string portal_states;
+    std::string portal_up_closure;
+    std::string portal_down_closure;
+    int portal_max_beam = 32;
 };
 
 struct OutputNet { int route = -1, dx = 0, dy = 0; };
@@ -95,14 +103,32 @@ Options parse_options(int argc, char** argv) {
             result.block_portals = true;
             result.block_portal_band = std::stoi(value(index, argc, argv, argument));
         }
+        else if (argument == "--portal-decomposition")
+            result.portal_decomposition = value(index, argc, argv, argument);
+        else if (argument == "--portal-states")
+            result.portal_states = value(index, argc, argv, argument);
+        else if (argument == "--portal-up-closure")
+            result.portal_up_closure = value(index, argc, argv, argument);
+        else if (argument == "--portal-down-closure")
+            result.portal_down_closure = value(index, argc, argv, argument);
+        else if (argument == "--portal-max-beam")
+            result.portal_max_beam = std::stoi(value(index, argc, argv, argument));
         else throw std::runtime_error("unknown argument: " + argument);
     }
-    if (result.model.empty() || result.axis.empty() || result.candidates.empty() || result.output.empty())
+    const bool portal_mode = !result.portal_decomposition.empty();
+    if (result.model.empty() || result.axis.empty() || result.output.empty() ||
+        (!portal_mode && result.candidates.empty()))
         throw std::runtime_error(
             "usage: offline_structured_pricer --model prpr_model.json --axis axis.bin "
             "--candidates candidates.csv --output audit.csv [--candidate-limit 32] "
             "[--state-beam 32] [--edge-beam 160] [--runtime-table table.bin] "
-            "[--selector-table selector.bin] [--passes 1] [--warm-cache]");
+            "[--selector-table selector.bin] [--passes 1] [--warm-cache]; or "
+            "--portal-decomposition decomposition.csv --portal-states states.csv "
+            "--portal-up-closure up.bin --portal-down-closure down.bin "
+            "--runtime-table table.bin --output audit.csv");
+    if (portal_mode && (result.portal_states.empty() || result.portal_up_closure.empty() ||
+                        result.portal_down_closure.empty() || result.runtime_table.empty()))
+        throw std::runtime_error("Portal evaluation requires states, both closures, and runtime table");
     if (result.state_beam <= 0 || result.state_beam > kStates)
         throw std::runtime_error("state beam must be in [1,160]");
     if (result.edge_beam <= 0 || result.edge_beam > kStates)
@@ -113,6 +139,8 @@ Options parse_options(int argc, char** argv) {
         throw std::runtime_error("passes must be positive");
     if (result.block_portal_band <= 0 || result.block_portal_band > 12)
         throw std::runtime_error("block portal band must be in [1,12]");
+    if (result.portal_max_beam <= 0 || result.portal_max_beam > 1920)
+        throw std::runtime_error("portal max beam must be in [1,1920]");
     return result;
 }
 
@@ -162,7 +190,19 @@ public:
         const int total_dx = to.x - from.x;
         const int total_dy = to.y - from.y;
         const std::vector<Source> sources = source_candidates(from.port, from.x, from.y);
-        const auto& targets = target_arcs_[to.port];
+        // A periodic Portal endpoint is itself a Routing Input.  The original
+        // competition requests normally terminate at an Output, so the P6
+        // pricer only populated target_arcs_ for those ports.  Allowing the
+        // DP to stop directly in the input's routing state is the exact
+        // zero-cost terminal connector needed by P10/P11; it does not alter
+        // ordinary Output endpoint queries.
+        std::vector<std::pair<int, int>> direct_target;
+        const std::vector<std::pair<int, int>>* targets = &target_arcs_[to.port];
+        const int target_iid = port_to_input_[to.port];
+        if (target_iid >= 0 && input_to_state_[target_iid] >= 0) {
+            direct_target.push_back({input_to_state_[target_iid], 0});
+            targets = &direct_target;
+        }
         uint32_t best = from_spec == to_spec ? 0u : kBig;
         const int iid = port_to_input_[from.port];
         if (from.x == to.x && from.y == to.y && iid >= 0) {
@@ -177,7 +217,7 @@ public:
                 if (!instantiate(candidate, total_dx - source.dx, total_dy - source.dy, deltas))
                     continue;
                 const uint32_t priced = price_candidate(
-                    from.x, from.y, total_dx, total_dy, source, targets,
+                    from.x, from.y, total_dx, total_dy, source, *targets,
                     candidate.axes, deltas, transition_count);
                 if (priced < kBig) {
                     ++valid_candidates;
@@ -215,7 +255,7 @@ public:
                             deltas.insert(deltas.begin(), 0);
                         }
                         const uint32_t priced = price_candidate(
-                            from.x, from.y, total_dx, total_dy, source, targets,
+                            from.x, from.y, total_dx, total_dy, source, *targets,
                             axes, deltas, transition_count);
                         if (priced < kBig) {
                             ++valid_candidates;
@@ -1005,6 +1045,562 @@ std::vector<Request> load_requests(const std::string& path) {
     return result;
 }
 
+struct PortalEvent {
+    int x = 0;
+    int phase = 0;
+    int type_group = 0;
+    std::string route;
+};
+
+struct PortalEvalRow {
+    std::string from, to;
+    int golden = 0, direction = 0, periods = 0;
+    int true_source = -1, true_target = -1;
+    int oracle_source_local = 0, oracle_core = 0, oracle_target_local = 0;
+};
+
+struct RankedPortal {
+    uint32_t cost = kBig;
+    uint32_t rank_cost = kBig;
+    uint16_t event = 0;
+};
+
+std::vector<unsigned char> load_bytes(const std::string& path) {
+    std::ifstream input(path, std::ios::binary | std::ios::ate);
+    if (!input) throw std::runtime_error("cannot open binary file: " + path);
+    const std::streamsize size = input.tellg();
+    if (size <= 0) throw std::runtime_error("empty binary file: " + path);
+    input.seekg(0);
+    std::vector<unsigned char> result(static_cast<size_t>(size));
+    if (!input.read(reinterpret_cast<char*>(result.data()), size))
+        throw std::runtime_error("cannot read binary file: " + path);
+    return result;
+}
+
+std::vector<PortalEvalRow> load_portal_eval_rows(const std::string& path) {
+    std::ifstream input(path);
+    if (!input) throw std::runtime_error("cannot open Portal decomposition: " + path);
+    std::string line;
+    if (!std::getline(input, line)) throw std::runtime_error("empty Portal decomposition");
+    std::vector<PortalEvalRow> result;
+    while (std::getline(input, line)) {
+        if (!line.empty() && line.back() == '\r') line.pop_back();
+        const std::vector<std::string> fields = split(line, ',');
+        if (fields.size() < 12) throw std::runtime_error("bad Portal decomposition row");
+        result.push_back(PortalEvalRow{
+            fields[0], fields[1], std::stoi(fields[2]), std::stoi(fields[3]),
+            std::stoi(fields[4]), std::stoi(fields[7]), std::stoi(fields[8]),
+            std::stoi(fields[9]), std::stoi(fields[10]), std::stoi(fields[11])});
+    }
+    return result;
+}
+
+Endpoint parse_coordinate(const std::string& specification) {
+    const size_t slash = specification.find('/');
+    const size_t underscore = specification.find('_', 4);
+    if (specification.rfind("SRB_", 0) != 0 || slash == std::string::npos ||
+        underscore == std::string::npos)
+        throw std::runtime_error("bad endpoint coordinate: " + specification);
+    return Endpoint{std::stoi(specification.substr(4, underscore - 4)),
+                    std::stoi(specification.substr(underscore + 1, slash - underscore - 1)), -1};
+}
+
+std::array<std::vector<PortalEvent>, 2> load_portal_events(const std::string& path) {
+    struct DirectionState { std::string route; int span = 0; };
+    std::array<std::vector<DirectionState>, 2> states;
+    std::ifstream input(path);
+    if (!input) throw std::runtime_error("cannot open Portal state CSV: " + path);
+    std::string line;
+    if (!std::getline(input, line)) throw std::runtime_error("empty Portal state CSV");
+    while (std::getline(input, line)) {
+        if (!line.empty() && line.back() == '\r') line.pop_back();
+        const std::vector<std::string> fields = split(line, ',');
+        if (fields.size() < 5) throw std::runtime_error("bad Portal state row");
+        const int dx = std::stoi(fields[3]), dy = std::stoi(fields[4]);
+        if (dx == 0 && dy > 0) states[0].push_back({fields[1], dy});
+        if (dx == 0 && dy < 0) states[1].push_back({fields[1], -dy});
+    }
+    for (const auto& direction_states : states)
+        if (direction_states.size() != 40)
+            throw std::runtime_error("Portal state CSV must contain 40 states per direction");
+    std::array<std::vector<PortalEvent>, 2> result;
+    const std::array<int, 12> xs{{70, 71, 72, 73, 74, 75, 90, 91, 92, 93, 94, 95}};
+    for (int direction_index = 0; direction_index < 2; ++direction_index)
+        for (int x : xs)
+            for (size_t state_index = 0; state_index < states[direction_index].size(); ++state_index) {
+                const DirectionState& state = states[direction_index][state_index];
+                const int side = x < 76 ? 0 : 1;
+                const int type_group = side * 40 + static_cast<int>(state_index);
+                for (int phase = 1; phase <= state.span; ++phase)
+                    result[direction_index].push_back(
+                        PortalEvent{x, phase, type_group, state.route});
+            }
+    return result;
+}
+
+std::string portal_endpoint(const PortalEvent& event, int boundary, int direction) {
+    return "SRB_" + std::to_string(event.x) + "_" +
+           std::to_string(boundary + direction * event.phase) + "/" + event.route;
+}
+
+int rank_of_event(const std::vector<RankedPortal>& ranked, int event) {
+    for (size_t index = 0; index < ranked.size(); ++index)
+        if (ranked[index].event == event) return static_cast<int>(index + 1);
+    return 0;
+}
+
+int run_portal_connector_eval(const Options& options, const Pricer& pricer,
+                              RuntimeGenerator& generator) {
+    using Clock = std::chrono::steady_clock;
+    const std::vector<PortalEvalRow> rows = load_portal_eval_rows(options.portal_decomposition);
+    const auto events = load_portal_events(options.portal_states);
+    const std::vector<unsigned char> up_bytes = load_bytes(options.portal_up_closure);
+    const std::vector<unsigned char> down_bytes = load_bytes(options.portal_down_closure);
+    const p10::PackedPortalClosureView up(up_bytes.data(), up_bytes.size());
+    const p10::PackedPortalClosureView down(down_bytes.data(), down_bytes.size());
+    if (up.direction() != 1 || down.direction() != -1 || up.dimension() != 1920 ||
+        down.dimension() != 1920 || events[0].size() != up.dimension() ||
+        events[1].size() != down.dimension())
+        throw std::runtime_error("Portal closure/event shape mismatch");
+
+    const std::array<int, 12> all_beams{{
+        1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 1920}};
+    std::vector<int> beams;
+    for (int beam : all_beams)
+        if (beam <= options.portal_max_beam) beams.push_back(beam);
+    const std::array<int, 7> joint_beams{{1, 2, 4, 8, 16, 32, 64}};
+    struct Metrics {
+        uint64_t reachable = 0, exact = 0, under = 0;
+        double score = 0.0, mae = 0.0;
+    };
+    std::vector<Metrics> metrics(beams.size());
+    std::array<Metrics, 7> joint_source_metrics{}, joint_target_metrics{};
+    struct TypedStrategy { int sources = 0, per_type = 0; };
+    const std::array<TypedStrategy, 6> typed_strategies{{
+        {16, 1}, {32, 1}, {32, 2}, {32, 4}, {64, 1}, {64, 2}}};
+    std::array<Metrics, 6> typed_metrics{};
+    // A tiny closure-aware index supplements globally cheap target events
+    // with exits that are structurally cheap for the current entry event.
+    // The largest configuration needs only 16 uint16 target IDs per closure
+    // row (well below 1 MiB for both directions and all five periods).
+    struct ConditionalStrategy {
+        int sources = 0, global_targets = 0, core_targets = 0;
+    };
+    const std::array<ConditionalStrategy, 6> conditional_strategies{{
+        {16, 16, 4}, {16, 16, 8}, {32, 16, 4},
+        {32, 16, 8}, {32, 16, 16}, {64, 16, 8}}};
+    std::array<Metrics, 6> conditional_metrics{};
+    std::array<uint64_t, 6> conditional_pairs{};
+    Metrics branch_bound_metrics{};
+    std::vector<uint32_t> branch_bound_rows, branch_bound_pairs;
+    std::ofstream output(options.output);
+    if (!output) throw std::runtime_error("cannot create Portal evaluation: " + options.output);
+    output << "From,To,Golden,Direction,Periods,SourceReachable,TargetReachable,"
+              "TrueSourceRank,TrueTargetRank,OracleSourceLocal,PredictedTrueSourceLocal,"
+              "OracleTargetLocal,PredictedTrueTargetLocal";
+    for (int beam : beams) output << ",Pred" << beam;
+    for (int beam : joint_beams) output << ",JointSource" << beam;
+    for (int beam : joint_beams) output << ",JointTarget" << beam;
+    for (const TypedStrategy& strategy : typed_strategies)
+        output << ",TypedS" << strategy.sources << "G" << strategy.per_type;
+    for (const ConditionalStrategy& strategy : conditional_strategies)
+        output << ",ConditionalS" << strategy.sources
+               << "T" << strategy.global_targets
+               << "C" << strategy.core_targets;
+    output << ",BranchBound,BranchRows,BranchPairs,Transitions,ConnectorUs\n";
+
+    uint64_t total_transitions = 0;
+    double total_us = 0.0;
+    std::array<std::array<std::vector<uint16_t>, 6>, 2> row_min_cache;
+    std::array<std::array<std::vector<uint16_t>, 6>, 2> column_min_cache;
+    std::array<std::array<std::vector<std::array<uint16_t, 16>>, 6>, 2>
+        closure_top_target_cache;
+    for (size_t row_index = 0; row_index < rows.size(); ++row_index) {
+        const PortalEvalRow& row = rows[row_index];
+        const int direction_index = row.direction > 0 ? 0 : 1;
+        if (row.direction != 1 && row.direction != -1)
+            throw std::runtime_error("bad Portal row direction");
+        const auto& row_events = events[direction_index];
+        const p10::PackedPortalClosureView& closure = row.direction > 0 ? up : down;
+        if (row.periods <= 0 || row.periods > closure.periods())
+            throw std::runtime_error("Portal row period outside closure");
+        const Endpoint from = parse_coordinate(row.from), to = parse_coordinate(row.to);
+        const int source_boundary = row.direction > 0
+            ? ((from.y - 49 + 99) / 100) * 100 + 49
+            : (from.y / 100) * 100;
+        const int target_boundary = row.direction > 0
+            ? ((to.y - 50) / 100) * 100 + 49
+            : (to.y / 100 + 1) * 100;
+        if (std::abs(target_boundary - source_boundary) / 100 != row.periods)
+            throw std::runtime_error("Portal boundary inference disagrees with period count");
+
+        std::vector<RankedPortal> source_ranked, target_ranked;
+        source_ranked.reserve(row_events.size());
+        target_ranked.reserve(row_events.size());
+        uint32_t predicted_true_source = kBig, predicted_true_target = kBig;
+        uint64_t transitions = 0;
+        const auto started = Clock::now();
+        for (size_t event_index = 0; event_index < row_events.size(); ++event_index) {
+            const std::string entry = portal_endpoint(
+                row_events[event_index], source_boundary, row.direction);
+            const std::vector<TemplateCandidate>& candidates = generator.generate(
+                row.from, entry, options.candidate_limit);
+            int valid = 0;
+            const uint32_t cost = pricer.query(row.from, entry, candidates, transitions, valid);
+            if (static_cast<int>(event_index) == row.true_source) predicted_true_source = cost;
+            if (cost < kBig)
+                source_ranked.push_back(RankedPortal{
+                    cost, cost, static_cast<uint16_t>(event_index)});
+
+            const std::string exit = portal_endpoint(
+                row_events[event_index], target_boundary, row.direction);
+            const std::vector<TemplateCandidate>& target_candidates = generator.generate(
+                exit, row.to, options.candidate_limit);
+            valid = 0;
+            const uint32_t target_cost = pricer.query(
+                exit, row.to, target_candidates, transitions, valid);
+            if (static_cast<int>(event_index) == row.true_target) predicted_true_target = target_cost;
+            if (target_cost < kBig)
+                target_ranked.push_back(RankedPortal{
+                    target_cost, target_cost, static_cast<uint16_t>(event_index)});
+        }
+        // A local-only ranking often prefers a cheap event whose periodic
+        // continuation is intrinsically expensive.  The exact row/column
+        // minima are deterministic lower bounds that depend only on
+        // direction, period, and event.  They can later be stored in less
+        // than 75 KiB for both directions and all five periods.
+        std::vector<uint16_t>& row_min = row_min_cache[direction_index][row.periods];
+        std::vector<uint16_t>& column_min = column_min_cache[direction_index][row.periods];
+        std::vector<std::array<uint16_t, 16>>& closure_top_targets =
+            closure_top_target_cache[direction_index][row.periods];
+        if (row_min.empty()) {
+            row_min.assign(row_events.size(), kInf16);
+            column_min.assign(row_events.size(), kInf16);
+            closure_top_targets.resize(row_events.size());
+            for (uint16_t source = 0; source < row_events.size(); ++source) {
+                std::array<std::pair<uint16_t, uint16_t>, 16> best;
+                best.fill({kInf16, kInf16});
+                for (uint16_t target = 0; target < row_events.size(); ++target) {
+                    const uint16_t core = closure.lookup(
+                        static_cast<uint16_t>(row.periods), source, target);
+                    row_min[source] = std::min(row_min[source], core);
+                    column_min[target] = std::min(column_min[target], core);
+                    const std::pair<uint16_t, uint16_t> candidate{core, target};
+                    if (candidate < best.back()) {
+                        size_t position = best.size() - 1;
+                        while (position > 0 && candidate < best[position - 1]) {
+                            best[position] = best[position - 1];
+                            --position;
+                        }
+                        best[position] = candidate;
+                    }
+                }
+                for (size_t index = 0; index < best.size(); ++index)
+                    closure_top_targets[source][index] = best[index].second;
+            }
+        }
+        for (RankedPortal& source : source_ranked)
+            source.rank_cost += row_min[source.event];
+        for (RankedPortal& target : target_ranked)
+            target.rank_cost += column_min[target.event];
+        const auto order = [](const RankedPortal& left, const RankedPortal& right) {
+            return std::tuple<uint32_t, uint32_t, uint16_t>{
+                       left.rank_cost, left.cost, left.event} <
+                   std::tuple<uint32_t, uint32_t, uint16_t>{
+                       right.rank_cost, right.cost, right.event};
+        };
+        std::sort(source_ranked.begin(), source_ranked.end(), order);
+        std::sort(target_ranked.begin(), target_ranked.end(), order);
+        std::vector<uint32_t> predictions(beams.size(), kBig);
+        const auto update_metric = [&](Metrics& current, uint32_t prediction) {
+            if (prediction >= kBig) return;
+            ++current.reachable;
+            const double error = std::abs(static_cast<double>(prediction) - row.golden);
+            current.exact += prediction == static_cast<uint32_t>(row.golden);
+            current.under += prediction < static_cast<uint32_t>(row.golden);
+            current.mae += error;
+            current.score += row.golden == 0
+                ? static_cast<double>(prediction == 0)
+                : 1.0 - std::tanh(4.0 * error / row.golden);
+        };
+        for (size_t beam_index = 0; beam_index < beams.size(); ++beam_index) {
+            const size_t source_count = std::min<size_t>(beams[beam_index], source_ranked.size());
+            const size_t target_count = std::min<size_t>(beams[beam_index], target_ranked.size());
+            for (size_t source_index = 0; source_index < source_count; ++source_index)
+                for (size_t target_index = 0; target_index < target_count; ++target_index) {
+                    const RankedPortal& source = source_ranked[source_index];
+                    const RankedPortal& target = target_ranked[target_index];
+                    const uint32_t combined = source.cost +
+                        closure.lookup(static_cast<uint16_t>(row.periods), source.event, target.event) +
+                        target.cost;
+                    predictions[beam_index] = std::min(predictions[beam_index], combined);
+                }
+            update_metric(metrics[beam_index], predictions[beam_index]);
+        }
+        // Joint expansion keeps only K events on one side but scans every
+        // reachable local event on the other side.  This identifies whether
+        // the remaining loss is entry selection or exit selection, and is a
+        // precursor to a factored row/column index rather than a 512x512 Beam.
+        std::array<uint32_t, 7> joint_source_predictions{}, joint_target_predictions{};
+        joint_source_predictions.fill(kBig);
+        joint_target_predictions.fill(kBig);
+        uint32_t joint_best = kBig;
+        size_t joint_cursor = 0;
+        const size_t source_limit = std::min<size_t>(joint_beams.back(), source_ranked.size());
+        for (size_t source_index = 0; source_index < source_limit; ++source_index) {
+            const RankedPortal& source = source_ranked[source_index];
+            for (const RankedPortal& target : target_ranked)
+                joint_best = std::min(joint_best, source.cost +
+                    closure.lookup(static_cast<uint16_t>(row.periods), source.event, target.event) +
+                    target.cost);
+            while (joint_cursor < joint_beams.size() &&
+                   static_cast<size_t>(joint_beams[joint_cursor]) == source_index + 1)
+                joint_source_predictions[joint_cursor++] = joint_best;
+        }
+        joint_best = kBig;
+        joint_cursor = 0;
+        const size_t target_limit = std::min<size_t>(joint_beams.back(), target_ranked.size());
+        for (size_t target_index = 0; target_index < target_limit; ++target_index) {
+            const RankedPortal& target = target_ranked[target_index];
+            for (const RankedPortal& source : source_ranked)
+                joint_best = std::min(joint_best, source.cost +
+                    closure.lookup(static_cast<uint16_t>(row.periods), source.event, target.event) +
+                    target.cost);
+            while (joint_cursor < joint_beams.size() &&
+                   static_cast<size_t>(joint_beams[joint_cursor]) == target_index + 1)
+                joint_target_predictions[joint_cursor++] = joint_best;
+        }
+        for (size_t index = 0; index < joint_beams.size(); ++index) {
+            update_metric(joint_source_metrics[index], joint_source_predictions[index]);
+            update_metric(joint_target_metrics[index], joint_target_predictions[index]);
+        }
+        // Inspired by lightweight FPGA routing: compare resources only
+        // within the same type, retain a small number of winners per type,
+        // and preserve type diversity.  The 1920 target events form 80
+        // deterministic groups: left/right corridor x 40 direction states.
+        std::array<std::vector<RankedPortal>, 80> target_types;
+        for (const RankedPortal& target : target_ranked)
+            target_types[row_events[target.event].type_group].push_back(target);
+        std::array<uint32_t, 6> typed_predictions{};
+        typed_predictions.fill(kBig);
+        for (size_t strategy_index = 0; strategy_index < typed_strategies.size(); ++strategy_index) {
+            const TypedStrategy strategy = typed_strategies[strategy_index];
+            const size_t source_count = std::min<size_t>(strategy.sources, source_ranked.size());
+            uint32_t best = kBig;
+            for (size_t source_index = 0; source_index < source_count; ++source_index) {
+                const RankedPortal& source = source_ranked[source_index];
+                for (const auto& group : target_types) {
+                    const size_t target_count = std::min<size_t>(strategy.per_type, group.size());
+                    for (size_t target_index = 0; target_index < target_count; ++target_index) {
+                        const RankedPortal& target = group[target_index];
+                        best = std::min(best, source.cost +
+                            closure.lookup(static_cast<uint16_t>(row.periods),
+                                           source.event, target.event) + target.cost);
+                    }
+                }
+            }
+            typed_predictions[strategy_index] = best;
+            update_metric(typed_metrics[strategy_index], best);
+        }
+        // Conditional target shortlists combine query-local winners with a
+        // precomputed per-entry closure shortlist.  This tests whether a few
+        // hundred exact combinations can replace an indiscriminate Beam^2.
+        std::vector<uint32_t> target_cost_by_event(row_events.size(), kBig);
+        for (const RankedPortal& target : target_ranked)
+            target_cost_by_event[target.event] = target.cost;
+        std::array<uint32_t, 6> conditional_predictions{};
+        conditional_predictions.fill(kBig);
+        for (size_t strategy_index = 0;
+             strategy_index < conditional_strategies.size(); ++strategy_index) {
+            const ConditionalStrategy strategy = conditional_strategies[strategy_index];
+            const size_t source_count = std::min<size_t>(strategy.sources, source_ranked.size());
+            const size_t global_count = std::min<size_t>(
+                strategy.global_targets, target_ranked.size());
+            uint32_t best = kBig;
+            uint64_t pairs = 0;
+            for (size_t source_index = 0; source_index < source_count; ++source_index) {
+                const RankedPortal& source = source_ranked[source_index];
+                for (size_t target_index = 0; target_index < global_count; ++target_index) {
+                    const RankedPortal& target = target_ranked[target_index];
+                    best = std::min(best, source.cost +
+                        closure.lookup(static_cast<uint16_t>(row.periods),
+                                       source.event, target.event) + target.cost);
+                    ++pairs;
+                }
+                for (int core_index = 0; core_index < strategy.core_targets; ++core_index) {
+                    const uint16_t target_event =
+                        closure_top_targets[source.event][core_index];
+                    if (target_event == kInf16 || target_cost_by_event[target_event] >= kBig)
+                        continue;
+                    best = std::min(best, source.cost +
+                        closure.lookup(static_cast<uint16_t>(row.periods),
+                                       source.event, target_event) +
+                        target_cost_by_event[target_event]);
+                    ++pairs;
+                }
+            }
+            conditional_predictions[strategy_index] = best;
+            conditional_pairs[strategy_index] += pairs;
+            update_metric(conditional_metrics[strategy_index], best);
+        }
+
+        // Certified layered expansion.  For any fixed source event,
+        //   source_local + row_min[source] + min(target_local)
+        // is an admissible lower bound.  Once the next row cannot beat the
+        // incumbent, all remaining rows are safely pruned.  A 16x16 seed
+        // supplies an inexpensive incumbent; the reported pair count includes
+        // seed lookups and excludes duplicate seed cells during row scans.
+        const size_t seed_sources = std::min<size_t>(16, source_ranked.size());
+        const size_t seed_targets = std::min<size_t>(16, target_ranked.size());
+        uint32_t branch_prediction = kBig;
+        uint32_t branch_pairs = 0, expanded_rows = 0;
+        for (size_t source_index = 0; source_index < seed_sources; ++source_index)
+            for (size_t target_index = 0; target_index < seed_targets; ++target_index) {
+                const RankedPortal& source = source_ranked[source_index];
+                const RankedPortal& target = target_ranked[target_index];
+                branch_prediction = std::min(branch_prediction, source.cost +
+                    closure.lookup(static_cast<uint16_t>(row.periods),
+                                   source.event, target.event) + target.cost);
+                ++branch_pairs;
+            }
+        const uint32_t minimum_target_local = target_ranked.empty()
+            ? kBig : std::min_element(
+                target_ranked.begin(), target_ranked.end(),
+                [](const RankedPortal& left, const RankedPortal& right) {
+                    return left.cost < right.cost;
+                })->cost;
+        for (size_t source_index = 0; source_index < source_ranked.size(); ++source_index) {
+            const RankedPortal& source = source_ranked[source_index];
+            const uint64_t lower_bound = static_cast<uint64_t>(source.cost) +
+                row_min[source.event] + minimum_target_local;
+            if (lower_bound >= branch_prediction) break;
+            ++expanded_rows;
+            const size_t begin_target = source_index < seed_sources ? seed_targets : 0;
+            for (size_t target_index = begin_target;
+                 target_index < target_ranked.size(); ++target_index) {
+                const RankedPortal& target = target_ranked[target_index];
+                branch_prediction = std::min(branch_prediction, source.cost +
+                    closure.lookup(static_cast<uint16_t>(row.periods),
+                                   source.event, target.event) + target.cost);
+                ++branch_pairs;
+            }
+        }
+        update_metric(branch_bound_metrics, branch_prediction);
+        branch_bound_rows.push_back(expanded_rows);
+        branch_bound_pairs.push_back(branch_pairs);
+        const double elapsed_us = std::chrono::duration<double, std::micro>(
+            Clock::now() - started).count();
+        total_us += elapsed_us;
+        total_transitions += transitions;
+        output << row.from << ',' << row.to << ',' << row.golden << ',' << row.direction << ','
+               << row.periods << ',' << source_ranked.size() << ',' << target_ranked.size() << ','
+               << rank_of_event(source_ranked, row.true_source) << ','
+               << rank_of_event(target_ranked, row.true_target) << ','
+               << row.oracle_source_local << ',';
+        if (predicted_true_source >= kBig) output << -1; else output << predicted_true_source;
+        output << ',' << row.oracle_target_local << ',';
+        if (predicted_true_target >= kBig) output << -1; else output << predicted_true_target;
+        for (uint32_t prediction : predictions) {
+            output << ',';
+            if (prediction >= kBig) output << -1; else output << prediction;
+        }
+        for (uint32_t prediction : joint_source_predictions) {
+            output << ',';
+            if (prediction >= kBig) output << -1; else output << prediction;
+        }
+        for (uint32_t prediction : joint_target_predictions) {
+            output << ',';
+            if (prediction >= kBig) output << -1; else output << prediction;
+        }
+        for (uint32_t prediction : typed_predictions) {
+            output << ',';
+            if (prediction >= kBig) output << -1; else output << prediction;
+        }
+        for (uint32_t prediction : conditional_predictions) {
+            output << ',';
+            if (prediction >= kBig) output << -1; else output << prediction;
+        }
+        output << ',';
+        if (branch_prediction >= kBig) output << -1; else output << branch_prediction;
+        output << ',' << expanded_rows << ',' << branch_pairs
+               << ',' << transitions << ',' << std::fixed << std::setprecision(3)
+               << elapsed_us << '\n';
+        if ((row_index + 1) % 10 == 0 || row_index + 1 == rows.size())
+            std::cerr << "portal_rows=" << (row_index + 1) << '/' << rows.size()
+                      << " mean_us=" << (total_us / (row_index + 1)) << '\n';
+    }
+    const double denominator = std::max<size_t>(rows.size(), 1);
+    std::cerr << std::fixed << std::setprecision(6);
+    for (size_t index = 0; index < beams.size(); ++index) {
+        const Metrics& current = metrics[index];
+        std::cerr << "beam=" << beams[index]
+                  << " reachable=" << current.reachable
+                  << " exact=" << current.exact
+                  << " under=" << current.under
+                  << " accuracy=" << (100.0 * current.score / denominator)
+                  << " mae=" << (current.mae / denominator) << '\n';
+    }
+    for (size_t index = 0; index < joint_beams.size(); ++index) {
+        const Metrics& source = joint_source_metrics[index];
+        const Metrics& target = joint_target_metrics[index];
+        std::cerr << "joint_source=" << joint_beams[index]
+                  << " exact=" << source.exact << " under=" << source.under
+                  << " accuracy=" << (100.0 * source.score / denominator)
+                  << " mae=" << (source.mae / denominator)
+                  << " joint_target=" << joint_beams[index]
+                  << " exact=" << target.exact << " under=" << target.under
+                  << " accuracy=" << (100.0 * target.score / denominator)
+                  << " mae=" << (target.mae / denominator) << '\n';
+    }
+    for (size_t index = 0; index < typed_strategies.size(); ++index) {
+        const TypedStrategy strategy = typed_strategies[index];
+        const Metrics& current = typed_metrics[index];
+        std::cerr << "typed_sources=" << strategy.sources
+                  << " per_type=" << strategy.per_type
+                  << " exact=" << current.exact << " under=" << current.under
+                  << " accuracy=" << (100.0 * current.score / denominator)
+                  << " mae=" << (current.mae / denominator) << '\n';
+    }
+    for (size_t index = 0; index < conditional_strategies.size(); ++index) {
+        const ConditionalStrategy strategy = conditional_strategies[index];
+        const Metrics& current = conditional_metrics[index];
+        std::cerr << "conditional_sources=" << strategy.sources
+                  << " global_targets=" << strategy.global_targets
+                  << " core_targets=" << strategy.core_targets
+                  << " exact=" << current.exact << " under=" << current.under
+                  << " accuracy=" << (100.0 * current.score / denominator)
+                  << " mae=" << (current.mae / denominator)
+                  << " mean_pairs=" << (conditional_pairs[index] / denominator) << '\n';
+    }
+    std::vector<uint32_t> sorted_branch_rows = branch_bound_rows;
+    std::vector<uint32_t> sorted_branch_pairs = branch_bound_pairs;
+    std::sort(sorted_branch_rows.begin(), sorted_branch_rows.end());
+    std::sort(sorted_branch_pairs.begin(), sorted_branch_pairs.end());
+    const auto percentile = [](const std::vector<uint32_t>& values, double fraction) {
+        if (values.empty()) return 0u;
+        const size_t index = std::min<size_t>(
+            values.size() - 1, static_cast<size_t>(std::ceil(fraction * values.size())) - 1);
+        return values[index];
+    };
+    uint64_t branch_row_sum = 0, branch_pair_sum = 0;
+    for (uint32_t value : branch_bound_rows) branch_row_sum += value;
+    for (uint32_t value : branch_bound_pairs) branch_pair_sum += value;
+    std::cerr << "branch_bound_exact=" << branch_bound_metrics.exact
+              << " under=" << branch_bound_metrics.under
+              << " accuracy=" << (100.0 * branch_bound_metrics.score / denominator)
+              << " mae=" << (branch_bound_metrics.mae / denominator)
+              << " mean_rows=" << (branch_row_sum / denominator)
+              << " p50_rows=" << percentile(sorted_branch_rows, 0.50)
+              << " p95_rows=" << percentile(sorted_branch_rows, 0.95)
+              << " max_rows=" << (sorted_branch_rows.empty() ? 0 : sorted_branch_rows.back())
+              << " mean_pairs=" << (branch_pair_sum / denominator)
+              << " p95_pairs=" << percentile(sorted_branch_pairs, 0.95) << '\n';
+    std::cerr << "mean_connector_us=" << (total_us / denominator)
+              << " mean_transitions=" << (static_cast<double>(total_transitions) / denominator)
+              << '\n';
+    return 0;
+}
+
 } // namespace
 
 int main(int argc, char** argv) {
@@ -1015,6 +1611,10 @@ int main(int argc, char** argv) {
         if (!options.runtime_table.empty())
             generator = std::make_unique<RuntimeGenerator>(
                 options.runtime_table, options.selector_table);
+        if (!options.portal_decomposition.empty()) {
+            if (!generator) throw std::runtime_error("Portal evaluation requires runtime generator");
+            return run_portal_connector_eval(options, pricer, *generator);
+        }
         const std::vector<Request> requests = load_requests(options.candidates);
         if (generator && options.warm_cache)
             for (const Request& request : requests)
