@@ -3,6 +3,7 @@
 #include "fast_model_data.hpp"
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <cstdint>
 #include <cstring>
@@ -25,9 +26,34 @@ class FastEstimator {
 public:
     FastEstimator() {
         for (int i = 0; i < 550; ++i) sqrt_distance_[i] = std::sqrt(static_cast<float>(i));
+#if !defined(SRB_FAST_BINARY_PORT_LOOKUP) && !defined(P23_DIRECT_PORT_DECODE)
+        build_port_hash();
+#endif
     }
 
     bool parse_endpoint(Slice text, Endpoint& out) const {
+#ifdef P21_TRUST_ENDPOINTS
+        // Official rows have already been split/trimmed by the two-column CSV
+        // reader and contain only legal SRB coordinates and port names.
+        // Keep the digit loop because x/y widths vary, but remove duplicated
+        // prefix, separator, range and hash-membership checks.
+        std::size_t pos = 4;
+        int x = 0;
+        while (text.data[pos] != '_') {
+            x = x * 10 + (text.data[pos++] - '0');
+        }
+        ++pos;
+        int y = 0;
+        while (text.data[pos] != '/') {
+            y = y * 10 + (text.data[pos++] - '0');
+        }
+        ++pos;
+        const Slice port{text.data + pos, text.size - pos};
+        out.x = static_cast<int16_t>(x);
+        out.y = static_cast<int16_t>(y);
+        out.port = static_cast<uint16_t>(find_port(port));
+        return true;
+#else
         trim(text);
         if (text.size < 9 || std::memcmp(text.data, "SRB_", 4) != 0) return false;
 
@@ -46,6 +72,7 @@ public:
         out.y = static_cast<int16_t>(y);
         out.port = static_cast<uint16_t>(pid);
         return true;
+#endif
     }
 
     bool predict_spec(Slice from, Slice to, uint32_t& result) const {
@@ -132,7 +159,17 @@ public:
     }
 
 private:
+#ifdef P18_PERFECT_PORT_HASH
+    static constexpr std::size_t kPortHashSize = 16384;
+    static constexpr uint64_t kPortHashSalt = UINT64_C(349);
+#else
+    static constexpr std::size_t kPortHashSize = 1024;
+#endif
     float sqrt_distance_[550] = {};
+#if !defined(P18_PERFECT_PORT_HASH) || !defined(P18_TRUST_PORTS)
+    std::array<uint64_t, kPortHashSize> port_keys_{};
+#endif
+    std::array<uint16_t, kPortHashSize> port_ids_{};
 
     static void trim(Slice& value) {
         while (value.size && (value.data[0] == ' ' || value.data[0] == '\t' || value.data[0] == '\r')) {
@@ -157,28 +194,142 @@ private:
         return true;
     }
 
-    static int compare(Slice a, const char* b) {
-        const size_t bn = std::strlen(b);
-        const size_t n = std::min(a.size, bn);
-        int c = std::memcmp(a.data, b, n);
-        if (c != 0) return c;
-        if (a.size < bn) return -1;
-        if (a.size > bn) return 1;
+    static uint64_t pack_port(Slice value) {
+        if (!value.size || value.size > 7) return 0;
+        uint64_t key = static_cast<uint64_t>(value.size) << 56;
+        switch (value.size) {
+        case 7: key |= static_cast<uint64_t>(static_cast<unsigned char>(value.data[6])) << 48;
+                [[fallthrough]];
+        case 6: key |= static_cast<uint64_t>(static_cast<unsigned char>(value.data[5])) << 40;
+                [[fallthrough]];
+        case 5: key |= static_cast<uint64_t>(static_cast<unsigned char>(value.data[4])) << 32;
+                [[fallthrough]];
+        case 4: key |= static_cast<uint64_t>(static_cast<unsigned char>(value.data[3])) << 24;
+                [[fallthrough]];
+        case 3: key |= static_cast<uint64_t>(static_cast<unsigned char>(value.data[2])) << 16;
+                [[fallthrough]];
+        case 2: key |= static_cast<uint64_t>(static_cast<unsigned char>(value.data[1])) << 8;
+                [[fallthrough]];
+        case 1: key |= static_cast<uint64_t>(static_cast<unsigned char>(value.data[0]));
+                break;
+        default: return 0;
+        }
+        return key;
+    }
+
+    static std::size_t port_slot(uint64_t key) {
+#ifdef P18_PERFECT_PORT_HASH
+        key ^= kPortHashSalt;
+#endif
+        key ^= key >> 33;
+        key *= UINT64_C(0xff51afd7ed558ccd);
+        key ^= key >> 33;
+        return static_cast<std::size_t>(key) & (kPortHashSize - 1);
+    }
+
+#ifdef P23_DIRECT_PORT_DECODE
+    static int find_port(Slice name) {
+        // All official names belong to one of four regular families.  P21 has
+        // already opted into trusted legal input, so decode the architecture
+        // grammar directly instead of packing, hashing and touching a sparse
+        // 32 KiB table twice per row.
+        const char first = name.data[0];
+        if (name.data[1] == '_') {
+            // A_[A-H]{0..5,D,M,Q0,Q1,Y} and S_[...], 88 ports each.
+            const int group = name.data[2] - 'A';
+            const char suffix = name.data[3];
+            int variant;
+            if (suffix <= '5') variant = suffix - '0';
+            else if (suffix == 'D') variant = 6;
+            else if (suffix == 'M') variant = 7;
+            else if (suffix == 'Q') variant = 8 + (name.data[4] - '0');
+            else variant = 10;  // Y
+            return (first == 'A' ? 320 : 408) + group * 11 + variant;
+        }
+
+        const char family = name.data[1];
+        int base;
+        if (first == 'I') {
+            base = family == 'D' ? 160 : (family == 'L' ? 288 :
+                   (family == 'Q' ? 224 : 64));
+        } else {
+            base = family == 'D' ? 128 : (family == 'L' ? 256 :
+                   (family == 'Q' ? 192 : 0));
+        }
+        const char direction = name.data[2];
+        const int direction_index = direction == 'E' ? 0 : (direction == 'N' ? 1 :
+                                    (direction == 'S' ? 2 : 3));
+        if (family != 'S') {
+            return base + direction_index * 8 + (name.data[4] - '0');
+        }
+        const int ab = name.data[3] - 'A';
+        return base + (direction_index * 2 + ab) * 8 + (name.data[5] - '0');
+    }
+#elif defined(SRB_FAST_BINARY_PORT_LOOKUP)
+    static int compare_port(Slice value, const char* expected) {
+        const std::size_t expected_size = std::strlen(expected);
+        const std::size_t common = std::min(value.size, expected_size);
+        const int compared = std::memcmp(value.data, expected, common);
+        if (compared != 0) return compared;
+        if (value.size < expected_size) return -1;
+        if (value.size > expected_size) return 1;
         return 0;
     }
 
-    static int find_port(Slice name) {
-        int lo = 0;
-        int hi = srb_fast_data::kPortCount;
-        while (lo < hi) {
-            int mid = lo + (hi - lo) / 2;
-            int c = compare(name, srb_fast_data::kSortedPortNames[mid]);
-            if (c == 0) return srb_fast_data::kSortedPortIds[mid];
-            if (c < 0) hi = mid;
-            else lo = mid + 1;
+    int find_port(Slice name) const {
+        int lower = 0;
+        int upper = srb_fast_data::kPortCount;
+        while (lower < upper) {
+            const int middle = lower + (upper - lower) / 2;
+            const int compared = compare_port(name, srb_fast_data::kSortedPortNames[middle]);
+            if (compared == 0) return srb_fast_data::kSortedPortIds[middle];
+            if (compared < 0) upper = middle;
+            else lower = middle + 1;
         }
         return -1;
     }
+#else
+    void build_port_hash() {
+        static_assert((kPortHashSize & (kPortHashSize - 1)) == 0,
+                      "port hash size must be a power of two");
+        for (uint16_t sorted = 0; sorted < srb_fast_data::kPortCount; ++sorted) {
+            const char* text = srb_fast_data::kSortedPortNames[sorted];
+            const Slice name{text, std::strlen(text)};
+            const uint64_t key = pack_port(name);
+            std::size_t slot = port_slot(key);
+#ifndef P18_PERFECT_PORT_HASH
+            while (port_keys_[slot]) slot = (slot + 1) & (kPortHashSize - 1);
+#endif
+#if !defined(P18_PERFECT_PORT_HASH) || !defined(P18_TRUST_PORTS)
+            port_keys_[slot] = key;
+#endif
+            port_ids_[slot] = srb_fast_data::kSortedPortIds[sorted];
+        }
+    }
+
+    int find_port(Slice name) const {
+        const uint64_t key = pack_port(name);
+        if (!key) return -1;
+        std::size_t slot = port_slot(key);
+#ifdef P18_PERFECT_PORT_HASH
+#ifdef P18_TRUST_PORTS
+        // Contest inputs only contain legal architecture ports.  The offline
+        // selected salt is collision-free for all 496 legal names, so one
+        // indexed load is enough on the billion-row hot path.
+        return port_ids_[slot];
+#else
+        return port_keys_[slot] == key ? port_ids_[slot] : -1;
+#endif
+#else
+        for (std::size_t probes = 0; probes < kPortHashSize; ++probes) {
+            if (!port_keys_[slot]) return -1;
+            if (port_keys_[slot] == key) return port_ids_[slot];
+            slot = (slot + 1) & (kPortHashSize - 1);
+        }
+        return -1;
+#endif
+    }
+#endif
 
     static int side(int value, int low, int high) {
         if (value < low) return 0;

@@ -7,6 +7,18 @@
 #else
 #include "p2_student_data.hpp"
 #endif
+#ifdef P2_COMPILED_STUDENT
+#include "p2_compiled_student.hpp"
+#endif
+#ifdef P2_COMPILED_TEACHER
+#include "p2_compiled_teacher.hpp"
+#endif
+#ifdef P16_BLENDED_FOREST
+#include "p16_student_data.hpp"
+#ifdef P16_COMPILED
+#include "p16_compiled.hpp"
+#endif
+#endif
 #ifdef V9_EXACT_MEMORY
 #include "exact_memory_data.hpp"
 #endif
@@ -130,6 +142,25 @@ public:
         return true;
     }
 
+    bool parse_spec(srb_fast::Slice from,
+                    srb_fast::Slice to,
+                    srb_fast::Endpoint& source,
+                    srb_fast::Endpoint& target) const {
+        return parser_.parse_endpoint(from, source) && parser_.parse_endpoint(to, target);
+    }
+
+#ifdef P24_DEFAULT_SUBMISSION_FAST_PATH
+    bool predict_endpoints_base(const srb_fast::Endpoint& source,
+                                const srb_fast::Endpoint& target,
+                                srb_v4::Prediction& prediction) {
+#ifdef P38_FAST_SUBMISSION_PREDICT
+        return base_.predict_endpoints_submission_fast(source, target, prediction);
+#else
+        return base_.predict_endpoints(source, target, prediction);
+#endif
+    }
+#endif
+
     bool predict_spec_detailed(srb_fast::Slice from,
                                srb_fast::Slice to,
                                DetailedPrediction& prediction) {
@@ -149,10 +180,12 @@ public:
         if (!base_.predict_endpoints(source, target, base_prediction)) return false;
         prediction.source = source;
         prediction.target = target;
+#ifndef P18_FAST_BASE
         prediction.source_class = p2_student_data::kSourceClass[source.port];
         prediction.target_class = p2_student_data::kTargetClass[target.port];
         prediction.source_route = p2_student_data::kSourceRoute[source.port];
         prediction.target_route = p2_student_data::kTargetRoute[target.port];
+#endif
         prediction.base_delay = base_prediction.delay;
         if (base_prediction.delay == 0) {
             prediction.teacher_delay = 0;
@@ -161,27 +194,63 @@ public:
             return true;
         }
 
-        const Environment environment = classify(source, target);
+#ifdef P18_FAST_BASE
+        // P18 deliberately omits all learned forests and residual memories.
+        // The packed Atlas selector only needs geometry and the already
+        // computed Block intersection count, so avoid constructing 42 unused
+        // features and scanning Gap prefixes on every one of 10^9 rows.
+        {
+        Environment environment;
+        environment.dx = static_cast<int>(target.x) - source.x;
+        environment.dy = static_cast<int>(target.y) - source.y;
+        environment.ax = std::abs(environment.dx);
+        environment.ay = std::abs(environment.dy);
+        environment.cheb = base_prediction.chebyshev;
+        environment.direction = base_prediction.direction;
+        environment.block_mask = base_prediction.block_mask;
+        environment.block_count = base_prediction.intersected_blocks;
+        prediction.environment = environment;
+        prediction.teacher_delay = base_prediction.delay;
+        prediction.delay = base_prediction.delay;
+        prediction.uncertainty = 0.0f;
+        return true;
+        }
+#endif
+
+        const Environment environment = classify(source, target, base_prediction);
         prediction.environment = environment;
         float features[42];
         build_features(source, target, environment, base_prediction.delay, features);
         float teacher_correction = 0.0f;
+#ifndef P2_PROFILE_SKIP_TEACHER
         if (environment.cheb <= 72 && environment.block_count == 0) {
+#ifdef P2_COMPILED_TEACHER
+            teacher_correction = p2_compiled::evaluate_teacher(features);
+#else
             teacher_correction = evaluate_forest(
                 p2_student_data::kTeacherNodes,
                 p2_student_data::kTeacherRoots,
                 p2_student_data::kTeacherMasks,
                 features);
+#endif
         }
+#endif
         const uint32_t teacher_delay = rounded_delay(
             static_cast<double>(base_prediction.delay) * (1.0 + teacher_correction));
         prediction.teacher_delay = teacher_delay;
         update_base_features(teacher_delay, features);
-        const float student_correction = evaluate_forest(
+        const float student_correction =
+#ifdef P2_PROFILE_SKIP_STUDENT
+            0.0f;
+#elif defined(P2_COMPILED_STUDENT)
+            p2_compiled::evaluate_student(features);
+#else
+            evaluate_forest(
             p2_student_data::kStudentNodes,
             p2_student_data::kStudentRoots,
             p2_student_data::kStudentMasks,
             features);
+#endif
         const uint32_t student_delay = rounded_delay(
             static_cast<double>(teacher_delay) * (1.0 + student_correction));
 #ifdef P2_POST_MEMORY
@@ -215,6 +284,20 @@ public:
                 prediction.source_route, prediction.target_route);
         }
 #endif
+#ifdef P16_BLENDED_FOREST
+        // P16 is trained on the complete pre-Atlas P8 output.  Applying it at
+        // the end preserves that feature contract; P14 then overrides this
+        // value whenever its packed exact lookup completes.
+        update_base_features(prediction.delay, features);
+        const float p16_correction =
+#ifdef P16_COMPILED
+            p16_compiled::evaluate(features);
+#else
+            evaluate_forest(p16_data::kNodes, p16_data::kRoots, p16_data::kMasks, features);
+#endif
+        prediction.delay = rounded_delay(
+            static_cast<double>(prediction.delay) * (1.0 + p16_correction));
+#endif
         const float scale = static_cast<float>(std::max<uint32_t>(prediction.delay, 1));
         prediction.uncertainty =
             (std::abs(static_cast<float>(teacher_delay) - base_prediction.delay) +
@@ -224,44 +307,34 @@ public:
 
 private:
     static Environment classify(const srb_fast::Endpoint& source,
-                                const srb_fast::Endpoint& target) {
+                                const srb_fast::Endpoint& target,
+                                const srb_v4::Prediction& base_prediction) {
         Environment result;
         result.dx = static_cast<int>(target.x) - source.x;
         result.dy = static_cast<int>(target.y) - source.y;
         result.ax = std::abs(result.dx);
         result.ay = std::abs(result.dy);
-        result.cheb = std::max(result.ax, result.ay);
-        result.direction = (result.dx > 0 ? 1 : 0) + (result.dx < 0 ? 2 : 0) +
-                           (result.dy > 0 ? 3 : 0) + (result.dy < 0 ? 6 : 0);
+        result.cheb = base_prediction.chebyshev;
+        result.direction = base_prediction.direction;
         result.boundary = std::min({
             static_cast<int>(source.x), static_cast<int>(source.y),
             static_cast<int>(target.x), static_cast<int>(target.y),
             119 - static_cast<int>(source.x), 549 - static_cast<int>(source.y),
             119 - static_cast<int>(target.x), 549 - static_cast<int>(target.y),
         });
-        const int min_x = std::min<int>(source.x, target.x);
-        const int max_x = std::max<int>(source.x, target.x);
-        const int min_y = std::min<int>(source.y, target.y);
-        const int max_y = std::max<int>(source.y, target.y);
-        for (const auto& gap : p2_student_data::kGaps) {
-            const bool crossed = gap.vertical
-                ? (min_x <= gap.site && gap.site < max_x)
-                : (min_y <= gap.site && gap.site < max_y);
-            if (!crossed) continue;
-            result.gap_delay += gap.delay;
-            if (gap.vertical) ++result.vertical_gaps;
-            else ++result.horizontal_gaps;
-        }
-        uint32_t bit = 1;
-        for (const auto& block : p2_student_data::kBlocks) {
-            const bool hit = min_x <= block.right && max_x >= block.left &&
-                             min_y <= block.upper && max_y >= block.lower;
-            if (hit) {
-                result.block_mask |= bit;
-                ++result.block_count;
-            }
-            bit <<= 1;
-        }
+        result.gap_delay =
+            std::abs(static_cast<int>(srb_fast_data::kXGapPrefix[target.x]) -
+                     static_cast<int>(srb_fast_data::kXGapPrefix[source.x])) +
+            std::abs(static_cast<int>(srb_fast_data::kYGapPrefix[target.y]) -
+                     static_cast<int>(srb_fast_data::kYGapPrefix[source.y]));
+        result.vertical_gaps =
+            std::abs(static_cast<int>(srb_v4_data::kXGapCountPrefix[target.x]) -
+                     static_cast<int>(srb_v4_data::kXGapCountPrefix[source.x]));
+        result.horizontal_gaps =
+            std::abs(static_cast<int>(srb_v4_data::kYGapCountPrefix[target.y]) -
+                     static_cast<int>(srb_v4_data::kYGapCountPrefix[source.y]));
+        result.block_mask = base_prediction.block_mask;
+        result.block_count = base_prediction.intersected_blocks;
         return result;
     }
 

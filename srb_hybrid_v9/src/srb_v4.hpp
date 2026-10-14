@@ -60,6 +60,10 @@ enum class Branch : uint8_t {
 struct Prediction {
     uint32_t delay = 0;
     Branch branch = Branch::V3Fallback;
+    uint8_t intersected_blocks = 0;
+    uint8_t block_mask = 0;
+    uint8_t direction = 0;
+    uint16_t chebyshev = 0;
 };
 
 #pragma pack(push, 1)
@@ -188,6 +192,28 @@ public:
             y_clearance_[distance] = static_cast<uint8_t>(
                 std::min(119, std::min(distance, 549 - distance)));
         }
+#ifdef P18_SEPARABLE_BETA
+        for (int dx = -119; dx <= 119; ++dx) {
+            const int xp = std::max(dx, 0);
+            const int xn = std::max(-dx, 0);
+            x_beta_[dx + 119] =
+                srb_fast_data::kBeta[1] * xp +
+                srb_fast_data::kBeta[2] * xn +
+                srb_fast_data::kBeta[5] * sqrt_distance_[xp] +
+                srb_fast_data::kBeta[6] * sqrt_distance_[xn] +
+                srb_fast_data::kBeta[9] * (dx == 0 ? 1.0f : 0.0f);
+        }
+        for (int dy = -549; dy <= 549; ++dy) {
+            const int yp = std::max(dy, 0);
+            const int yn = std::max(-dy, 0);
+            y_beta_[dy + 549] =
+                srb_fast_data::kBeta[3] * yp +
+                srb_fast_data::kBeta[4] * yn +
+                srb_fast_data::kBeta[7] * sqrt_distance_[yp] +
+                srb_fast_data::kBeta[8] * sqrt_distance_[yn] +
+                srb_fast_data::kBeta[10] * (dy == 0 ? 1.0f : 0.0f);
+        }
+#endif
         for (int distance = 0; distance < 120; ++distance) {
             x_clearance_[distance] = static_cast<uint8_t>(std::min(distance, 119 - distance));
             int bin = 0;
@@ -195,6 +221,62 @@ public:
             while (bin < 9 && distance >= edges[bin]) ++bin;
             boundary_bin_by_clearance_[distance] = static_cast<uint8_t>(bin);
         }
+#ifdef P20_BLOCK_SIDES
+        for (int coordinate = 0; coordinate < 120; ++coordinate) {
+            for (int block = 0; block < srb_fast_data::kBlockCount; ++block) {
+                x_block_side_[coordinate][block] = static_cast<uint8_t>(
+                    side(coordinate, srb_fast_data::kBlockLeft[block],
+                         srb_fast_data::kBlockRight[block]));
+            }
+        }
+        for (int coordinate = 0; coordinate < 550; ++coordinate) {
+            for (int block = 0; block < srb_fast_data::kBlockCount; ++block) {
+                y_block_side_[coordinate][block] = static_cast<uint8_t>(
+                    side(coordinate, srb_fast_data::kBlockLower[block],
+                         srb_fast_data::kBlockUpper[block]));
+            }
+        }
+#endif
+#ifdef P18_PRECOMPUTED_GEOMETRY
+        geometry_.resize(239u * 1099u);
+        for (int dx = -119; dx <= 119; ++dx) {
+            for (int dy = -549; dy <= 549; ++dy) {
+                const int ax = std::abs(dx);
+                const int ay = std::abs(dy);
+                const int xp = std::max(dx, 0);
+                const int xn = std::max(-dx, 0);
+                const int yp = std::max(dy, 0);
+                const int yn = std::max(-dy, 0);
+                const int quad = direction_code(dx, dy);
+                const int rx = (dx > 0 ? ax % 8 : (dx < 0 ? -(ax % 8) : 0)) + 8;
+                const int ry = (dy > 0 ? ay % 8 : (dy < 0 ? -(ay % 8) : 0)) + 8;
+                const int distance_bin = std::min(15, std::max(ax, ay) / 32);
+                const int ratio = std::min(16, 17 * std::min(ax, ay) / (std::max(ax, ay) + 1));
+                Geometry& geometry = geometry_[
+                    static_cast<std::size_t>(dx + 119) * 1099 + dy + 549];
+                geometry.beta = srb_fast_data::kBeta[0]
+                    + srb_fast_data::kBeta[1] * xp
+                    + srb_fast_data::kBeta[2] * xn
+                    + srb_fast_data::kBeta[3] * yp
+                    + srb_fast_data::kBeta[4] * yn
+                    + srb_fast_data::kBeta[5] * sqrt_distance_[xp]
+                    + srb_fast_data::kBeta[6] * sqrt_distance_[xn]
+                    + srb_fast_data::kBeta[7] * sqrt_distance_[yp]
+                    + srb_fast_data::kBeta[8] * sqrt_distance_[yn]
+                    + srb_fast_data::kBeta[9] * (dx == 0 ? 1.0f : 0.0f)
+                    + srb_fast_data::kBeta[10] * (dy == 0 ? 1.0f : 0.0f);
+                geometry.remainder = static_cast<uint16_t>(rx * 17 + ry);
+                geometry.geom8 = static_cast<uint16_t>(
+                    quad * (15 * 69) + std::min(14, ax / 8) * 69 + std::min(68, ay / 8));
+                geometry.geom4 = static_cast<uint16_t>(
+                    quad * (30 * 138) + std::min(29, ax / 4) * 138 + std::min(137, ay / 4));
+                geometry.chebyshev = static_cast<uint16_t>(std::max(ax, ay));
+                geometry.quad = static_cast<uint8_t>(quad);
+                geometry.distance_bin = static_cast<uint8_t>(distance_bin);
+                geometry.angle = static_cast<uint8_t>(quad * 17 + ratio);
+            }
+        }
+#endif
 #ifdef SRB_V6_HAS_MACRO
 #ifdef SRB_V6_ENABLE_MACRO10_FAMILY_PHASE
         static constexpr int macro_period = 10;
@@ -250,7 +332,11 @@ public:
         }
         const FallbackContext context =
             use_fused_fallback_ ? predict_fallback_with_context(source, target)
-                                : FallbackContext{fallback_.predict(source, target), 0, 0, 0};
+                                : FallbackContext{fallback_.predict(source, target), 0, 0, 0, 0};
+        result.intersected_blocks = context.intersected_blocks;
+        result.block_mask = context.block_mask;
+        result.direction = context.direction;
+        result.chebyshev = context.chebyshev;
         const uint32_t base = context.delay;
         if (enable_residual_) {
 #ifdef SRB_V4_HAS_FAMILY_RESIDUAL
@@ -273,6 +359,35 @@ public:
         return true;
     }
 
+#ifdef P38_FAST_SUBMISSION_PREDICT
+    // The contest hot path constructs this estimator with the legacy Atlas
+    // disabled, the fused fallback enabled and the family residual enabled.
+    // Those options never change online.  Bypass their per-row branches and
+    // omit diagnostic counter writes that the submission never reads.
+    bool predict_endpoints_submission_fast(const srb_fast::Endpoint& source,
+                                           const srb_fast::Endpoint& target,
+                                           Prediction& result) const {
+        if (source.x == target.x && source.y == target.y && source.port == target.port) {
+            result = Prediction{};
+            result.delay = 0;
+            result.branch = Branch::SameEndpoint;
+            return true;
+        }
+        const FallbackContext context = predict_fallback_with_context(source, target);
+        result.intersected_blocks = context.intersected_blocks;
+        result.block_mask = context.block_mask;
+        result.direction = context.direction;
+        result.chebyshev = context.chebyshev;
+#ifdef SRB_V4_HAS_FAMILY_RESIDUAL
+        result.delay = predict_residual_family(source, target, context);
+#else
+        result.delay = predict_residual_optimized(source, target, context);
+#endif
+        result.branch = Branch::V4Residual;
+        return true;
+    }
+#endif
+
     uint64_t same_endpoint_queries() const { return same_endpoint_queries_; }
     uint64_t atlas_queries() const { return atlas_queries_; }
     uint64_t fallback_queries() const { return fallback_queries_; }
@@ -283,9 +398,21 @@ public:
     bool residual_enabled() const { return enable_residual_; }
 
 private:
+    struct Geometry {
+        float beta;
+        uint16_t remainder;
+        uint16_t geom8;
+        uint16_t geom4;
+        uint16_t chebyshev;
+        uint8_t quad;
+        uint8_t distance_bin;
+        uint8_t angle;
+    };
+
     struct FallbackContext {
         uint32_t delay;
         uint8_t intersected_blocks;
+        uint8_t block_mask;
         uint8_t direction;
         uint16_t chebyshev;
     };
@@ -432,11 +559,37 @@ private:
         return 1;
     }
 
+    static uint32_t round_positive_delay(float value) {
+        if (!(value > 0.0f)) return 0;
+#ifdef P22_FAST_ROUND
+        // Architecture delays are far below 2^23, where adding 0.5f and
+        // truncating is exactly the same nearest-integer operation as the
+        // generic double/floor/overflow path.
+        return static_cast<uint32_t>(value + 0.5f);
+#else
+        const double rounded = std::floor(static_cast<double>(value) + 0.5);
+        if (rounded >= static_cast<double>(std::numeric_limits<uint32_t>::max())) {
+            return std::numeric_limits<uint32_t>::max();
+        }
+        return static_cast<uint32_t>(rounded);
+#endif
+    }
+
     FallbackContext predict_fallback_with_context(const srb_fast::Endpoint& source,
                                                    const srb_fast::Endpoint& target) const {
         using namespace srb_fast_data;
         const int dx = static_cast<int>(target.x) - source.x;
         const int dy = static_cast<int>(target.y) - source.y;
+#ifdef P18_PRECOMPUTED_GEOMETRY
+        const std::size_t geometry_index =
+            static_cast<std::size_t>(dx + 119) * 1099 + dy + 549;
+        const Geometry& geometry = geometry_[geometry_index];
+        float value = geometry.beta;
+        const int quad = geometry.quad;
+        const int distance_bin = geometry.distance_bin;
+        const int remainder = geometry.remainder;
+        const int chebyshev = geometry.chebyshev;
+#else
         const int ax = std::abs(dx);
         const int ay = std::abs(dy);
         const int xp = std::max(dx, 0);
@@ -444,6 +597,9 @@ private:
         const int yp = std::max(dy, 0);
         const int yn = std::max(-dy, 0);
 
+#ifdef P18_SEPARABLE_BETA
+        float value = kBeta[0] + x_beta_[dx + 119] + y_beta_[dy + 549];
+#else
         float value = kBeta[0]
                     + kBeta[1] * xp
                     + kBeta[2] * xn
@@ -455,10 +611,18 @@ private:
                     + kBeta[8] * sqrt_distance_[yn]
                     + kBeta[9] * (dx == 0 ? 1.0f : 0.0f)
                     + kBeta[10] * (dy == 0 ? 1.0f : 0.0f);
+#endif
 
         const int quad = direction_code(dx, dy);
+#endif
         value += kSrcQuad[static_cast<size_t>(source.port) * 9 + quad];
         value += kDstQuad[static_cast<size_t>(target.port) * 9 + quad];
+#ifdef P18_PRECOMPUTED_GEOMETRY
+        value += kRemainder[remainder];
+        value += kDistanceBin[quad * 16 + distance_bin];
+        value += kGeom8[geometry.geom8];
+        value += kAngle[geometry.angle];
+#else
         const int rx = (dx > 0 ? ax % 8 : (dx < 0 ? -(ax % 8) : 0)) + 8;
         const int ry = (dy > 0 ? ay % 8 : (dy < 0 ? -(ay % 8) : 0)) + 8;
         value += kRemainder[rx * 17 + ry];
@@ -469,46 +633,74 @@ private:
         value += kGeom8[quad * (15 * 69) + gx * 69 + gy];
         const int ratio = std::min(16, 17 * std::min(ax, ay) / (std::max(ax, ay) + 1));
         value += kAngle[quad * 17 + ratio];
+#endif
         value += kPortPair[static_cast<size_t>(source.port) * kPortCount + target.port];
         value += kSrcDistance[(static_cast<size_t>(source.port) * 9 + quad) * 16 + distance_bin];
         value += kDstDistance[(static_cast<size_t>(target.port) * 9 + quad) * 16 + distance_bin];
         value += kSrcRegion[(source.x / 8) * 69 + source.y / 8];
         value += kDstRegion[(target.x / 8) * 69 + target.y / 8];
+#ifndef P18_PRECOMPUTED_GEOMETRY
         const int remainder = rx * 17 + ry;
+#endif
         value += kSrcRemainder[static_cast<size_t>(source.port) * (17 * 17) + remainder];
         value += kDstRemainder[static_cast<size_t>(target.port) * (17 * 17) + remainder];
+#ifdef P18_PRECOMPUTED_GEOMETRY
+        value += kGeom4[geometry.geom4];
+        value += kDisplacement[geometry_index];
+#else
         value += kGeom4[quad * (30 * 138) + std::min(29, ax / 4) * 138 + std::min(137, ay / 4)];
         value += kDisplacement[static_cast<size_t>(dx + 119) * 1099 + (dy + 549)];
+#endif
 
         const int min_x = std::min<int>(source.x, target.x);
         const int max_x = std::max<int>(source.x, target.x);
         const int min_y = std::min<int>(source.y, target.y);
         const int max_y = std::max<int>(source.y, target.y);
         int intersected_blocks = 0;
+        uint8_t block_mask = 0;
         for (int block = 0; block < kBlockCount; ++block) {
+#ifdef P20_BLOCK_SIDES
+            const int source_x_side = x_block_side_[source.x][block];
+            const int target_x_side = x_block_side_[target.x][block];
+            const int source_y_side = y_block_side_[source.y][block];
+            const int target_y_side = y_block_side_[target.y][block];
+            const int code = source_x_side + 3 * target_x_side
+                           + 9 * source_y_side + 27 * target_y_side;
+#else
             const int code = side(source.x, kBlockLeft[block], kBlockRight[block])
                            + 3 * side(target.x, kBlockLeft[block], kBlockRight[block])
                            + 9 * side(source.y, kBlockLower[block], kBlockUpper[block])
                            + 27 * side(target.y, kBlockLower[block], kBlockUpper[block]);
+#endif
             value += kBlockEffect[block * 81 + code];
-            intersected_blocks += min_x <= kBlockRight[block] && max_x >= kBlockLeft[block] &&
-                                  min_y <= kBlockUpper[block] && max_y >= kBlockLower[block];
+#ifdef P20_BLOCK_SIDES
+            const bool intersected =
+                !(source_x_side == 0 && target_x_side == 0) &&
+                !(source_x_side == 2 && target_x_side == 2) &&
+                !(source_y_side == 0 && target_y_side == 0) &&
+                !(source_y_side == 2 && target_y_side == 2);
+#else
+            const bool intersected =
+                min_x <= kBlockRight[block] && max_x >= kBlockLeft[block] &&
+                min_y <= kBlockUpper[block] && max_y >= kBlockLower[block];
+#endif
+            intersected_blocks += intersected;
+            if (intersected) block_mask |= static_cast<uint8_t>(1u << block);
         }
         value += std::abs(static_cast<int>(kXGapPrefix[target.x]) - kXGapPrefix[source.x]);
         value += std::abs(static_cast<int>(kYGapPrefix[target.y]) - kYGapPrefix[source.y]);
 
-        uint32_t delay = 0;
-        if (value > 0.0f) {
-            const double rounded = std::floor(static_cast<double>(value) + 0.5);
-            delay = rounded >= static_cast<double>(std::numeric_limits<uint32_t>::max())
-                        ? std::numeric_limits<uint32_t>::max()
-                        : static_cast<uint32_t>(rounded);
-        }
+        const uint32_t delay = round_positive_delay(value);
         return FallbackContext{
             delay,
             static_cast<uint8_t>(std::min(intersected_blocks, 7)),
+            block_mask,
             static_cast<uint8_t>(quad),
+#ifdef P18_PRECOMPUTED_GEOMETRY
+            static_cast<uint16_t>(chebyshev)};
+#else
             static_cast<uint16_t>(std::max(ax, ay))};
+#endif
     }
 
     static uint32_t predict_residual_with_boundary(const srb_fast::Endpoint& source,
@@ -541,12 +733,7 @@ private:
         correction += srb_v4_data::kTargetPort[target.port];
         correction *= srb_v4_data::kAlpha;
         const float value = static_cast<float>(base) * (1.0f + correction);
-        if (!(value > 0.0f)) return 0;
-        const double rounded = std::floor(static_cast<double>(value) + 0.5);
-        if (rounded >= static_cast<double>(std::numeric_limits<uint32_t>::max())) {
-            return std::numeric_limits<uint32_t>::max();
-        }
-        return static_cast<uint32_t>(rounded);
+        return round_positive_delay(value);
     }
 
     static uint32_t predict_residual_reference(const srb_fast::Endpoint& source,
@@ -632,12 +819,7 @@ private:
 #endif
         correction *= kAlpha;
         const float value = static_cast<float>(base) * (1.0f + correction);
-        if (!(value > 0.0f)) return 0;
-        const double rounded = std::floor(static_cast<double>(value) + 0.5);
-        if (rounded >= static_cast<double>(std::numeric_limits<uint32_t>::max())) {
-            return std::numeric_limits<uint32_t>::max();
-        }
-        return static_cast<uint32_t>(rounded);
+        return round_positive_delay(value);
     }
 #endif
 
@@ -647,6 +829,17 @@ private:
     uint8_t x_clearance_[120] = {};
     uint8_t y_clearance_[550] = {};
     uint8_t boundary_bin_by_clearance_[120] = {};
+#ifdef P20_BLOCK_SIDES
+    uint8_t x_block_side_[120][srb_fast_data::kBlockCount] = {};
+    uint8_t y_block_side_[550][srb_fast_data::kBlockCount] = {};
+#endif
+#ifdef P18_SEPARABLE_BETA
+    float x_beta_[239] = {};
+    float y_beta_[1099] = {};
+#endif
+#ifdef P18_PRECOMPUTED_GEOMETRY
+    std::vector<Geometry> geometry_;
+#endif
 #ifdef SRB_V6_HAS_MACRO
     uint8_t x_phase_[120] = {};
     uint8_t y_phase_[550] = {};

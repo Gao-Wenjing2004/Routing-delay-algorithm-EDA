@@ -1,0 +1,83 @@
+{
+  "p19": {
+    "status": "rejected_by_three_way_gate",
+    "strict_candidate_count": 0,
+    "evaluated_candidates": 1152,
+    "base_accuracy": {
+      "train": 89.88195186017296,
+      "independent_source": 91.35763028769273,
+      "independent_region": 90.67940198371154,
+      "public_1m": 94.66472293693411
+    },
+    "best_diagnostic": {
+      "key": "ports_displacement_pair_s10",
+      "lookups": 11,
+      "parameters": 503629,
+      "int16_bytes": 1007258,
+      "source_gain": -0.2802459560402184,
+      "region_gain": -0.3172395239936918,
+      "public_gain": -0.1406575664205576
+    }
+  },
+  "p38_regression": [
+    {
+      "dataset": "public_1m",
+      "output_bytes": 40333509,
+      "sha256_p25": "dc3dd91e14241c0976f692f5107f79fcc0c86f2f6d5806be2ee8a25f94e952c5",
+      "sha256_p38": "dc3dd91e14241c0976f692f5107f79fcc0c86f2f6d5806be2ee8a25f94e952c5",
+      "byte_exact": true
+    },
+    {
+      "dataset": "independent_source",
+      "output_bytes": 16044152,
+      "sha256_p25": "f53b99efb7025998a3df74ba3b102226eb3144c61d5e39e2c3fbf853d4b4cb27",
+      "sha256_p38": "f53b99efb7025998a3df74ba3b102226eb3144c61d5e39e2c3fbf853d4b4cb27",
+      "byte_exact": true
+    },
+    {
+      "dataset": "independent_region",
+      "output_bytes": 16629142,
+      "sha256_p25": "524707884c64fd839620da5296f82998774a6c1d09d9ebc34b0e81b54bacd1dc",
+      "sha256_p38": "524707884c64fd839620da5296f82998774a6c1d09d9ebc34b0e81b54bacd1dc",
+      "byte_exact": true
+    }
+  ],
+  "p38_timing": {
+    "dataset_rows": 2000000,
+    "fixed_core_direct": {
+      "p25_elapsed_s": 0.546384,
+      "p38_elapsed_s": 0.499088,
+      "p38_speedup_percent": 8.6562
+    },
+    "alternating_seven_round_median": {
+      "p25_elapsed_s": 0.573728,
+      "p38_elapsed_s": 0.53461,
+      "p38_speedup_percent": 6.8182135088404205
+    }
+  },
+  "concurrency": [
+    {"processes": 1, "wall_s": 0.7559494, "sum_cpu_s": 0.671875, "cpu_s_per_2m": 0.671875},
+    {"processes": 2, "wall_s": 0.6780209, "sum_cpu_s": 1.234375, "cpu_s_per_2m": 0.6171875},
+    {"processes": 4, "wall_s": 0.8551511, "sum_cpu_s": 3.125, "cpu_s_per_2m": 0.78125},
+    {"processes": 8, "wall_s": 1.039217, "sum_cpu_s": 7.328125, "cpu_s_per_2m": 0.916015625}
+  ],
+  "formal_package": {
+    "path": "submission_v9_p38_fast_soa_avx2.zip",
+    "zip_bytes": 90860856,
+    "zip_sha256": "93f39e64cf17af87722be56b9b740dca877c946a6b40781064b61c6987efb794",
+    "elf_path": "submission_p38/bin/estimate",
+    "elf_bytes": 96627152,
+    "elf_sha256": "a9664b76e31443da459d46710871a9d22bb59fa3e8055064d315d8c47e8563d8",
+    "zip_member": "bin/estimate",
+    "zip_member_mode": "100755"
+  },
+  "conservative_projection": {
+    "basis": "apply seven-round median speedup to P25 267.6 s CPU projection",
+    "cpu_s": 249.35446065034304,
+    "time_score": 86.14697440831426,
+    "public_accuracy": 94.66472293693411,
+    "consistency_assumption": 100.0,
+    "public_proxy_total": 93.65382451079444,
+    "remaining_speedup_to_144_s": 1.7316281989607156
+  }
+}
