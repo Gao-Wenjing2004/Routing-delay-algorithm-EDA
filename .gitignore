@@ -18,3 +18,6 @@
 # Local experiment outputs
 /experiments/**/predictions*.csv
 /experiments/**/result*.csv
+
+# Keep this byte-exact, user-confirmed competition archive on the wufan branch.
+!/submission_k48_20261015/submission.zip

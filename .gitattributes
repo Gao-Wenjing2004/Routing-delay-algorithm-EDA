@@ -9,3 +9,18 @@
 /submission_v7_20260919/src/** -text -whitespace
 
 /submission_v7_20260919/bin/estimate filter=lfs diff=lfs merge=lfs -text
+
+# Preserve the submitted K48 source snapshot byte-for-byte.
+/submission_k48_20261015/src/** -text -whitespace
+/submission_k48_20261015/build.sh -text
+# Runtime assets, the exact submission archive, and generated model constants use LFS.
+/submission_k48_20261015/bin/assets/adaptive_a.bin filter=lfs diff=lfs merge=lfs -text
+/submission_k48_20261015/bin/assets/augment48_full110.bin filter=lfs diff=lfs merge=lfs -text
+/submission_k48_20261015/bin/assets/complete_hull.bin filter=lfs diff=lfs merge=lfs -text
+/submission_k48_20261015/bin/assets/lower_k32.bin filter=lfs diff=lfs merge=lfs -text
+/submission_k48_20261015/bin/assets/normalized_local.bin filter=lfs diff=lfs merge=lfs -text
+/submission_k48_20261015/bin/assets/pair30.delta.bin filter=lfs diff=lfs merge=lfs -text
+/submission_k48_20261015/bin/assets/short_k32.bin filter=lfs diff=lfs merge=lfs -text
+/submission_k48_20261015/bin/estimate filter=lfs diff=lfs merge=lfs -text
+/submission_k48_20261015/src/model_data.hpp filter=lfs diff=lfs merge=lfs -text
+/submission_k48_20261015/submission.zip filter=lfs diff=lfs merge=lfs -text

@@ -1,0 +1,45 @@
+{
+  "status": "Linux_compiled_and_upload_format_checked",
+  "archive_bytes": 91242296,
+  "archive_sha256": "859765a3288742cf282b42c68948c7204d86f87e724e23a1d5c0d2b3b4420003",
+  "uncompressed_runtime_bytes": 97989218,
+  "files": {
+    "bin/estimate": {
+      "bytes": 9198696,
+      "sha256": "b4ecc598c84ec40f8a4a11ebe690374474e8b766d942668b5b05fbe0929ca1f9"
+    },
+    "bin/assets/adaptive_a.bin": {
+      "bytes": 266072,
+      "sha256": "a141958f3e33c6d089410e97bb77c0eeaaf624312f62e4b7a572bf660776b7a6"
+    },
+    "bin/assets/augment48_full110.bin": {
+      "bytes": 10022340,
+      "sha256": "8d1711f6927fb06b6578313f0928717ea2167f8d00e7d117c62432924890469e"
+    },
+    "bin/assets/complete_hull.bin": {
+      "bytes": 16097406,
+      "sha256": "a33ef5276d82d85e416e6ab323c581026c96d4af8ee173d9afb7fe4b3cbbc7fe"
+    },
+    "bin/assets/lower_k32.bin": {
+      "bytes": 1689893,
+      "sha256": "fcd51cfa2f83e4ec6a42e3923729e5db1e8614389f40828d0fb1ad2303a1e4b8"
+    },
+    "bin/assets/normalized_local.bin": {
+      "bytes": 41952166,
+      "sha256": "eb5942ee268ff5e49b94cd0b8ec2690fbfa73b333465602d4220d6227996fe81"
+    },
+    "bin/assets/pair30.delta.bin": {
+      "bytes": 684272,
+      "sha256": "4f13c19a4cb9c1fc024f35eb08abde462cf8b0b6fe823723063c67c5817807d1"
+    },
+    "bin/assets/short_k32.bin": {
+      "bytes": 18078373,
+      "sha256": "fc77e8416fa33df6644356ee343b7ca99f289847c68d951813b1bbea394cada1"
+    }
+  },
+  "full_local_tests_skipped_at_explicit_user_request": true,
+  "Linux_prediction_parity_tested": false,
+  "platform_testing_pending": true,
+  "source_and_assets_identical_to_frozen_K48_Lazy": true,
+  "ZIP_CRC_payload_SHA_and_Unix_modes_verified": true
+}
