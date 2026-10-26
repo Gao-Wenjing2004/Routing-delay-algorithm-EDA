@@ -1,0 +1,756 @@
+{
+  "train_rows": 1000000,
+  "train_changed_rows": 144790,
+  "ranked_ports": [
+    {
+      "rank": 1,
+      "port": 341,
+      "name": "ZDE[5]",
+      "changed_rows": 2791,
+      "v68_better_rows": 2414,
+      "train_score_sum_gain": 94.77438564498041
+    },
+    {
+      "rank": 2,
+      "port": 396,
+      "name": "ZLW[4]",
+      "changed_rows": 2693,
+      "v68_better_rows": 2220,
+      "train_score_sum_gain": 79.35041812926593
+    },
+    {
+      "rank": 3,
+      "port": 437,
+      "name": "ZSEA[5]",
+      "changed_rows": 2401,
+      "v68_better_rows": 2066,
+      "train_score_sum_gain": 76.48641182908936
+    },
+    {
+      "rank": 4,
+      "port": 357,
+      "name": "ZDS[5]",
+      "changed_rows": 2450,
+      "v68_better_rows": 2115,
+      "train_score_sum_gain": 74.39642599605541
+    },
+    {
+      "rank": 5,
+      "port": 342,
+      "name": "ZDE[6]",
+      "changed_rows": 2441,
+      "v68_better_rows": 2141,
+      "train_score_sum_gain": 74.14147486395017
+    },
+    {
+      "rank": 6,
+      "port": 313,
+      "name": "S_FY",
+      "changed_rows": 2268,
+      "v68_better_rows": 2001,
+      "train_score_sum_gain": 74.04336309070611
+    },
+    {
+      "rank": 7,
+      "port": 485,
+      "name": "ZSWA[5]",
+      "changed_rows": 2406,
+      "v68_better_rows": 2052,
+      "train_score_sum_gain": 74.00340602859886
+    },
+    {
+      "rank": 8,
+      "port": 438,
+      "name": "ZSEA[6]",
+      "changed_rows": 2268,
+      "v68_better_rows": 1979,
+      "train_score_sum_gain": 70.82096440733812
+    },
+    {
+      "rank": 9,
+      "port": 339,
+      "name": "ZDE[3]",
+      "changed_rows": 2386,
+      "v68_better_rows": 2005,
+      "train_score_sum_gain": 70.31084418406836
+    },
+    {
+      "rank": 10,
+      "port": 312,
+      "name": "S_FQ1",
+      "changed_rows": 2281,
+      "v68_better_rows": 2000,
+      "train_score_sum_gain": 69.66225692992178
+    },
+    {
+      "rank": 11,
+      "port": 358,
+      "name": "ZDS[6]",
+      "changed_rows": 2233,
+      "v68_better_rows": 1987,
+      "train_score_sum_gain": 69.55526706039069
+    },
+    {
+      "rank": 12,
+      "port": 469,
+      "name": "ZSSA[5]",
+      "changed_rows": 2284,
+      "v68_better_rows": 1972,
+      "train_score_sum_gain": 69.46887369431954
+    },
+    {
+      "rank": 13,
+      "port": 470,
+      "name": "ZSSA[6]",
+      "changed_rows": 2206,
+      "v68_better_rows": 1959,
+      "train_score_sum_gain": 68.28011267473158
+    },
+    {
+      "rank": 14,
+      "port": 462,
+      "name": "ZSNB[6]",
+      "changed_rows": 2117,
+      "v68_better_rows": 1867,
+      "train_score_sum_gain": 63.293379044621794
+    },
+    {
+      "rank": 15,
+      "port": 454,
+      "name": "ZSNA[6]",
+      "changed_rows": 2026,
+      "v68_better_rows": 1791,
+      "train_score_sum_gain": 61.91531554054651
+    },
+    {
+      "rank": 16,
+      "port": 486,
+      "name": "ZSWA[6]",
+      "changed_rows": 2080,
+      "v68_better_rows": 1820,
+      "train_score_sum_gain": 61.69980034764729
+    },
+    {
+      "rank": 17,
+      "port": 360,
+      "name": "ZDW[0]",
+      "changed_rows": 2531,
+      "v68_better_rows": 2117,
+      "train_score_sum_gain": 61.55001330815876
+    },
+    {
+      "rank": 18,
+      "port": 484,
+      "name": "ZSWA[4]",
+      "changed_rows": 2282,
+      "v68_better_rows": 1944,
+      "train_score_sum_gain": 61.08806356123291
+    },
+    {
+      "rank": 19,
+      "port": 399,
+      "name": "ZLW[7]",
+      "changed_rows": 2257,
+      "v68_better_rows": 1888,
+      "train_score_sum_gain": 60.24108770018105
+    },
+    {
+      "rank": 20,
+      "port": 491,
+      "name": "ZSWB[3]",
+      "changed_rows": 2341,
+      "v68_better_rows": 1929,
+      "train_score_sum_gain": 59.523009833886704
+    },
+    {
+      "rank": 21,
+      "port": 343,
+      "name": "ZDE[7]",
+      "changed_rows": 2356,
+      "v68_better_rows": 2028,
+      "train_score_sum_gain": 59.12856776587826
+    },
+    {
+      "rank": 22,
+      "port": 346,
+      "name": "ZDN[2]",
+      "changed_rows": 2410,
+      "v68_better_rows": 2051,
+      "train_score_sum_gain": 59.01583234885962
+    },
+    {
+      "rank": 23,
+      "port": 350,
+      "name": "ZDN[6]",
+      "changed_rows": 1773,
+      "v68_better_rows": 1566,
+      "train_score_sum_gain": 57.97695888734892
+    },
+    {
+      "rank": 24,
+      "port": 290,
+      "name": "S_DQ1",
+      "changed_rows": 2346,
+      "v68_better_rows": 1978,
+      "train_score_sum_gain": 57.87435374669354
+    },
+    {
+      "rank": 25,
+      "port": 394,
+      "name": "ZLW[2]",
+      "changed_rows": 2328,
+      "v68_better_rows": 1967,
+      "train_score_sum_gain": 57.598073381171595
+    },
+    {
+      "rank": 26,
+      "port": 300,
+      "name": "S_EQ0",
+      "changed_rows": 2248,
+      "v68_better_rows": 1909,
+      "train_score_sum_gain": 57.51907382599573
+    },
+    {
+      "rank": 27,
+      "port": 458,
+      "name": "ZSNB[2]",
+      "changed_rows": 2343,
+      "v68_better_rows": 1976,
+      "train_score_sum_gain": 57.375078385969786
+    },
+    {
+      "rank": 28,
+      "port": 289,
+      "name": "S_DQ0",
+      "changed_rows": 2241,
+      "v68_better_rows": 1850,
+      "train_score_sum_gain": 56.85966861204469
+    },
+    {
+      "rank": 29,
+      "port": 279,
+      "name": "S_CQ1",
+      "changed_rows": 2255,
+      "v68_better_rows": 1915,
+      "train_score_sum_gain": 56.01578230993834
+    },
+    {
+      "rank": 30,
+      "port": 468,
+      "name": "ZSSA[4]",
+      "changed_rows": 2045,
+      "v68_better_rows": 1736,
+      "train_score_sum_gain": 55.97107548957433
+    },
+    {
+      "rank": 31,
+      "port": 460,
+      "name": "ZSNB[4]",
+      "changed_rows": 2154,
+      "v68_better_rows": 1822,
+      "train_score_sum_gain": 55.17800551551906
+    },
+    {
+      "rank": 32,
+      "port": 280,
+      "name": "S_CY",
+      "changed_rows": 2246,
+      "v68_better_rows": 1899,
+      "train_score_sum_gain": 54.38028644681685
+    },
+    {
+      "rank": 33,
+      "port": 495,
+      "name": "ZSWB[7]",
+      "changed_rows": 2123,
+      "v68_better_rows": 1833,
+      "train_score_sum_gain": 54.13397764565285
+    },
+    {
+      "rank": 34,
+      "port": 481,
+      "name": "ZSWA[1]",
+      "changed_rows": 2426,
+      "v68_better_rows": 1989,
+      "train_score_sum_gain": 53.172152339962835
+    },
+    {
+      "rank": 35,
+      "port": 52,
+      "name": "A_EQ0",
+      "changed_rows": 2212,
+      "v68_better_rows": 1882,
+      "train_score_sum_gain": 52.68516087202159
+    },
+    {
+      "rank": 36,
+      "port": 480,
+      "name": "ZSWA[0]",
+      "changed_rows": 2485,
+      "v68_better_rows": 2045,
+      "train_score_sum_gain": 51.87548201597966
+    },
+    {
+      "rank": 37,
+      "port": 368,
+      "name": "ZLE[0]",
+      "changed_rows": 2502,
+      "v68_better_rows": 2026,
+      "train_score_sum_gain": 51.651415983649784
+    },
+    {
+      "rank": 38,
+      "port": 32,
+      "name": "A_CY",
+      "changed_rows": 2130,
+      "v68_better_rows": 1818,
+      "train_score_sum_gain": 51.01195019216953
+    },
+    {
+      "rank": 39,
+      "port": 334,
+      "name": "S_HQ1",
+      "changed_rows": 1931,
+      "v68_better_rows": 1684,
+      "train_score_sum_gain": 50.273970131234655
+    },
+    {
+      "rank": 40,
+      "port": 441,
+      "name": "ZSEB[1]",
+      "changed_rows": 2457,
+      "v68_better_rows": 2025,
+      "train_score_sum_gain": 50.11029161211993
+    },
+    {
+      "rank": 41,
+      "port": 455,
+      "name": "ZSNA[7]",
+      "changed_rows": 2137,
+      "v68_better_rows": 1857,
+      "train_score_sum_gain": 49.783541945940875
+    },
+    {
+      "rank": 42,
+      "port": 432,
+      "name": "ZSEA[0]",
+      "changed_rows": 2378,
+      "v68_better_rows": 1993,
+      "train_score_sum_gain": 49.68607507502124
+    },
+    {
+      "rank": 43,
+      "port": 20,
+      "name": "A_BQ1",
+      "changed_rows": 2200,
+      "v68_better_rows": 1895,
+      "train_score_sum_gain": 49.21516718707745
+    },
+    {
+      "rank": 44,
+      "port": 464,
+      "name": "ZSSA[0]",
+      "changed_rows": 2312,
+      "v68_better_rows": 1963,
+      "train_score_sum_gain": 48.66736581227113
+    },
+    {
+      "rank": 45,
+      "port": 440,
+      "name": "ZSEB[0]",
+      "changed_rows": 2295,
+      "v68_better_rows": 1909,
+      "train_score_sum_gain": 48.459075950898864
+    },
+    {
+      "rank": 46,
+      "port": 30,
+      "name": "A_CQ0",
+      "changed_rows": 2053,
+      "v68_better_rows": 1729,
+      "train_score_sum_gain": 47.248929716256605
+    },
+    {
+      "rank": 47,
+      "port": 459,
+      "name": "ZSNB[3]",
+      "changed_rows": 2144,
+      "v68_better_rows": 1748,
+      "train_score_sum_gain": 47.06194005603015
+    },
+    {
+      "rank": 48,
+      "port": 74,
+      "name": "A_GQ0",
+      "changed_rows": 1721,
+      "v68_better_rows": 1563,
+      "train_score_sum_gain": 47.04016674324751
+    },
+    {
+      "rank": 49,
+      "port": 387,
+      "name": "ZLS[3]",
+      "changed_rows": 1805,
+      "v68_better_rows": 1480,
+      "train_score_sum_gain": 46.990712763263424
+    },
+    {
+      "rank": 50,
+      "port": 465,
+      "name": "ZSSA[1]",
+      "changed_rows": 2152,
+      "v68_better_rows": 1781,
+      "train_score_sum_gain": 46.896506500099754
+    },
+    {
+      "rank": 51,
+      "port": 397,
+      "name": "ZLW[5]",
+      "changed_rows": 1855,
+      "v68_better_rows": 1580,
+      "train_score_sum_gain": 46.32079306874855
+    },
+    {
+      "rank": 52,
+      "port": 383,
+      "name": "ZLN[7]",
+      "changed_rows": 1712,
+      "v68_better_rows": 1478,
+      "train_score_sum_gain": 46.100650012223824
+    },
+    {
+      "rank": 53,
+      "port": 258,
+      "name": "S_AY",
+      "changed_rows": 2353,
+      "v68_better_rows": 1962,
+      "train_score_sum_gain": 45.553702501027665
+    },
+    {
+      "rank": 54,
+      "port": 257,
+      "name": "S_AQ1",
+      "changed_rows": 2157,
+      "v68_better_rows": 1815,
+      "train_score_sum_gain": 45.55235921857865
+    },
+    {
+      "rank": 55,
+      "port": 352,
+      "name": "ZDS[0]",
+      "changed_rows": 2043,
+      "v68_better_rows": 1734,
+      "train_score_sum_gain": 44.64076694280355
+    },
+    {
+      "rank": 56,
+      "port": 21,
+      "name": "A_BY",
+      "changed_rows": 2252,
+      "v68_better_rows": 1869,
+      "train_score_sum_gain": 44.508680836806256
+    },
+    {
+      "rank": 57,
+      "port": 335,
+      "name": "S_HY",
+      "changed_rows": 2000,
+      "v68_better_rows": 1737,
+      "train_score_sum_gain": 44.19604131972779
+    },
+    {
+      "rank": 58,
+      "port": 449,
+      "name": "ZSNA[1]",
+      "changed_rows": 2192,
+      "v68_better_rows": 1786,
+      "train_score_sum_gain": 43.90424455479756
+    },
+    {
+      "rank": 59,
+      "port": 355,
+      "name": "ZDS[3]",
+      "changed_rows": 1993,
+      "v68_better_rows": 1661,
+      "train_score_sum_gain": 43.33422776827413
+    },
+    {
+      "rank": 60,
+      "port": 456,
+      "name": "ZSNB[0]",
+      "changed_rows": 2369,
+      "v68_better_rows": 1933,
+      "train_score_sum_gain": 43.09620665385482
+    },
+    {
+      "rank": 61,
+      "port": 85,
+      "name": "A_HQ0",
+      "changed_rows": 1779,
+      "v68_better_rows": 1529,
+      "train_score_sum_gain": 42.02568050737125
+    },
+    {
+      "rank": 62,
+      "port": 322,
+      "name": "S_GQ0",
+      "changed_rows": 1708,
+      "v68_better_rows": 1525,
+      "train_score_sum_gain": 40.687911277880026
+    },
+    {
+      "rank": 63,
+      "port": 64,
+      "name": "A_FQ1",
+      "changed_rows": 1674,
+      "v68_better_rows": 1482,
+      "train_score_sum_gain": 40.47948415773652
+    },
+    {
+      "rank": 64,
+      "port": 10,
+      "name": "A_AY",
+      "changed_rows": 2088,
+      "v68_better_rows": 1734,
+      "train_score_sum_gain": 40.23284398858286
+    },
+    {
+      "rank": 65,
+      "port": 311,
+      "name": "S_FQ0",
+      "changed_rows": 1635,
+      "v68_better_rows": 1417,
+      "train_score_sum_gain": 40.071820124510154
+    },
+    {
+      "rank": 66,
+      "port": 471,
+      "name": "ZSSA[7]",
+      "changed_rows": 566,
+      "v68_better_rows": 487,
+      "train_score_sum_gain": 13.160600953091402
+    },
+    {
+      "rank": 67,
+      "port": 476,
+      "name": "ZSSB[4]",
+      "changed_rows": 465,
+      "v68_better_rows": 385,
+      "train_score_sum_gain": 9.816459293383172
+    },
+    {
+      "rank": 68,
+      "port": 361,
+      "name": "ZDW[1]",
+      "changed_rows": 270,
+      "v68_better_rows": 219,
+      "train_score_sum_gain": 5.359208559459115
+    },
+    {
+      "rank": 69,
+      "port": 301,
+      "name": "S_EQ1",
+      "changed_rows": 176,
+      "v68_better_rows": 147,
+      "train_score_sum_gain": 4.469758616914206
+    },
+    {
+      "rank": 70,
+      "port": 395,
+      "name": "ZLW[3]",
+      "changed_rows": 64,
+      "v68_better_rows": 53,
+      "train_score_sum_gain": 2.6335381692455195
+    },
+    {
+      "rank": 71,
+      "port": 472,
+      "name": "ZSSB[0]",
+      "changed_rows": 85,
+      "v68_better_rows": 73,
+      "train_score_sum_gain": 2.183813449087085
+    },
+    {
+      "rank": 72,
+      "port": 344,
+      "name": "ZDN[0]",
+      "changed_rows": 127,
+      "v68_better_rows": 114,
+      "train_score_sum_gain": 2.049879420047872
+    },
+    {
+      "rank": 73,
+      "port": 268,
+      "name": "S_BQ1",
+      "changed_rows": 69,
+      "v68_better_rows": 61,
+      "train_score_sum_gain": 1.6718513835962432
+    },
+    {
+      "rank": 74,
+      "port": 75,
+      "name": "A_GQ1",
+      "changed_rows": 52,
+      "v68_better_rows": 45,
+      "train_score_sum_gain": 1.3969931390531385
+    },
+    {
+      "rank": 75,
+      "port": 474,
+      "name": "ZSSB[2]",
+      "changed_rows": 47,
+      "v68_better_rows": 40,
+      "train_score_sum_gain": 1.1293142431459575
+    },
+    {
+      "rank": 76,
+      "port": 477,
+      "name": "ZSSB[5]",
+      "changed_rows": 32,
+      "v68_better_rows": 28,
+      "train_score_sum_gain": 0.6345775776896706
+    },
+    {
+      "rank": 77,
+      "port": 490,
+      "name": "ZSWB[2]",
+      "changed_rows": 25,
+      "v68_better_rows": 22,
+      "train_score_sum_gain": 0.5879912699654928
+    },
+    {
+      "rank": 78,
+      "port": 434,
+      "name": "ZSEA[2]",
+      "changed_rows": 28,
+      "v68_better_rows": 23,
+      "train_score_sum_gain": 0.36489613895793804
+    },
+    {
+      "rank": 79,
+      "port": 291,
+      "name": "S_DY",
+      "changed_rows": 9,
+      "v68_better_rows": 9,
+      "train_score_sum_gain": 0.22215041842614203
+    },
+    {
+      "rank": 80,
+      "port": 493,
+      "name": "ZSWB[5]",
+      "changed_rows": 1,
+      "v68_better_rows": 1,
+      "train_score_sum_gain": 0.018023541508890295
+    },
+    {
+      "rank": 81,
+      "port": 365,
+      "name": "ZDW[5]",
+      "changed_rows": 1,
+      "v68_better_rows": 1,
+      "train_score_sum_gain": 0.005644342692615045
+    },
+    {
+      "rank": 82,
+      "port": 380,
+      "name": "ZLN[4]",
+      "changed_rows": 5,
+      "v68_better_rows": 2,
+      "train_score_sum_gain": 0.004815923537982325
+    },
+    {
+      "rank": 83,
+      "port": 41,
+      "name": "A_DQ0",
+      "changed_rows": 8,
+      "v68_better_rows": 7,
+      "train_score_sum_gain": -0.05124997748963245
+    }
+  ],
+  "validation_curve": [
+    {
+      "retained_source_ports": 0,
+      "accuracy": 98.30275767678401,
+      "changed_rows_restored_to_v68": 0,
+      "estimated_extension_bytes": 0,
+      "estimated_extension_build_fraction": 0.0
+    },
+    {
+      "retained_source_ports": 8,
+      "accuracy": 98.36085477801262,
+      "changed_rows_restored_to_v68": 9869,
+      "estimated_extension_bytes": 52203925,
+      "estimated_extension_build_fraction": 0.0851063829787234
+    },
+    {
+      "retained_source_ports": 16,
+      "accuracy": 98.41657284391482,
+      "changed_rows_restored_to_v68": 20335,
+      "estimated_extension_bytes": 104407849,
+      "estimated_extension_build_fraction": 0.1702127659574468
+    },
+    {
+      "retained_source_ports": 24,
+      "accuracy": 98.46534216420663,
+      "changed_rows_restored_to_v68": 32098,
+      "estimated_extension_bytes": 156611774,
+      "estimated_extension_build_fraction": 0.2553191489361702
+    },
+    {
+      "retained_source_ports": 32,
+      "accuracy": 98.52231274105168,
+      "changed_rows_restored_to_v68": 45644,
+      "estimated_extension_bytes": 208815698,
+      "estimated_extension_build_fraction": 0.3404255319148936
+    },
+    {
+      "retained_source_ports": 40,
+      "accuracy": 98.55011602141784,
+      "changed_rows_restored_to_v68": 55307,
+      "estimated_extension_bytes": 261019623,
+      "estimated_extension_build_fraction": 0.425531914893617
+    },
+    {
+      "retained_source_ports": 48,
+      "accuracy": 98.58979002443276,
+      "changed_rows_restored_to_v68": 65693,
+      "estimated_extension_bytes": 313223548,
+      "estimated_extension_build_fraction": 0.5106382978723404
+    },
+    {
+      "retained_source_ports": 56,
+      "accuracy": 98.62742164006643,
+      "changed_rows_restored_to_v68": 75846,
+      "estimated_extension_bytes": 365427472,
+      "estimated_extension_build_fraction": 0.5957446808510638
+    },
+    {
+      "retained_source_ports": 64,
+      "accuracy": 98.67951305271282,
+      "changed_rows_restored_to_v68": 88762,
+      "estimated_extension_bytes": 417631397,
+      "estimated_extension_build_fraction": 0.6808510638297872
+    },
+    {
+      "retained_source_ports": 72,
+      "accuracy": 98.68530863456735,
+      "changed_rows_restored_to_v68": 89817,
+      "estimated_extension_bytes": 469835321,
+      "estimated_extension_build_fraction": 0.7659574468085106
+    },
+    {
+      "retained_source_ports": 80,
+      "accuracy": 98.68530863456735,
+      "changed_rows_restored_to_v68": 89817,
+      "estimated_extension_bytes": 522039246,
+      "estimated_extension_build_fraction": 0.851063829787234
+    },
+    {
+      "retained_source_ports": 83,
+      "accuracy": 98.68530863456735,
+      "changed_rows_restored_to_v68": 89817,
+      "estimated_extension_bytes": 541615718,
+      "estimated_extension_build_fraction": 0.8829787234042553
+    }
+  ]
+}

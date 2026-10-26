@@ -1,7 +1,15 @@
 #pragma once
 #include <cstdint>
 namespace srb_runtime_ext_ids {
-#ifdef SRB_EXTENSION_V46_PORTS
+#ifdef SRB_EXTENSION_V70_PORTS
+// Ranked on the public 1M panel, then selected only after the independent
+// 608K/source-disjoint Dijkstra panel recovered the full V68 score.  Keeping
+// an entire source slice preserves the existing one-lookup online path.
+static constexpr uint16_t sources[72]={341,396,437,357,342,313,485,438,339,312,358,469,470,462,454,486,
+360,484,399,491,343,346,350,290,394,300,458,289,279,468,460,280,495,481,52,480,
+368,32,334,441,455,432,20,464,440,30,459,74,387,465,397,383,258,257,352,21,
+335,449,355,456,85,322,64,10,311,471,476,361,301,395,472,344};
+#elif defined(SRB_EXTENSION_V46_PORTS)
 static constexpr uint16_t sources[94]={0,5,6,8,9,17,22,23,24,26,27,28,30,32,33,36,37,38,39,40,42,44,48,49,
 52,53,54,59,63,131,133,134,135,136,138,144,147,149,150,152,153,256,271,275,283,284,285,287,
 330,340,341,350,352,372,384,394,395,405,417,418,428,439,440,449,450,460,461,471,472,473,482,494,
