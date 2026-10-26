@@ -1,0 +1,81 @@
+{
+  "atlas": "E:\\紫光同创\\the-best-baseline\\Routing-delay-algorithm-EDA-Zhouyt_V34\\srb_runtime_atlas_v67.tmp",
+  "samples": 200000,
+  "seed": 684453,
+  "eligible_sources": 117,
+  "eligible_targets": 256,
+  "results": [
+    {
+      "radius": 24,
+      "attempts": 200000,
+      "comparable": 200000,
+      "exact": 15689,
+      "absolute_error_sum": 15416028,
+      "max_absolute_error": 1925,
+      "missing_anchor": 0,
+      "coverage": 1.0,
+      "exact_rate": 0.078445,
+      "mae_ps": 77.08014
+    },
+    {
+      "radius": 32,
+      "attempts": 180459,
+      "comparable": 180459,
+      "exact": 38524,
+      "absolute_error_sum": 4379309,
+      "max_absolute_error": 1014,
+      "missing_anchor": 0,
+      "coverage": 1.0,
+      "exact_rate": 0.2134778536952992,
+      "mae_ps": 24.26761203375836
+    },
+    {
+      "radius": 40,
+      "attempts": 155442,
+      "comparable": 155442,
+      "exact": 57301,
+      "absolute_error_sum": 1525939,
+      "max_absolute_error": 636,
+      "missing_anchor": 0,
+      "coverage": 1.0,
+      "exact_rate": 0.3686326732800659,
+      "mae_ps": 9.81677410223749
+    },
+    {
+      "radius": 48,
+      "attempts": 124913,
+      "comparable": 124913,
+      "exact": 67434,
+      "absolute_error_sum": 486298,
+      "max_absolute_error": 333,
+      "missing_anchor": 0,
+      "coverage": 1.0,
+      "exact_rate": 0.5398477340228799,
+      "mae_ps": 3.893093593140826
+    },
+    {
+      "radius": 56,
+      "attempts": 88870,
+      "comparable": 88870,
+      "exact": 58991,
+      "absolute_error_sum": 161392,
+      "max_absolute_error": 144,
+      "missing_anchor": 0,
+      "coverage": 1.0,
+      "exact_rate": 0.6637898053336334,
+      "mae_ps": 1.816045909755823
+    },
+    {
+      "radius": 64,
+      "attempts": 47091,
+      "comparable": 47091,
+      "exact": 35676,
+      "absolute_error_sum": 38612,
+      "max_absolute_error": 20,
+      "missing_anchor": 0,
+      "coverage": 1.0,
+      "exact_rate": 0.7575969930559979,
+      "mae_ps": 0.8199443630417702
+    }
+  ]
+}

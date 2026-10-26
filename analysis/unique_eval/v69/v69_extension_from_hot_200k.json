@@ -1,0 +1,25 @@
+{
+  "atlas": "E:\\紫光同创\\the-best-baseline\\Routing-delay-algorithm-EDA-Zhouyt_V34\\srb_runtime_atlas_v67.tmp",
+  "samples": 200000,
+  "seed": 684453,
+  "x_period": 10,
+  "y_period": 12,
+  "eligible_sources": 93,
+  "eligible_targets": 256,
+  "extension": true,
+  "atlas_extension_bytes": 613396114,
+  "results": [
+    {
+      "radius": 72,
+      "attempts": 200000,
+      "comparable": 200000,
+      "exact": 153236,
+      "absolute_error_sum": 290430,
+      "max_absolute_error": 64,
+      "missing_anchor": 0,
+      "coverage": 1.0,
+      "exact_rate": 0.76618,
+      "mae_ps": 1.45215
+    }
+  ]
+}

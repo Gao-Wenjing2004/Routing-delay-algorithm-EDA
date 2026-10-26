@@ -15,10 +15,17 @@
 #include "period_gate_data.hpp"
 #endif
 #endif
+#ifdef SRB_HIERARCHICAL_SELECTOR
+#include "v54_selector_data.hpp"
+#endif
 #include <fstream>
 #include <string>
 #include <stdexcept>
 #include <vector>
+
+#ifndef SRB_EXTENSION_RADIUS
+#define SRB_EXTENSION_RADIUS 104
+#endif
 #ifdef _WIN32
 #define NOMINMAX
 #include <windows.h>
@@ -30,6 +37,10 @@
 #endif
 namespace srb_v3 {
 class HybridEstimator {
+#pragma pack(push,1)
+ struct EndpointException{uint32_t index;uint16_t value;};
+ struct EndpointExceptionHeader{char magic[8];uint32_t version,base_count,hot_count,reserved;};
+#pragma pack(pop)
 public:
  HybridEstimator(const std::string&path,int radius=72,unsigned=0,int=-1):radius_(radius){
   std::fill(src_,src_+496,-1);std::fill(dst_,dst_+496,-1);std::fill(hsrc_,hsrc_+496,-1);std::fill(hdst_,hdst_+496,-1);
@@ -77,7 +88,7 @@ public:
 #endif
   if(!data_||bytes_<64)throw std::runtime_error("cannot map endpoint Atlas");
   std::memcpy(&h_,data_,64);
-  if(std::memcmp(h_.magic,"SRBE2E1\0",8)||(h_.version<1||h_.version>3)||h_.ports!=496||h_.base_radius!=24||h_.hot_radius!=72
+  if(std::memcmp(h_.magic,"SRBE2E1\0",8)||(h_.version<1||h_.version>4)||h_.ports!=496||h_.base_radius!=24||h_.hot_radius!=72
      ||!h_.sources||h_.sources>496||!h_.targets||h_.targets>496||!h_.hot_sources||h_.hot_sources>496||!h_.hot_targets||h_.hot_targets>496
      ||h_.hot_cells!=145*145-49*49
      ||h_.base_values!=uint64_t(h_.sources)*49*49*h_.targets
@@ -85,13 +96,17 @@ public:
   uint64_t prefix=64+2ull*(h_.sources+h_.targets+h_.hot_sources+h_.hot_targets);
   if(h_.version==2){
    bits_=h_.reserved;if(bits_<1||bits_>15||h_.base_values%16||h_.hot_values%16)throw std::runtime_error("bad packed layout");
-   record_bytes_=2+2*bits_;mask_=(1u<<bits_)-1;
+   record_bytes_=2+2*bits_;mask_=(1u<<bits_)-1;base_bits_=hot_bits_=bits_;base_record_bytes_=hot_record_bytes_=record_bytes_;base_mask_=hot_mask_=mask_;
+  }else if(h_.version==4){
+   base_bits_=h_.reserved&255;hot_bits_=(h_.reserved>>8)&255;if(base_bits_<1||base_bits_>15||hot_bits_<1||hot_bits_>15||h_.base_values%16||h_.hot_values%16)throw std::runtime_error("bad hybrid packed layout");base_record_bytes_=2+2*base_bits_;hot_record_bytes_=2+2*hot_bits_;base_mask_=(1u<<base_bits_)-1;hot_mask_=(1u<<hot_bits_)-1;
   }
   uint64_t endpoint_bytes=0;
   if(h_.version==3){
    struct PackHeader{char magic[8];uint64_t base_bytes,hot_bytes;}ph{};std::memcpy(&ph,data_+prefix,sizeof(ph));if(std::memcmp(ph.magic,"SRBADP1",7))throw std::runtime_error("bad adaptive Atlas");
    auto setup=[&](uint64_t values,uint64_t records,const uint8_t*&q,const uint8_t*&offs,const uint8_t*&widths,const uint8_t*&data){uint64_t blocks=values/16,groups=(blocks+15)/16;offs=q;q+=(groups+1)*4;widths=q;q+=(blocks+1)/2;data=q;q+=records;};
    const uint8_t*q=reinterpret_cast<const uint8_t*>(data_+prefix+sizeof(ph));setup(h_.base_values,ph.base_bytes,q,base_offsets_,base_widths_,base_records_);setup(h_.hot_values,ph.hot_bytes,q,hot_offsets_,hot_widths_,hot_records_);endpoint_bytes=q-reinterpret_cast<const uint8_t*>(data_);
+  }else if(h_.version==4){
+   const uint64_t base_bytes=h_.base_values/16*base_record_bytes_,hot_bytes=h_.hot_values/16*hot_record_bytes_,exceptions_offset=prefix+base_bytes+hot_bytes;if(exceptions_offset+sizeof(EndpointExceptionHeader)>bytes_)throw std::runtime_error("truncated hybrid Atlas");EndpointExceptionHeader eh{};std::memcpy(&eh,data_+exceptions_offset,sizeof(eh));if(std::memcmp(eh.magic,"SRBEXC1",7)||eh.version!=1||eh.reserved)throw std::runtime_error("bad hybrid Atlas exceptions");base_exception_count_=eh.base_count;hot_exception_count_=eh.hot_count;base_exceptions_=reinterpret_cast<const EndpointException*>(data_+exceptions_offset+sizeof(eh));hot_exceptions_=base_exceptions_+base_exception_count_;endpoint_bytes=exceptions_offset+sizeof(eh)+uint64_t(base_exception_count_+hot_exception_count_)*sizeof(EndpointException);
   }else{const uint64_t payload=bits_?(h_.base_values+h_.hot_values)/16*record_bytes_:2*(h_.base_values+h_.hot_values);endpoint_bytes=prefix+payload;}
 #ifdef SRB_ENDPOINT_EXTENSION
   if(endpoint_bytes>bytes_)throw std::runtime_error("truncated endpoint Atlas");
@@ -106,6 +121,9 @@ public:
   else if(h_.version==2){
    hot_=reinterpret_cast<const uint16_t*>(reinterpret_cast<const char*>(base_)+(h_.base_values/16)*record_bytes_);
    if(reinterpret_cast<const char*>(hot_)+(h_.hot_values/16)*record_bytes_!=data_+endpoint_bytes)throw std::runtime_error("truncated packed Atlas");
+  }else if(h_.version==4){
+   hot_=reinterpret_cast<const uint16_t*>(reinterpret_cast<const char*>(base_)+(h_.base_values/16)*base_record_bytes_);
+   if(reinterpret_cast<const char*>(hot_)+(h_.hot_values/16)*hot_record_bytes_!=reinterpret_cast<const char*>(data_)+prefix+(h_.base_values/16)*base_record_bytes_+(h_.hot_values/16)*hot_record_bytes_)throw std::runtime_error("truncated hybrid packed Atlas");
   }else{hot_=base_+h_.base_values;if(reinterpret_cast<const char*>(hot_+h_.hot_values)!=data_+endpoint_bytes)throw std::runtime_error("truncated endpoint Atlas");}
   unsigned k=0;for(int y=-72;y<=72;++y)for(int x=-72;x<=72;++x)annulus_[(y+72)*145+x+72]=(std::abs(x)<=24&&std::abs(y)<=24)?65535:k++;
 #ifdef SRB_ROUTE_TAIL
@@ -117,6 +135,9 @@ public:
 #ifdef SRB_ENDPOINT_EXTENSION
   if(bytes_>endpoint_bytes)init_extension(reinterpret_cast<const uint8_t*>(data_+endpoint_bytes),bytes_-endpoint_bytes);
   else load_extension("endpoint_extension.bin");
+#endif
+#ifdef SRB_SOURCE_MOVE_CACHE
+  prepare_source_move_cache();
 #endif
  }
  ~HybridEstimator(){
@@ -131,7 +152,11 @@ public:
   srb_fast::Endpoint a,b;if(!parse_endpoints(from,to,a,b))return false;return predict_endpoints(a,b,result,local);
  }
  bool parse_endpoints(srb_fast::Slice from,srb_fast::Slice to,srb_fast::Endpoint&a,srb_fast::Endpoint&b)const{
+#ifdef SRB_PRETRIMMED_ENDPOINTS
+  return fallback_.parse_endpoint_pretrimmed(from,a)&&fallback_.parse_endpoint_pretrimmed(to,b);
+#else
   return fallback_.parse_endpoint(from,a)&&fallback_.parse_endpoint(to,b);
+#endif
  }
  bool predict_endpoints(const srb_fast::Endpoint&a,const srb_fast::Endpoint&b,uint32_t&result,bool&local)const{
   if(a.x==b.x&&a.y==b.y&&a.port==b.port){result=0;local=true;return true;}
@@ -140,12 +165,19 @@ public:
   // do not consume a Net offset. Fold those columns out before the regular
   // fabric lookup; local_lookup_delay() charges the Block penalty once.
   bool endpoint_block_fold=false;
+#ifdef SRB_LANDING_BLOCK_CONTEXT
+  srb_fast::Endpoint local_source=a;
+#endif
+#ifdef SRB_BLOCK_FOLD_CACHE
+  const int cached_fold=fallback_.local_dx_fold(a,b);dx+=cached_fold;endpoint_block_fold=cached_fold!=0;
+#else
   for(int bi=1;bi<srb_fast_data::kBlockCount;++bi){
    if(a.y>=srb_fast_data::kBlockLower[bi]&&a.y<=srb_fast_data::kBlockUpper[bi]&&b.y>=srb_fast_data::kBlockLower[bi]&&b.y<=srb_fast_data::kBlockUpper[bi]){
     if(a.x<srb_fast_data::kBlockLeft[bi]&&b.x>srb_fast_data::kBlockRight[bi]){dx-=srb_fast_data::kBlockRight[bi]-srb_fast_data::kBlockLeft[bi]+1;endpoint_block_fold=true;}
     else if(b.x<srb_fast_data::kBlockLeft[bi]&&a.x>srb_fast_data::kBlockRight[bi]){dx+=srb_fast_data::kBlockRight[bi]-srb_fast_data::kBlockLeft[bi]+1;endpoint_block_fold=true;}
    }
   }
+#endif
 #ifdef SRB_ACTUAL_SOURCE_NET
   // Endpoint Atlases are generated in an obstacle-free fabric.  An Output
   // source has one compulsory first Net.  Resolve that Net at its real chip
@@ -158,9 +190,26 @@ public:
    const auto&e=srb_local_arch::kOutputNet[a.port];
    if(e.next_route>=0){
     int mx=0,my=0;
+#ifdef SRB_SOURCE_MOVE_CACHE
+    source_net_valid=cached_output_move(a,mx,my,source_net_extra);
+#else
     source_net_valid=actual_output_move(a,e.dx,e.dy,mx,my,source_net_extra);
+#endif
     if(source_net_valid){
-     if(!endpoint_block_fold){dx-=mx-int(e.dx);dy-=my-int(e.dy);}
+     if(!endpoint_block_fold){
+      dx-=mx-int(e.dx);dy-=my-int(e.dy);
+#ifdef SRB_LANDING_BLOCK_CONTEXT
+#ifdef SRB_SHIFTED_LANDING_ONLY
+      if(mx!=int(e.dx)||my!=int(e.dy)){
+#endif
+      local_source.x=static_cast<int16_t>(int(a.x)+mx);
+      local_source.y=static_cast<int16_t>(int(a.y)+my);
+      fallback_.refresh_endpoint_metadata(local_source);
+#ifdef SRB_SHIFTED_LANDING_ONLY
+      }
+#endif
+#endif
+     }
      else source_net_extra=0;
      source_net_extra+=source_excursion_gap(a,b,mx,my);
     }
@@ -175,11 +224,15 @@ public:
 #endif
      (d<=radius_
 #ifdef SRB_ENDPOINT_EXTENSION
-     ||(extension_data_&&d<=104)
+     ||(extension_data_&&d<=SRB_EXTENSION_RADIUS)
 #endif
      )&&
 #ifdef SRB_MERGED_MODEL
+#ifdef SRB_LANDING_BLOCK_CONTEXT
+     fallback_.local_lookup_allowed(local_source,b)
+#else
      fallback_.local_lookup_allowed(a,b)
+#endif
 #else
      safe(a,b)
 #endif
@@ -191,11 +244,11 @@ public:
 #endif
      )value=get(hot_,(uint64_t(hsrc_[a.port])*h_.hot_cells+annulus_[(dy+72)*145+dx+72])*h_.hot_targets+hdst_[b.port]);
 #ifdef SRB_ENDPOINT_EXTENSION
-   else if(d>72&&d<=104&&ext_src_[a.port]>=0&&ext_dst_[b.port]>=0&&extension_data_
+   else if(d>72&&d<=SRB_EXTENSION_RADIUS&&ext_src_[a.port]>=0&&ext_dst_[b.port]>=0&&extension_data_
 #ifdef SRB_EXT_ANCHORS_ONLY
      &&false
 #endif
-     )value=get_extension((uint64_t(ext_src_[a.port])*22656+ext_annulus_[(dy+104)*209+dx+104])*256+ext_dst_[b.port]);
+     ){constexpr int ew=2*SRB_EXTENSION_RADIUS+1,ec=ew*ew-145*145;value=get_extension((uint64_t(ext_src_[a.port])*ec+ext_annulus_[(dy+SRB_EXTENSION_RADIUS)*ew+dx+SRB_EXTENSION_RADIUS])*256+ext_dst_[b.port]);}
 #endif
   }
 #ifdef SRB_LONG_EXTRAPOLATE_DISABLED
@@ -206,7 +259,11 @@ public:
   // on the conservative fallback model.
   if(value==65535&&d>72&&hsrc_[a.port]>=0&&hdst_[b.port]>=0&&
 #ifdef SRB_MERGED_MODEL
+#ifdef SRB_LANDING_BLOCK_CONTEXT
+     fallback_.local_lookup_allowed(local_source,b)
+#else
      fallback_.local_lookup_allowed(a,b)
+#endif
 #else
      safe(a,b)
 #endif
@@ -252,14 +309,14 @@ public:
 #else
     false;
 #endif
-   const int limit=has_ext?104:72;
+   const int limit=has_ext?SRB_EXTENSION_RADIUS:72;
    auto exact_value=[&](int qx,int qy)->uint16_t{
     int qd=std::max(std::abs(qx),std::abs(qy));
     if(qd<=24&&src_[a.port]>=0&&dst_[b.port]>=0)
      return get(base_,(uint64_t(src_[a.port])*49*49+(qy+24)*49+qx+24)*h_.targets+dst_[b.port]);
     if(qd<=72){uint16_t cell=annulus_[(qy+72)*145+qx+72];if(cell!=65535)return get(hot_,(uint64_t(hsrc_[a.port])*h_.hot_cells+cell)*h_.hot_targets+hdst_[b.port]);}
 #ifdef SRB_ENDPOINT_EXTENSION
-    if(has_ext&&qd<=104){uint16_t cell=ext_annulus_[(qy+104)*209+qx+104];if(cell!=65535)return get_extension((uint64_t(ext_src_[a.port])*22656+cell)*256+ext_dst_[b.port]);}
+    if(has_ext&&qd<=SRB_EXTENSION_RADIUS){constexpr int ew=2*SRB_EXTENSION_RADIUS+1,ec=ew*ew-145*145;uint16_t cell=ext_annulus_[(qy+SRB_EXTENSION_RADIUS)*ew+qx+SRB_EXTENSION_RADIUS];if(cell!=65535)return get_extension((uint64_t(ext_src_[a.port])*ec+cell)*256+ext_dst_[b.port]);}
 #endif
     return 65535;
    };
@@ -290,13 +347,23 @@ public:
   local=value!=65535;
   if(local)result=value+std::abs(int(srb_fast_data::kXGapPrefix[b.x])-srb_fast_data::kXGapPrefix[a.x])+std::abs(int(srb_fast_data::kYGapPrefix[b.y])-srb_fast_data::kYGapPrefix[a.y])
 #ifdef SRB_MERGED_MODEL
+#ifdef SRB_LANDING_BLOCK_CONTEXT
+    +fallback_.local_lookup_delay(local_source,b)
+#else
     +fallback_.local_lookup_delay(a,b)
+#endif
 #endif
 #ifdef SRB_ACTUAL_SOURCE_NET
     +source_net_extra
 #endif
     ;
   else result=fallback_.predict(a,b);
+#ifdef SRB_HIERARCHICAL_SELECTOR
+  if(local&&selector_gate(a,b)){
+   const uint32_t alternative=fallback_.predict(a,b);
+   if(selector_choose(a,b,result,alternative))result=alternative;
+  }
+#endif
   return true;
  }
  void prefetch_endpoints(const srb_fast::Endpoint&a,const srb_fast::Endpoint&b)const{
@@ -307,18 +374,18 @@ public:
   const int dx=int(b.x)-a.x,dy=int(b.y)-a.y;
   const int d=std::max(std::abs(dx),std::abs(dy));
   const void*p=nullptr;
-  if(h_.version==2){
+  if(h_.version==2||h_.version==4){
    if(d<=24&&src_[a.port]>=0&&dst_[b.port]>=0){
     uint64_t i=(uint64_t(src_[a.port])*49*49+(dy+24)*49+dx+24)*h_.targets+dst_[b.port];
-    p=reinterpret_cast<const uint8_t*>(base_)+(i/16)*record_bytes_;
+    p=reinterpret_cast<const uint8_t*>(base_)+(i/16)*base_record_bytes_;
    }else if(d>24&&d<=72&&hsrc_[a.port]>=0&&hdst_[b.port]>=0){
     uint16_t c=annulus_[(dy+72)*145+dx+72];
-    if(c!=65535){uint64_t i=(uint64_t(hsrc_[a.port])*h_.hot_cells+c)*h_.hot_targets+hdst_[b.port];p=reinterpret_cast<const uint8_t*>(hot_)+(i/16)*record_bytes_;}
+    if(c!=65535){uint64_t i=(uint64_t(hsrc_[a.port])*h_.hot_cells+c)*h_.hot_targets+hdst_[b.port];p=reinterpret_cast<const uint8_t*>(hot_)+(i/16)*hot_record_bytes_;}
    }
 #ifdef SRB_ENDPOINT_EXTENSION
-   else if(d>72&&d<=104&&extension_data_&&ext_src_[a.port]>=0&&ext_dst_[b.port]>=0){
-    uint16_t c=ext_annulus_[(dy+104)*209+dx+104];
-    if(c!=65535){uint64_t i=(uint64_t(ext_src_[a.port])*22656+c)*256+ext_dst_[b.port];p=extension_data_+(i/16)*18;}
+   else if(d>72&&d<=SRB_EXTENSION_RADIUS&&extension_data_&&ext_src_[a.port]>=0&&ext_dst_[b.port]>=0){
+    constexpr int ew=2*SRB_EXTENSION_RADIUS+1,ec=ew*ew-145*145;uint16_t c=ext_annulus_[(dy+SRB_EXTENSION_RADIUS)*ew+dx+SRB_EXTENSION_RADIUS];
+    if(c!=65535){uint64_t i=(uint64_t(ext_src_[a.port])*ec+c)*256+ext_dst_[b.port];p=extension_data_+(i/16)*18;}
    }
 #endif
   }
@@ -333,6 +400,43 @@ public:
 #endif
   ;}
  private:
+#ifdef SRB_HIERARCHICAL_SELECTOR
+ static uint8_t selector_distance_bin(int d){
+  static constexpr int edge[13]={16,24,32,40,48,56,72,104,128,192,256,384,512};
+  uint8_t b=0;while(b<13&&d>edge[b])++b;return b;
+ }
+ static uint32_t selector_key(const srb_fast::Endpoint&a,const srb_fast::Endpoint&b){
+  const int dx=int(b.x)-a.x,dy=int(b.y)-a.y,adx=std::abs(dx),ady=std::abs(dy);
+  const uint8_t db=selector_distance_bin(std::max(adx,ady));
+  const uint8_t orient=uint8_t((dx>0)+2*(dy>0)+4*(adx>ady)+8*(ady>adx));
+  return (uint32_t(a.port)*14u+db)*16u+orient;
+ }
+ static bool selector_gate(const srb_fast::Endpoint&a,const srb_fast::Endpoint&b){
+  const uint32_t key=selector_key(a,b);
+  return srb_v54_selector::bit(srb_v54_selector::kGateBits,key);
+ }
+ static bool selector_choose(const srb_fast::Endpoint&a,const srb_fast::Endpoint&b,uint32_t atlas,uint32_t alternative){
+  const int delta=int(alternative)-int(atlas),magnitude=std::abs(delta);
+  const uint32_t sign=delta<0?0u:delta>0?2u:1u;
+  static constexpr int edge[8]={0,2,4,8,16,32,64,128};
+  uint32_t mag=0;while(mag<8&&magnitude>edge[mag])++mag;
+  const uint32_t key=(selector_key(a,b)*3u+sign)*9u+mag;
+  return srb_v54_selector::bit(srb_v54_selector::kFineBits,key);
+ }
+#endif
+#ifdef SRB_SOURCE_MOVE_CACHE
+ void prepare_source_move_cache(){
+  using namespace srb_local_arch;
+  std::fill(source_move_class_,source_move_class_+496,int16_t(-1));
+  std::vector<std::pair<int8_t,int8_t>> moves;
+  for(int p=0;p<496;++p){const auto&e=kOutputNet[p];if(kPortToInput[p]>=0||e.next_route<0)continue;size_t i=0;while(i<moves.size()&&(moves[i].first!=e.dx||moves[i].second!=e.dy))++i;if(i==moves.size())moves.push_back({e.dx,e.dy});source_move_class_[p]=int16_t(i);}
+  source_move_cache_.resize(moves.size()*120u*550u);
+  for(size_t m=0;m<moves.size();++m)for(int x=0;x<120;++x)for(int y=0;y<550;++y){srb_fast::Endpoint a;a.x=int16_t(x);a.y=int16_t(y);int dx=0,dy=0;uint16_t extra=0;bool valid=actual_output_move(a,moves[m].first,moves[m].second,dx,dy,extra);uint32_t code=valid?0x80000000u|uint8_t(int8_t(dx))|(uint32_t(uint8_t(int8_t(dy)))<<8)|(uint32_t(extra)<<16):0;source_move_cache_[(m*120u+unsigned(x))*550u+unsigned(y)]=code;}
+ }
+ bool cached_output_move(const srb_fast::Endpoint&a,int&dx,int&dy,uint16_t&extra)const{
+  const int c=source_move_class_[a.port];if(c<0)return false;const uint32_t code=source_move_cache_[(size_t(c)*120u+unsigned(a.x))*550u+unsigned(a.y)];if(!(code&0x80000000u))return false;dx=int(int8_t(code&255));dy=int(int8_t((code>>8)&255));extra=uint16_t((code>>16)&0x1ff);return true;
+ }
+#endif
 #ifdef SRB_ACTUAL_SOURCE_NET
  static bool actual_output_move(const srb_fast::Endpoint&a,int ndx,int ndy,int&dx,int&dy,uint16_t&extra){
   using namespace srb_fast_data;
@@ -385,9 +489,9 @@ public:
 #pragma pack(pop)
  void init_extension(const uint8_t*data,size_t n){
   if(n<sizeof(ExtHeader))throw std::runtime_error("truncated endpoint extension");ExtHeader e{};std::memcpy(&e,data,sizeof(e));
-  if(std::memcmp(e.magic,"SRBEXT1",7)||e.version!=2||e.inner!=72||e.radius!=104||!e.sources||e.sources>496||e.targets!=256||e.bits!=8||e.values!=uint64_t(e.sources)*e.cells*e.targets||n!=sizeof(e)+2ull*(e.sources+e.targets)+(e.values/16)*18+uint64_t(e.reserved)*sizeof(ExtException))throw std::runtime_error("bad endpoint extension");
+  if(std::memcmp(e.magic,"SRBEXT1",7)||e.version!=2||e.inner!=72||e.radius!=SRB_EXTENSION_RADIUS||!e.sources||e.sources>496||e.targets!=256||e.bits!=8||e.values!=uint64_t(e.sources)*e.cells*e.targets||n!=sizeof(e)+2ull*(e.sources+e.targets)+(e.values/16)*18+uint64_t(e.reserved)*sizeof(ExtException))throw std::runtime_error("bad endpoint extension");
   std::fill(ext_src_,ext_src_+496,-1);std::fill(ext_dst_,ext_dst_+496,-1);auto*p=reinterpret_cast<const uint16_t*>(data+sizeof(e));for(unsigned i=0;i<e.sources;++i){if(p[i]>=496||ext_src_[p[i]]>=0)throw std::runtime_error("bad extension source IDs");ext_src_[p[i]]=i;}p+=e.sources;for(unsigned i=0;i<e.targets;++i){if(p[i]>=496||ext_dst_[p[i]]>=0)throw std::runtime_error("bad extension target IDs");ext_dst_[p[i]]=i;}extension_data_=reinterpret_cast<const uint8_t*>(p+e.targets);extension_exceptions_=reinterpret_cast<const ExtException*>(extension_data_+(e.values/16)*18);extension_exception_count_=e.reserved;
-  std::fill(ext_annulus_,ext_annulus_+209*209,65535);unsigned k=0;for(int y=-104;y<=104;++y)for(int x=-104;x<=104;++x)if(std::max(std::abs(x),std::abs(y))>72)ext_annulus_[(y+104)*209+x+104]=k++;
+  constexpr int ew=2*SRB_EXTENSION_RADIUS+1;std::fill(ext_annulus_,ext_annulus_+ew*ew,65535);unsigned k=0;for(int y=-SRB_EXTENSION_RADIUS;y<=SRB_EXTENSION_RADIUS;++y)for(int x=-SRB_EXTENSION_RADIUS;x<=SRB_EXTENSION_RADIUS;++x)if(std::max(std::abs(x),std::abs(y))>72)ext_annulus_[(y+SRB_EXTENSION_RADIUS)*ew+x+SRB_EXTENSION_RADIUS]=k++;
  }
  void load_extension(const char*path){
   std::ifstream f(path,std::ios::binary|std::ios::ate);if(!f)return;auto n=f.tellg();f.seekg(0);extension_.resize(size_t(n));f.read(reinterpret_cast<char*>(extension_.data()),extension_.size());if(!f)throw std::runtime_error("truncated endpoint extension");init_extension(extension_.data(),extension_.size());
@@ -435,6 +539,7 @@ public:
 #endif
  uint16_t get(const uint16_t*data,uint64_t index)const{
   if(h_.version==3){const bool base=data==base_;const uint8_t*offs=base?base_offsets_:hot_offsets_,*widths=base?base_widths_:hot_widths_,*records=base?base_records_:hot_records_;uint64_t block=index/16,group=block/16;uint32_t off;std::memcpy(&off,offs+group*4,4);for(uint64_t b=group*16;b<block;++b){unsigned z=(widths[b/2]>>(4*(b&1)))&15;off+=2+2*z;}unsigned z=(widths[block/2]>>(4*(block&1)))&15;auto*p=records+off;uint16_t lo;std::memcpy(&lo,p,2);unsigned bit=(index%16)*z,shift=bit%8;p+=2+bit/8;uint32_t v=p[0]|uint32_t(p[1])<<8;if(shift+z>16)v|=uint32_t(p[2])<<16;v=(v>>shift)&((1u<<z)-1);return v==((1u<<z)-1)?65535:uint16_t(lo+v);}
+  if(h_.version==4){const bool base=data==base_;const unsigned bits=base?base_bits_:hot_bits_,record_bytes=base?base_record_bytes_:hot_record_bytes_,mask=base?base_mask_:hot_mask_;auto*p=reinterpret_cast<const uint8_t*>(data)+(index/16)*record_bytes;uint16_t lo;std::memcpy(&lo,p,2);unsigned bit=(index%16)*bits,shift=bit%8;p+=2+bit/8;uint16_t raw;std::memcpy(&raw,p,2);uint32_t v=raw;if(shift+bits>16)v|=uint32_t(p[2])<<16;v=(v>>shift)&mask;if(v!=mask)return uint16_t(lo+v);const EndpointException*exceptions=base?base_exceptions_:hot_exceptions_;uint32_t count=base?base_exception_count_:hot_exception_count_,l=0,r=count;while(l<r){uint32_t m=(l+r)/2;if(exceptions[m].index<uint32_t(index))l=m+1;else r=m;}return l<count&&exceptions[l].index==uint32_t(index)?exceptions[l].value:65535;}
   if(!bits_)return data[index];
   auto*p=reinterpret_cast<const uint8_t*>(data)+(index/16)*record_bytes_;
   uint16_t lo;std::memcpy(&lo,p,2);unsigned bit=(index%16)*bits_,shift=bit%8;
@@ -449,11 +554,15 @@ public:
   }return true;
  }
  srb_fast::FastEstimator fallback_;e2e::Header h_{};int radius_;size_t bytes_=0;const char*data_=nullptr;const uint16_t*base_=nullptr,*hot_=nullptr;
- unsigned bits_=0,record_bytes_=0,mask_=0;
+ unsigned bits_=0,record_bytes_=0,mask_=0,base_bits_=0,hot_bits_=0,base_record_bytes_=0,hot_record_bytes_=0,base_mask_=0,hot_mask_=0;
+ const EndpointException*base_exceptions_=nullptr,*hot_exceptions_=nullptr;uint32_t base_exception_count_=0,hot_exception_count_=0;
  const uint8_t*base_offsets_=nullptr,*base_widths_=nullptr,*base_records_=nullptr,*hot_offsets_=nullptr,*hot_widths_=nullptr,*hot_records_=nullptr;
  int16_t src_[496],dst_[496],hsrc_[496],hdst_[496];uint16_t annulus_[145*145];
+#ifdef SRB_SOURCE_MOVE_CACHE
+ int16_t source_move_class_[496];std::vector<uint32_t>source_move_cache_;
+#endif
 #ifdef SRB_ENDPOINT_EXTENSION
- std::vector<uint8_t>extension_;const uint8_t*extension_data_=nullptr;const ExtException*extension_exceptions_=nullptr;uint32_t extension_exception_count_=0;int16_t ext_src_[496],ext_dst_[496];uint16_t ext_annulus_[209*209];
+ std::vector<uint8_t>extension_;const uint8_t*extension_data_=nullptr;const ExtException*extension_exceptions_=nullptr;uint32_t extension_exception_count_=0;int16_t ext_src_[496],ext_dst_[496];uint16_t ext_annulus_[(2*SRB_EXTENSION_RADIUS+1)*(2*SRB_EXTENSION_RADIUS+1)];
 #endif
 #ifdef SRB_ROUTE_TAIL
  TailHeader tail_header_{};std::vector<uint16_t>tail_;

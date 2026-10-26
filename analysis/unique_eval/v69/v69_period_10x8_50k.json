@@ -1,0 +1,59 @@
+{
+  "atlas": "E:\\紫光同创\\the-best-baseline\\Routing-delay-algorithm-EDA-Zhouyt_V34\\srb_runtime_atlas_v67.tmp",
+  "samples": 50000,
+  "seed": 684453,
+  "x_period": 10,
+  "y_period": 8,
+  "eligible_sources": 117,
+  "eligible_targets": 256,
+  "results": [
+    {
+      "radius": 40,
+      "attempts": 50000,
+      "comparable": 50000,
+      "exact": 8795,
+      "absolute_error_sum": 3789980,
+      "max_absolute_error": 665,
+      "missing_anchor": 0,
+      "coverage": 1.0,
+      "exact_rate": 0.1759,
+      "mae_ps": 75.7996
+    },
+    {
+      "radius": 48,
+      "attempts": 40103,
+      "comparable": 40103,
+      "exact": 10116,
+      "absolute_error_sum": 2286844,
+      "max_absolute_error": 338,
+      "missing_anchor": 0,
+      "coverage": 1.0,
+      "exact_rate": 0.25225045507817373,
+      "mae_ps": 57.0242625240007
+    },
+    {
+      "radius": 56,
+      "attempts": 28594,
+      "comparable": 28594,
+      "exact": 9422,
+      "absolute_error_sum": 1233892,
+      "max_absolute_error": 341,
+      "missing_anchor": 0,
+      "coverage": 1.0,
+      "exact_rate": 0.32950968734699587,
+      "mae_ps": 43.15212981744422
+    },
+    {
+      "radius": 64,
+      "attempts": 15245,
+      "comparable": 15245,
+      "exact": 5931,
+      "absolute_error_sum": 499288,
+      "max_absolute_error": 166,
+      "missing_anchor": 0,
+      "coverage": 1.0,
+      "exact_rate": 0.38904558871761236,
+      "mae_ps": 32.75093473269924
+    }
+  ]
+}
