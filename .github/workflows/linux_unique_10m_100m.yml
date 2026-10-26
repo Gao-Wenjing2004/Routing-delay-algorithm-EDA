@@ -7,7 +7,7 @@ on:
     paths:
       - .github/workflows/linux_unique_10m_100m.yml
       - benchmark_assets/endpoint_pool.zip
-      - bin/estimate_v67
+      - bin/estimate_v68
       - tools/unique_eval.py
       - tests/test_unique_eval.py
 
@@ -34,9 +34,9 @@ jobs:
         run: |
           set -euo pipefail
           echo '2657E2E6983D6356EF8EBB5FF20B469A2D264045A6D2E89BA44662DCCCC541E3  benchmark_assets/endpoint_pool.zip' | sha256sum -c -
-          echo '79A111513533A02D0851ABDF2F63A1DEE07E3CB2277F29AB924C9BA56D0EE51D  bin/estimate_v67' | sha256sum -c -
-          chmod +x bin/estimate_v67
-          file bin/estimate_v67
+          echo '1D288ECFBE02CE9949983FF197D8969856FC9C14AE3983DBA7386481A85ADB88  bin/estimate_v68' | sha256sum -c -
+          chmod +x bin/estimate_v68
+          file bin/estimate_v68
 
       - name: Record host and validate evaluator
         shell: bash
@@ -67,9 +67,9 @@ jobs:
             --sources 10000 --targets-per-source 1000 \
             --profile official-like --seed 20261030 --shuffle-seed 20261100 \
             --fold-count 5 --fold-index 0 --buckets 1024
-          rm -f /tmp/srb_runtime_atlas_v67.bin
+          rm -f /tmp/srb_runtime_atlas_v68.bin
           python3 tools/unique_eval.py benchmark \
-            --executable bin/estimate_v67 \
+            --executable bin/estimate_v68 \
             --input benchmark_work/perf_10m.csv \
             --output-dir benchmark_outputs \
             --report analysis/unique_eval/linux_components/perf_10m.json \
@@ -90,7 +90,7 @@ jobs:
             --profile official-like --seed 20261030 --shuffle-seed 20261101 \
             --fold-count 5 --fold-index 1 --buckets 1024
           python3 tools/unique_eval.py benchmark \
-            --executable bin/estimate_v67 \
+            --executable bin/estimate_v68 \
             --input benchmark_work/perf_50m.csv \
             --output-dir benchmark_outputs \
             --report analysis/unique_eval/linux_components/perf_50m.json \
@@ -111,7 +111,7 @@ jobs:
             --profile official-like --seed 20261030 --shuffle-seed 20261102 \
             --fold-count 5 --fold-index 2 --buckets 1024
           python3 tools/unique_eval.py benchmark \
-            --executable bin/estimate_v67 \
+            --executable bin/estimate_v68 \
             --input benchmark_work/perf_100m.csv \
             --output-dir benchmark_outputs \
             --report analysis/unique_eval/linux_components/perf_100m.json \
@@ -127,13 +127,13 @@ jobs:
             --input analysis/unique_eval/linux_components/perf_10m.json \
             --input analysis/unique_eval/linux_components/perf_50m.json \
             --input analysis/unique_eval/linux_components/perf_100m.json \
-            --report analysis/unique_eval/v67_linux_unique_10m_100m.json
+            --report analysis/unique_eval/v68_linux_unique_10m_100m.json
           python3 - <<'PY'
           import json
           from pathlib import Path
 
           root = Path('analysis/unique_eval')
-          timing = json.loads((root / 'v67_linux_unique_10m_100m.json').read_text())
+          timing = json.loads((root / 'v68_linux_unique_10m_100m.json').read_text())
           assert timing['formal_timing_gate'] is True, timing
           assert timing['reference_quality'] == 'release-reference', timing
           expected = {'perf_10m': 10_000_000, 'perf_50m': 50_000_000, 'perf_100m': 100_000_000}
@@ -159,7 +159,7 @@ jobs:
             analysis/unique_eval/linux_components/perf_10m.json \
             analysis/unique_eval/linux_components/perf_50m.json \
             analysis/unique_eval/linux_components/perf_100m.json \
-            analysis/unique_eval/v67_linux_unique_10m_100m.json
+            analysis/unique_eval/v68_linux_unique_10m_100m.json
           git commit -m 'benchmark: publish Linux unique 10M-100M evidence [skip ci]'
           git push
 

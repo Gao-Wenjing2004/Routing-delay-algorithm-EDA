@@ -4,8 +4,10 @@
 流水线在同一个 Ubuntu 22.04 runner 上依次生成并测试 1000 万、5000 万、1 亿条请求；
 三档使用互斥的 source fold，每档内部 `(From, To)` 唯一，并经 1024 个外存桶打散。
 
-每档运行正式 `bin/estimate_v67` ELF 五次，逐轮核验输出行数和 SHA-256，预测文件校验后立即删除。
-10M 第一轮先删除精确的 `/tmp/srb_runtime_atlas_v67.bin`，用于测得一次性冷启动开销；其余轮次估计稳态斜率。
+第一次 Linux 运行证明 V67 在 `SRB_SKIP_REPEAT_PROBE` 下没有打开输出文件；因此三档运行预测逻辑不变、
+只修复 Linux 输出文件描述符初始化的 `bin/estimate_v68` ELF。每档运行五次，逐轮核验输出行数和
+SHA-256，预测文件校验后立即删除。10M 第一轮先删除精确的 `/tmp/srb_runtime_atlas_v68.bin`，
+用于测得一次性冷启动开销；其余轮次估计稳态斜率。
 十亿条参考时间为“固定项 + 每行斜率 × 10 亿 + 一次冷启动开销”，不会漏算 Atlas 构建，也不会重复算三次。
 
 只有同时满足以下条件，`reference_quality` 才能由 `pilot` 变为 `release-reference`：
