@@ -8,6 +8,7 @@
 // cold-start latency only marginally but can make generation fail on the
 // memory-limited judge/container before the O(1) query loop starts.
 #define SRB_PARALLEL_ATLAS_BUILD 1
+#define SRB_EXTENSION_ROUTE_GROUP_LIMIT 4
 #ifndef SRB_RUNTIME_ATLAS_PATH
 #define SRB_RUNTIME_ATLAS_PATH "/tmp/srb_runtime_atlas_v70.bin"
 #endif

@@ -17,7 +17,9 @@ permissions:
 
 concurrency:
   group: v70-selective-extension-ablation
-  cancel-in-progress: false
+  # Every run rebuilds deterministic Atlas data and repeats the same 10M/
+  # 50M/100M panels.  Keep only the newest code revision during iteration.
+  cancel-in-progress: true
 
 jobs:
   linux-timing:

@@ -36,6 +36,10 @@
 #define SRB_EXTENSION_RADIUS 104
 #endif
 
+#ifndef SRB_EXTENSION_ROUTE_GROUP_LIMIT
+#define SRB_EXTENSION_ROUTE_GROUP_LIMIT 1024
+#endif
+
 namespace srb_runtime_atlas {
 using namespace srb_local_arch;
 
@@ -374,7 +378,7 @@ inline void append_extension(const std::string&path){
     const size_t source_count=std::size(sources),window=atlas_parallelism(std::min<size_t>(SRB_PARALLEL_ATLAS_BUILD,source_count));auto started=std::chrono::steady_clock::now();
 #ifdef SRB_PARALLEL_EXTENSION_ROUTE_REUSE
     struct Group{size_t begin,end;bool reuse;};std::vector<Group>groups;
-    for(size_t begin=0;begin<source_count;){int route=-1,dx=0,dy=0,cost=0;bool reuse=single_seed(ordered_sources[begin],route,dx,dy,cost)&&std::abs(dx)<=margin&&std::abs(dy)<=margin;size_t end=begin+1;if(reuse)while(end<source_count){int next_route=-1,next_dx=0,next_dy=0,next_cost=0;if(!single_seed(ordered_sources[end],next_route,next_dx,next_dy,next_cost)||next_route!=route||std::abs(next_dx)>margin||std::abs(next_dy)>margin)break;++end;}groups.push_back({begin,end,reuse});begin=end;}
+    for(size_t begin=0;begin<source_count;){int route=-1,dx=0,dy=0,cost=0;bool reuse=single_seed(ordered_sources[begin],route,dx,dy,cost)&&std::abs(dx)<=margin&&std::abs(dy)<=margin;size_t end=begin+1;if(reuse)while(end<source_count&&end-begin<size_t(SRB_EXTENSION_ROUTE_GROUP_LIMIT)){int next_route=-1,next_dx=0,next_dy=0,next_cost=0;if(!single_seed(ordered_sources[end],next_route,next_dx,next_dy,next_cost)||next_route!=route||std::abs(next_dx)>margin||std::abs(next_dy)>margin)break;++end;}groups.push_back({begin,end,reuse});begin=end;}
     size_t completed=0;
     for(size_t group_begin=0;group_begin<groups.size();group_begin+=window){size_t group_end=std::min(groups.size(),group_begin+window);std::vector<std::future<std::vector<ExtensionSectionResult>>>futures;futures.reserve(group_end-group_begin);for(size_t gi=group_begin;gi<group_end;++gi)futures.emplace_back(std::async(std::launch::async,[&,gi]{const Group&g=groups[gi];if(g.reuse)return generate_extension_route_group(ordered_sources+g.begin,ordered_sources+g.end,targets,g.begin);std::vector<ExtensionSectionResult>single;single.push_back(generate_extension_source(ordered_sources[g.begin],targets,g.begin));return single;}));for(size_t gi=group_begin;gi<group_end;++gi){std::vector<ExtensionSectionResult>results=futures[gi-group_begin].get();for(ExtensionSectionResult&result:results){out.bytes(result.data.data(),result.data.size());exceptions.insert(exceptions.end(),result.exceptions.begin(),result.exceptions.end());++completed;double sec=std::chrono::duration<double>(std::chrono::steady_clock::now()-started).count();std::fprintf(stderr,"\ratlas shared-route extension source=%zu/%zu group=%zu/%zu elapsed=%.1fs",completed,source_count,gi+1,groups.size(),sec);std::fflush(stderr);}}}
 #else
