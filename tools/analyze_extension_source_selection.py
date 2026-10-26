@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
-"""Rank Extension source ports on one panel and validate on another.
+"""Rank existing Extension source slices and validate on another panel.
 
 The V68 prediction represents a full Extension table; V69 represents no
-Extension.  Selecting the V68 answer by source port exactly models retaining
-that source port's Extension slice while all other ports use the compact V69
-path.  Ranking and validation inputs are deliberately separate.
+Extension.  Selecting the V68 answer by source port models retaining that
+source port's Extension slice while all other ports use the compact V69 path
+only when the port is already present in the full Atlas.  The eligible-port
+filter makes that invariant explicit.  Ranking and validation inputs are
+deliberately separate.
 """
 
 from __future__ import annotations
@@ -83,13 +85,19 @@ def rows(golden_path: Path, full_path: Path, compact_path: Path, names: dict[str
             )
 
 
-def train_ranking(golden: Path, full: Path, compact: Path, names: dict[str, int]):
+def train_ranking(
+    golden: Path,
+    full: Path,
+    compact: Path,
+    names: dict[str, int],
+    eligible: set[int] | None,
+):
     stats: dict[int, list[float]] = defaultdict(lambda: [0, 0, 0.0])
     total = 0
     changed = 0
     for port, target, full_value, compact_value in rows(golden, full, compact, names):
         total += 1
-        if full_value == compact_value:
+        if full_value == compact_value or (eligible is not None and port not in eligible):
             continue
         changed += 1
         value = stats[port]
@@ -145,19 +153,27 @@ def main() -> None:
     parser.add_argument("--validation-golden", type=Path, required=True)
     parser.add_argument("--validation-full", type=Path, required=True)
     parser.add_argument("--validation-compact", type=Path, required=True)
+    parser.add_argument(
+        "--eligible-source-ports",
+        type=int,
+        nargs="+",
+        help="only rank source slices that already exist in the full Atlas",
+    )
     parser.add_argument("--counts", type=int, nargs="+", default=[0, 8, 16, 24, 32, 48, 64, 80, 94])
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
 
     names = load_port_names(args.port_header)
     reverse_names = {value: key for key, value in names.items()}
+    eligible = set(args.eligible_source_ports) if args.eligible_source_ports else None
     ranking, stats, train_rows, changed = train_ranking(
-        args.train_golden, args.train_full, args.train_compact, names
+        args.train_golden, args.train_full, args.train_compact, names, eligible
     )
     counts = sorted(set(max(0, min(value, len(ranking))) for value in args.counts))
     report = {
         "train_rows": train_rows,
         "train_changed_rows": changed,
+        "eligible_source_ports": sorted(eligible) if eligible is not None else None,
         "ranked_ports": [
             {
                 "rank": rank,
