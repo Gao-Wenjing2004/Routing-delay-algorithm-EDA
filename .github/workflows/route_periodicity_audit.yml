@@ -1,0 +1,51 @@
+name: Exact route-state periodicity audit
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - benchmark/linux-unique-10m-100m
+    paths:
+      - .github/workflows/route_periodicity_audit.yml
+      - tools/audit_route_periodicity.cpp
+      - source/local_arch_data.hpp
+      - source/runtime_atlas_builder.hpp
+
+permissions:
+  contents: read
+
+concurrency:
+  group: exact-route-periodicity-audit
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-22.04
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - name: Build and run exact route-state audit
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p build analysis/unique_eval/route_periodicity
+          g++ -std=c++17 -O3 -DNDEBUG -ffp-contract=off -pthread \
+            tools/audit_route_periodicity.cpp -o build/audit_route_periodicity
+          /usr/bin/time -v build/audit_route_periodicity \
+            analysis/unique_eval/route_periodicity/route_periodicity.json \
+            2> analysis/unique_eval/route_periodicity/resource_usage.txt
+          cat analysis/unique_eval/route_periodicity/route_periodicity.json
+          cat analysis/unique_eval/route_periodicity/resource_usage.txt
+      - name: Upload audit executable and report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: exact-route-periodicity-audit
+          path: |
+            build/audit_route_periodicity
+            analysis/unique_eval/route_periodicity/
+          if-no-files-found: warn
+          retention-days: 14
