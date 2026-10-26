@@ -1,0 +1,173 @@
+name: Linux unique 10M-100M reference
+
+on:
+  push:
+    branches:
+      - benchmark/linux-unique-10m-100m
+    paths:
+      - .github/workflows/linux_unique_10m_100m.yml
+      - benchmark_assets/endpoint_pool.zip
+      - bin/estimate_v67
+      - tools/unique_eval.py
+      - tests/test_unique_eval.py
+
+permissions:
+  contents: write
+
+concurrency:
+  group: linux-unique-10m-100m
+  cancel-in-progress: false
+
+jobs:
+  benchmark:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-22.04
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: false
+          fetch-depth: 1
+
+      - name: Verify immutable inputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo '2657E2E6983D6356EF8EBB5FF20B469A2D264045A6D2E89BA44662DCCCC541E3  benchmark_assets/endpoint_pool.zip' | sha256sum -c -
+          echo '79A111513533A02D0851ABDF2F63A1DEE07E3CB2277F29AB924C9BA56D0EE51D  bin/estimate_v67' | sha256sum -c -
+          chmod +x bin/estimate_v67
+          file bin/estimate_v67
+
+      - name: Record host and validate evaluator
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p analysis/unique_eval/linux_components benchmark_work benchmark_outputs
+          {
+            uname -a
+            lscpu
+            free -h
+            df -h
+            python3 --version
+            printf 'runner_image=%s\n' "${ImageOS:-unknown}"
+            printf 'runner_image_version=%s\n' "${ImageVersion:-unknown}"
+          } > analysis/unique_eval/linux_host.txt
+          python3 -m unittest tests.test_unique_eval -v
+          unzip -q benchmark_assets/endpoint_pool.zip -d benchmark_work
+
+      - name: Generate and benchmark 10M cold plus warm
+        shell: bash
+        run: |
+          set -euo pipefail
+          ulimit -n 4096
+          python3 tools/unique_eval.py generate-perf \
+            --pool benchmark_work/delay_estimate_ans.csv \
+            --output benchmark_work/perf_10m.csv \
+            --manifest analysis/unique_eval/perf_10m.manifest.json \
+            --sources 10000 --targets-per-source 1000 \
+            --profile official-like --seed 20261030 --shuffle-seed 20261100 \
+            --fold-count 5 --fold-index 0 --buckets 1024
+          rm -f /tmp/srb_runtime_atlas_v67.bin
+          python3 tools/unique_eval.py benchmark \
+            --executable bin/estimate_v67 \
+            --input benchmark_work/perf_10m.csv \
+            --output-dir benchmark_outputs \
+            --report analysis/unique_eval/linux_components/perf_10m.json \
+            --runs 5 --timeout 3600 --cold-first-run
+          rm -f benchmark_work/perf_10m.csv
+          df -h
+
+      - name: Generate and benchmark 50M warm
+        shell: bash
+        run: |
+          set -euo pipefail
+          ulimit -n 4096
+          python3 tools/unique_eval.py generate-perf \
+            --pool benchmark_work/delay_estimate_ans.csv \
+            --output benchmark_work/perf_50m.csv \
+            --manifest analysis/unique_eval/perf_50m.manifest.json \
+            --sources 50000 --targets-per-source 1000 \
+            --profile official-like --seed 20261030 --shuffle-seed 20261101 \
+            --fold-count 5 --fold-index 1 --buckets 1024
+          python3 tools/unique_eval.py benchmark \
+            --executable bin/estimate_v67 \
+            --input benchmark_work/perf_50m.csv \
+            --output-dir benchmark_outputs \
+            --report analysis/unique_eval/linux_components/perf_50m.json \
+            --runs 5 --timeout 3600
+          rm -f benchmark_work/perf_50m.csv
+          df -h
+
+      - name: Generate and benchmark 100M warm
+        shell: bash
+        run: |
+          set -euo pipefail
+          ulimit -n 4096
+          python3 tools/unique_eval.py generate-perf \
+            --pool benchmark_work/delay_estimate_ans.csv \
+            --output benchmark_work/perf_100m.csv \
+            --manifest analysis/unique_eval/perf_100m.manifest.json \
+            --sources 100000 --targets-per-source 1000 \
+            --profile official-like --seed 20261030 --shuffle-seed 20261102 \
+            --fold-count 5 --fold-index 2 --buckets 1024
+          python3 tools/unique_eval.py benchmark \
+            --executable bin/estimate_v67 \
+            --input benchmark_work/perf_100m.csv \
+            --output-dir benchmark_outputs \
+            --report analysis/unique_eval/linux_components/perf_100m.json \
+            --runs 5 --timeout 3600
+          rm -f benchmark_work/perf_100m.csv
+          df -h
+
+      - name: Combine and enforce release gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tools/unique_eval.py combine-benchmarks \
+            --input analysis/unique_eval/linux_components/perf_10m.json \
+            --input analysis/unique_eval/linux_components/perf_50m.json \
+            --input analysis/unique_eval/linux_components/perf_100m.json \
+            --report analysis/unique_eval/v67_linux_unique_10m_100m.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          root = Path('analysis/unique_eval')
+          timing = json.loads((root / 'v67_linux_unique_10m_100m.json').read_text())
+          assert timing['formal_timing_gate'] is True, timing
+          assert timing['reference_quality'] == 'release-reference', timing
+          expected = {'perf_10m': 10_000_000, 'perf_50m': 50_000_000, 'perf_100m': 100_000_000}
+          for stem, rows in expected.items():
+              manifest = json.loads((root / f'{stem}.manifest.json').read_text())
+              assert manifest['rows'] == rows, manifest
+              assert manifest['duplicate_pairs'] == 0, manifest
+              assert manifest['one_row_per_source_per_bucket'] is True, manifest
+              assert manifest['order_diagnostics']['adjacent_same_source_rows'] == 0, manifest
+              assert manifest['order_diagnostics']['max_consecutive_same_source'] == 1, manifest
+          PY
+
+      - name: Publish small evidence reports to benchmark branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add analysis/unique_eval/linux_host.txt \
+            analysis/unique_eval/perf_10m.manifest.json \
+            analysis/unique_eval/perf_50m.manifest.json \
+            analysis/unique_eval/perf_100m.manifest.json \
+            analysis/unique_eval/linux_components/perf_10m.json \
+            analysis/unique_eval/linux_components/perf_50m.json \
+            analysis/unique_eval/linux_components/perf_100m.json \
+            analysis/unique_eval/v67_linux_unique_10m_100m.json
+          git commit -m 'benchmark: publish Linux unique 10M-100M evidence [skip ci]'
+          git push
+
+      - name: Upload evidence artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-unique-10m-100m-evidence
+          path: analysis/unique_eval/
+          if-no-files-found: warn
+          retention-days: 14

@@ -18,3 +18,7 @@
 # Local experiment outputs
 /experiments/**/predictions*.csv
 /experiments/**/result*.csv
+
+# Linux unique benchmark transient multi-GB files (reports are tracked).
+/benchmark_work/
+/benchmark_outputs/
