@@ -57,7 +57,8 @@ V68 只把输出文件打开移到条件编译之外；唯一分支仍用 `O_WRO
 
 - 提交包：`submission_v68_v67_linux_unique_output_fix.zip`
 - ZIP 字节数：`3,642,383`
-- ZIP SHA-256：`85D893CF9BAE019A726C8A6D18E05E03C82C854395DA8F7F5251714DB46329B8`
+- ZIP SHA-256：`E31BE3FA8C35ED00FA3DB4E0F3384E51A6CDC193202727E6CE42E2D8E6DA3187`
+- ZIP 内权限：`bin/estimate` 为 Unix `0755`
 - ELF SHA-256：`1D288ECFBE02CE9949983FF197D8969856FC9C14AE3983DBA7386481A85ADB88`
 - 时间报告：`analysis/unique_eval/v68_linux_unique_10m_100m.json`
 - 合成报告：`analysis/unique_eval/v68_unique_formal_reference.json` / `.md`
