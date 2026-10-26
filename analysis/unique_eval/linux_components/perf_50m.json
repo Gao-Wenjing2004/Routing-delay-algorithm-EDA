@@ -1,0 +1,83 @@
+{
+  "schema": 2,
+  "kind": "unique-srb-benchmark",
+  "executable": "/home/runner/work/Routing-delay-algorithm-EDA/Routing-delay-algorithm-EDA/bin/estimate_v68",
+  "runs_per_size": 5,
+  "all_consistent": true,
+  "host_platform": "Linux-6.8.0-1064-azure-x86_64-with-glibc2.35",
+  "python_platform": "linux",
+  "executable_format": "ELF",
+  "cold_start_overhead_seconds": 0.0,
+  "formal_timing_gate": false,
+  "reference_quality": "pilot",
+  "cases": [
+    {
+      "input": "/home/runner/work/Routing-delay-algorithm-EDA/Routing-delay-algorithm-EDA/benchmark_work/perf_50m.csv",
+      "rows": 50000000,
+      "input_bytes": 1767632165,
+      "input_sha256": "BE9020CCD7B8B43DAC0D82E34494F25279A919CC0BC8AEFAF4B159A169A8F11F",
+      "input_scan_seconds": 3.7211173009999357,
+      "consistent": true,
+      "runs": [
+        {
+          "run": 1,
+          "wall_seconds": 5.906246296999939,
+          "child_cpu_seconds": 19.369999999999997,
+          "output_sha256": "335B25D705786B40BE9DEC6AC9F5073F6A2EF56E6C7AC2D98F59D0E5FB3F36D1",
+          "output_bytes": 2014535977,
+          "output_verify_seconds": 4.247774106000065,
+          "stderr_tail": "processed=50000000 bad_rows=0 exact_hits=45045797 repeated_period=0 elapsed=5.88803 throughput=8.4918e+06 q/s\n",
+          "output": null
+        },
+        {
+          "run": 2,
+          "wall_seconds": 5.368620913999962,
+          "child_cpu_seconds": 19.85,
+          "output_sha256": "335B25D705786B40BE9DEC6AC9F5073F6A2EF56E6C7AC2D98F59D0E5FB3F36D1",
+          "output_bytes": 2014535977,
+          "output_verify_seconds": 4.486441938999974,
+          "stderr_tail": "processed=50000000 bad_rows=0 exact_hits=45045797 repeated_period=0 elapsed=5.3513 throughput=9.34352e+06 q/s\n",
+          "output": null
+        },
+        {
+          "run": 3,
+          "wall_seconds": 5.310787545000039,
+          "child_cpu_seconds": 19.770000000000003,
+          "output_sha256": "335B25D705786B40BE9DEC6AC9F5073F6A2EF56E6C7AC2D98F59D0E5FB3F36D1",
+          "output_bytes": 2014535977,
+          "output_verify_seconds": 4.210963188000051,
+          "stderr_tail": "processed=50000000 bad_rows=0 exact_hits=45045797 repeated_period=0 elapsed=5.29345 throughput=9.44564e+06 q/s\n",
+          "output": null
+        },
+        {
+          "run": 4,
+          "wall_seconds": 5.340140543999951,
+          "child_cpu_seconds": 19.800000000000004,
+          "output_sha256": "335B25D705786B40BE9DEC6AC9F5073F6A2EF56E6C7AC2D98F59D0E5FB3F36D1",
+          "output_bytes": 2014535977,
+          "output_verify_seconds": 4.5124903380000205,
+          "stderr_tail": "processed=50000000 bad_rows=0 exact_hits=45045797 repeated_period=0 elapsed=5.32301 throughput=9.39318e+06 q/s\n",
+          "output": null
+        },
+        {
+          "run": 5,
+          "wall_seconds": 5.400914575999991,
+          "child_cpu_seconds": 20.010000000000005,
+          "output_sha256": "335B25D705786B40BE9DEC6AC9F5073F6A2EF56E6C7AC2D98F59D0E5FB3F36D1",
+          "output_bytes": 2014535977,
+          "output_verify_seconds": 4.129957268999988,
+          "stderr_tail": "processed=50000000 bad_rows=0 exact_hits=45045797 repeated_period=0 elapsed=5.38368 throughput=9.28733e+06 q/s\n",
+          "output": null
+        }
+      ],
+      "steady_run_count": 5,
+      "median_wall_seconds": 5.368620913999962,
+      "min_wall_seconds": 5.310787545000039,
+      "max_wall_seconds": 5.906246296999939,
+      "cold_start_overhead_seconds": 0.0
+    }
+  ],
+  "extrapolation": null,
+  "observed_run_range": null,
+  "warning": "Release timing requires Linux + ELF, five runs, consistent outputs, and at least three unique input sizes spanning 10M-100M rows. Cold-start overhead is added once."
+}
