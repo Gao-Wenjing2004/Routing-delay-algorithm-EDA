@@ -1,0 +1,7 @@
+{
+  "baseline_v68_center_seconds": 185.55946525399884,
+  "v69_center_seconds": 117.70959321519743,
+  "seconds_delta": -67.84987203880141,
+  "time_score_delta": 0.565415600323345,
+  "accuracy_status": "pending local 608K source-disjoint Golden validation"
+}
