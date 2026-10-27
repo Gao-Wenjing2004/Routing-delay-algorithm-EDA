@@ -1,0 +1,30 @@
+{
+  "schema": 1,
+  "routes": 160,
+  "x_period": 10,
+  "y_period": 12,
+  "anchor_x_range": [95, 104],
+  "anchor_y_range": [93, 104],
+  "quadrants": 4,
+  "candidate_records": 12288000,
+  "candidate_bytes_u16_i16_i16": 73728000,
+  "generic_zlib9_bytes_observed": 25781946,
+  "generic_zlib9_ratio_observed": 0.34968971923635483,
+  "packing": {
+    "blocks": 76800,
+    "base_bytes_u8_anchor_i16_slopes": 61593600,
+    "base_bytes_u8_anchor_i8_slopes": 37017600,
+    "anchor_u8_exceptions": 1123808,
+    "x_slope_i8_exceptions": 3603325,
+    "y_slope_i8_exceptions": 4226153,
+    "exception_bytes_if_index32_value16": 53719716
+  },
+  "unreachable_combinations": 0,
+  "elapsed_seconds": 411.3095445,
+  "metrics": {
+    "x_slope_stability": {"comparable": 12288000, "exact": 9696312, "exact_rate": 0.789087890625, "mae_ps": 0.62878108724, "max_error_ps": 16},
+    "y_slope_stability": {"comparable": 12288000, "exact": 10590969, "exact_rate": 0.861895263672, "mae_ps": 0.352541910807, "max_error_ps": 18},
+    "xy_separability": {"comparable": 12288000, "exact": 10415070, "exact_rate": 0.847580566406, "mae_ps": 0.407469482422, "max_error_ps": 16},
+    "affine_xy_prediction": {"comparable": 12288000, "exact": 9763163, "exact_rate": 0.794528238932, "mae_ps": 0.560915690104, "max_error_ps": 19}
+  }
+}

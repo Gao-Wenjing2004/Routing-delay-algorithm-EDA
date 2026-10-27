@@ -8,6 +8,7 @@ on:
     paths:
       - .github/workflows/route_periodicity_audit.yml
       - tools/audit_route_periodicity.cpp
+      - tools/audit_route_full_distance.cpp
       - source/local_arch_data.hpp
       - source/runtime_atlas_builder.hpp
 
@@ -38,6 +39,7 @@ jobs:
             tools/audit_route_full_distance.cpp -o build/audit_route_full_distance
           /usr/bin/time -v build/audit_route_periodicity \
             analysis/unique_eval/route_periodicity/route_periodicity.json \
+            analysis/unique_eval/route_periodicity/route_period_table.bin \
             2> analysis/unique_eval/route_periodicity/resource_usage.txt
           /usr/bin/time -v build/audit_route_full_distance \
             analysis/unique_eval/route_periodicity/route_full_distance.json \

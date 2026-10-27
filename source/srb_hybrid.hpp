@@ -136,6 +136,12 @@ public:
   if(bytes_>endpoint_bytes)init_extension(reinterpret_cast<const uint8_t*>(data_+endpoint_bytes),bytes_-endpoint_bytes);
   else load_extension("endpoint_extension.bin");
 #endif
+#ifdef SRB_ROUTE_PERIOD_TABLE
+#ifndef SRB_ROUTE_PERIOD_TABLE_PATH
+#define SRB_ROUTE_PERIOD_TABLE_PATH "route_period_table.bin"
+#endif
+  load_route_period_table(SRB_ROUTE_PERIOD_TABLE_PATH);
+#endif
 #ifdef SRB_SOURCE_MOVE_CACHE
   prepare_source_move_cache();
 #endif
@@ -286,6 +292,19 @@ public:
    }
   }
 #endif
+#ifdef SRB_ROUTE_PERIOD_TABLE
+  // The endpoint Atlas is deliberately finite.  Beyond it, price the
+  // obstacle-free routing core from an exact-Dijkstra-derived 10x12 affine
+  // table.  This is a fixed number of array reads per source/target connector
+  // pair; no graph search is performed online.
+  if(value==65535&&d>72&&route_period_predict(a.port,b.port,dx,dy,value)&&
+#ifdef SRB_MERGED_MODEL
+     fallback_.local_lookup_allowed(a,b)
+#else
+     safe(a,b)
+#endif
+     ){}
+#endif
 #ifdef SRB_LONG_EXTRAPOLATE_V2
 #ifndef SRB_PERIOD_SLOPE_SPAN
 #define SRB_PERIOD_SLOPE_SPAN 1
@@ -398,8 +417,47 @@ public:
 #ifdef SRB_ENDPOINT_EXTENSION
   +extension_.size()
 #endif
+#ifdef SRB_ROUTE_PERIOD_TABLE
+  +route_period_bytes_.size()
+#endif
   ;}
  private:
+#ifdef SRB_ROUTE_PERIOD_TABLE
+#pragma pack(push,1)
+ struct RoutePeriodHeader{
+  char magic[8];uint32_t version,routes,x_period,y_period,x_anchor0,y_anchor0,quadrants;uint64_t records,bytes;uint8_t reserved[12];
+ };
+ struct RoutePeriodRecord{uint16_t anchor;int16_t x_slope,y_slope;};
+#pragma pack(pop)
+ static_assert(sizeof(RoutePeriodHeader)==64,"route period header layout");
+ static_assert(sizeof(RoutePeriodRecord)==6,"route period record layout");
+ void load_route_period_table(const char*path){
+  std::ifstream f(path,std::ios::binary|std::ios::ate);if(!f)throw std::runtime_error("cannot open route period table");auto n=f.tellg();f.seekg(0);route_period_bytes_.resize(size_t(n));f.read(reinterpret_cast<char*>(route_period_bytes_.data()),std::streamsize(route_period_bytes_.size()));if(!f)throw std::runtime_error("truncated route period table");
+  if(route_period_bytes_.size()<sizeof(RoutePeriodHeader))throw std::runtime_error("short route period table");RoutePeriodHeader h{};std::memcpy(&h,route_period_bytes_.data(),sizeof(h));
+  const uint64_t expected=4ull*10*12*160*160;if(std::memcmp(h.magic,"SRBPER1",7)||h.version!=1||h.routes!=160||h.x_period!=10||h.y_period!=12||h.x_anchor0!=95||h.y_anchor0!=93||h.quadrants!=4||h.records!=expected||h.bytes!=expected*sizeof(RoutePeriodRecord)||route_period_bytes_.size()!=sizeof(h)+h.bytes)throw std::runtime_error("bad route period table");
+  route_period_records_=reinterpret_cast<const RoutePeriodRecord*>(route_period_bytes_.data()+sizeof(h));
+ }
+ static int positive_mod(int value,int divisor){int result=value%divisor;return result<0?result+divisor:result;}
+ int route_period_cost(int source,int target,int dx,int dy)const{
+  if(!route_period_records_||source<0||source>=160||target<0||target>=160||!dx||!dy)return 65535;
+  const int sx=dx>0?1:-1,sy=dy>0?1:-1,ax_abs=95+positive_mod(std::abs(dx)-95,10),ay_abs=93+positive_mod(std::abs(dy)-93,12),nx=(std::abs(dx)-ax_abs)/10,ny=(std::abs(dy)-ay_abs)/12;
+  const unsigned quadrant=unsigned((sx>0)*2+(sy>0));const unsigned rx=unsigned(ax_abs-95),ry=unsigned(ay_abs-93);
+  const uint64_t index=((((uint64_t(source)*4+quadrant)*10+rx)*12+ry)*160+unsigned(target));const RoutePeriodRecord&r=route_period_records_[index];
+  if(r.anchor==65535)return 65535;
+  const int64_t value=int64_t(r.anchor)+int64_t(nx)*r.x_slope+int64_t(ny)*r.y_slope;return value>=0&&value<65535?int(value):65535;
+ }
+ bool route_period_predict(uint16_t source_port,uint16_t target_port,int dx,int dy,uint16_t&answer)const{
+  using namespace srb_local_arch;if(!route_period_records_)return false;uint32_t best=65535;
+  struct Seed{int route,dx,dy,cost;};Seed seeds[64];int source_count=0;const int input=kPortToInput[source_port];
+  if(input>=0){const int route=kInputToRoute[input];if(route>=0)seeds[source_count++]={route,0,0,0};else for(uint32_t i=kTransitionOffset[input];i<kTransitionOffset[input+1]&&source_count<64;++i){const auto&e=kTransitions[i];seeds[source_count++]={e.next_route,e.dx,e.dy,e.cost};}}
+  else{const auto&e=kOutputNet[source_port];if(e.next_route>=0)seeds[source_count++]={e.next_route,e.dx,e.dy,0};}
+  PortCost targets[160];int target_count=0;const int target_input=kPortToInput[target_port];
+  if(target_input>=0){const int route=kInputToRoute[target_input];if(route>=0)targets[target_count++]={uint16_t(route),0};}
+  else for(uint32_t i=kTargetOffset[target_port];i<kTargetOffset[target_port+1]&&target_count<160;++i)targets[target_count++]=kTargetArcs[i];
+  for(int si=0;si<source_count;++si)for(int ti=0;ti<target_count;++ti){const int core=route_period_cost(seeds[si].route,targets[ti].id,dx-seeds[si].dx,dy-seeds[si].dy);if(core!=65535)best=std::min(best,uint32_t(core+seeds[si].cost+targets[ti].cost));}
+  if(best>=65535)return false;answer=uint16_t(best);return true;
+ }
+#endif
 #ifdef SRB_HIERARCHICAL_SELECTOR
  static uint8_t selector_distance_bin(int d){
   static constexpr int edge[13]={16,24,32,40,48,56,72,104,128,192,256,384,512};
@@ -566,6 +624,9 @@ public:
 #endif
 #ifdef SRB_ROUTE_TAIL
  TailHeader tail_header_{};std::vector<uint16_t>tail_;
+#endif
+#ifdef SRB_ROUTE_PERIOD_TABLE
+ std::vector<uint8_t>route_period_bytes_;const RoutePeriodRecord*route_period_records_=nullptr;
 #endif
 #ifdef _WIN32
  HANDLE file_=INVALID_HANDLE_VALUE,map_=nullptr;

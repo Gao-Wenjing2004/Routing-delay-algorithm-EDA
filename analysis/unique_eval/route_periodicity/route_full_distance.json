@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "routes": 160,
+  "field_width": 335,
+  "field_height": 1195,
+  "sampled_x_values": 99,
+  "unreachable": 0,
+  "elapsed_seconds": 1290.32271815,
+  "metrics": {
+    "all": {"count": 364953600, "exact_rate": 0.387786362431, "mae_ps": 26.3236687294, "max_error_ps": 779, "score_samples": 22809600, "contest_accuracy_sample": 96.3106368103},
+    "x_0_16": {"count": 70041600, "exact_rate": 0.0229306726288, "mae_ps": 67.1004834413, "max_error_ps": 779, "score_samples": 4377600, "contest_accuracy_sample": 88.0232961926},
+    "x_17_32": {"count": 66355200, "exact_rate": 0.221033151886, "mae_ps": 23.5394005594, "max_error_ps": 526, "score_samples": 4147200, "contest_accuracy_sample": 96.8366038733},
+    "x_33_72": {"count": 73728000, "exact_rate": 0.460979790582, "mae_ps": 16.9345558811, "max_error_ps": 461, "score_samples": 4608000, "contest_accuracy_sample": 98.260298045},
+    "x_73_104": {"count": 81100800, "exact_rate": 0.580552522293, "mae_ps": 13.9226240678, "max_error_ps": 429, "score_samples": 5068800, "contest_accuracy_sample": 98.8379751935},
+    "x_105_119": {"count": 73728000, "exact_rate": 0.599240953234, "mae_ps": 13.1217980821, "max_error_ps": 427, "score_samples": 4608000, "contest_accuracy_sample": 98.9805065843},
+    "y_periods_1": {"count": 60825600, "exact_rate": 0.495603841146, "mae_ps": 14.2626841166, "max_error_ps": 531, "score_samples": 3801600, "contest_accuracy_sample": 96.2753279273},
+    "y_periods_2": {"count": 60825600, "exact_rate": 0.463245919481, "mae_ps": 15.229069964, "max_error_ps": 539, "score_samples": 3801600, "contest_accuracy_sample": 96.3430855915},
+    "y_periods_4": {"count": 60825600, "exact_rate": 0.396596170034, "mae_ps": 17.5461026443, "max_error_ps": 555, "score_samples": 3801600, "contest_accuracy_sample": 96.3951835055},
+    "y_periods_8": {"count": 60825600, "exact_rate": 0.355864767466, "mae_ps": 22.5685806963, "max_error_ps": 587, "score_samples": 3801600, "contest_accuracy_sample": 96.3993942786},
+    "y_periods_16": {"count": 60825600, "exact_rate": 0.325242759628, "mae_ps": 32.8037502959, "max_error_ps": 651, "score_samples": 3801600, "contest_accuracy_sample": 96.3402699242},
+    "y_periods_32": {"count": 60825600, "exact_rate": 0.29016471683, "mae_ps": 55.5318246594, "max_error_ps": 779, "score_samples": 3801600, "contest_accuracy_sample": 96.1105596349}
+  }
+}

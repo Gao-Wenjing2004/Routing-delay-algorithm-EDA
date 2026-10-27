@@ -3,8 +3,12 @@
 *.o
 *.obj
 *.exe
+*.pdb
 *.tmp
 *.log
+.zig-cache/
+.zig-global-cache/
+**/route_period_table.bin
 
 # Local build and generated assets
 **/build/

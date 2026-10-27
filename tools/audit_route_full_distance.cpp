@@ -117,8 +117,9 @@ int main(int argc, char** argv) {
         }
       }
 
-    Metric all;
+    Metric all, exact_x_y_periodic, exact_y_x_periodic;
     std::array<Metric, 5> x_bands;
+    std::array<Metric, 5> exact_x_y_periodic_bands;
     std::array<Metric, kPeriods.size()> y_spans;
     uint64_t unreachable = 0;
     const auto started = std::chrono::steady_clock::now();
@@ -165,15 +166,32 @@ int main(int argc, char** argv) {
                 const int anchor = at(ax, ay, target);
                 const int x_old = at(ax0, ay, target);
                 const int y_old = at(ax, ay0, target);
-                if (golden < 0 || anchor < 0 || x_old < 0 || y_old < 0) {
+                const int exact_x_anchor = at(x, ay, target);
+                const int exact_x_old = at(x, ay0, target);
+                const int exact_y_anchor = at(ax, y, target);
+                const int exact_y_old = at(ax0, y, target);
+                if (golden < 0 || anchor < 0 || x_old < 0 || y_old < 0 ||
+                    exact_x_anchor < 0 || exact_x_old < 0 ||
+                    exact_y_anchor < 0 || exact_y_old < 0) {
                   ++unreachable;
                   continue;
                 }
                 const int predicted = anchor + nx * (anchor - x_old) +
                                       ny * (anchor - y_old);
-                const bool score = ((source * ROUTES + target) & 15) == 0;
+                const int predicted_exact_x =
+                    exact_x_anchor + ny * (exact_x_anchor - exact_x_old);
+                const int predicted_exact_y =
+                    exact_y_anchor + nx * (exact_y_anchor - exact_y_old);
+                // Deterministic 1/16 sample, rotated by source so every route
+                // family/lane participates instead of always selecting the
+                // same ten target indices.
+                const bool score = ((source * 13 + target * 7) & 15) == 0;
                 all.add(golden, predicted, score);
+                exact_x_y_periodic.add(golden, predicted_exact_x, score);
+                exact_y_x_periodic.add(golden, predicted_exact_y, score);
                 x_bands[band].add(golden, predicted, score);
+                exact_x_y_periodic_bands[band].add(
+                    golden, predicted_exact_x, score);
                 y_spans[span_index].add(golden, predicted, score);
               }
             }
@@ -204,11 +222,18 @@ int main(int argc, char** argv) {
                .count()
         << ",\n  \"metrics\": {\n";
     metric_json(out, "all", all, true);
+    metric_json(out, "exact_x_y_periodic", exact_x_y_periodic, true);
+    metric_json(out, "exact_y_x_periodic", exact_y_x_periodic, true);
     static constexpr const char* kBandNames[5] = {"x_0_16", "x_17_32",
                                                   "x_33_72", "x_73_104",
                                                   "x_105_119"};
     for (size_t i = 0; i < x_bands.size(); ++i)
       metric_json(out, kBandNames[i], x_bands[i], true);
+    for (size_t i = 0; i < exact_x_y_periodic_bands.size(); ++i) {
+      const std::string name =
+          std::string("exact_x_y_periodic_") + kBandNames[i];
+      metric_json(out, name.c_str(), exact_x_y_periodic_bands[i], true);
+    }
     for (size_t i = 0; i < y_spans.size(); ++i) {
       const std::string name = "y_periods_" + std::to_string(kPeriods[i]);
       metric_json(out, name.c_str(), y_spans[i], i + 1 != y_spans.size());
