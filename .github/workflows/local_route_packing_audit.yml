@@ -8,6 +8,9 @@ on:
     paths:
       - .github/workflows/local_route_packing_audit.yml
       - tools/audit_exact_local_route_packing.cpp
+      - tools/build_exact_local_route_table.cpp
+      - tools/validate_exact_local_route_table.cpp
+      - source/exact_local_route_table.hpp
       - source/local_arch_data.hpp
       - source/runtime_atlas_builder.hpp
 
@@ -35,6 +38,12 @@ jobs:
           g++ -std=c++17 -O3 -DNDEBUG -ffp-contract=off -pthread \
             tools/audit_exact_local_route_packing.cpp \
             -o build/audit_exact_local_route_packing
+          g++ -std=c++17 -O3 -DNDEBUG -ffp-contract=off -pthread \
+            tools/build_exact_local_route_table.cpp \
+            -o build/build_exact_local_route_table
+          g++ -std=c++17 -O3 -DNDEBUG -ffp-contract=off -pthread \
+            tools/validate_exact_local_route_table.cpp \
+            -o build/validate_exact_local_route_table
           /usr/bin/time -v build/audit_exact_local_route_packing \
             analysis/unique_eval/local_route_packing/report.json \
             analysis/unique_eval/local_route_packing/route_radius24_u16.bin \
@@ -60,6 +69,23 @@ jobs:
           cat analysis/unique_eval/local_route_packing/report.json
           cat analysis/unique_eval/local_route_packing/compression_sizes.txt
           cat analysis/unique_eval/local_route_packing/resource_usage.txt
+      - name: Build and validate augmented direct-mapped table
+        shell: bash
+        run: |
+          set -euo pipefail
+          /usr/bin/time -v build/build_exact_local_route_table \
+            analysis/unique_eval/local_route_packing/exact_local_route_table.bin \
+            2> analysis/unique_eval/local_route_packing/build_table_resource_usage.txt
+          /usr/bin/time -v build/validate_exact_local_route_table \
+            analysis/unique_eval/local_route_packing/exact_local_route_table.bin \
+            analysis/unique_eval/local_route_packing/validation.json \
+            2> analysis/unique_eval/local_route_packing/validation_resource_usage.txt
+          sha256sum analysis/unique_eval/local_route_packing/exact_local_route_table.bin \
+            > analysis/unique_eval/local_route_packing/exact_local_route_table.sha256
+          cat analysis/unique_eval/local_route_packing/validation.json
+          cat analysis/unique_eval/local_route_packing/exact_local_route_table.sha256
+          cat analysis/unique_eval/local_route_packing/build_table_resource_usage.txt
+          cat analysis/unique_eval/local_route_packing/validation_resource_usage.txt
       - name: Upload aggregate packing report
         if: always()
         uses: actions/upload-artifact@v4
@@ -67,8 +93,15 @@ jobs:
           name: exact-local-route-packing-audit
           path: |
             build/audit_exact_local_route_packing
+            build/build_exact_local_route_table
+            build/validate_exact_local_route_table
             analysis/unique_eval/local_route_packing/report.json
             analysis/unique_eval/local_route_packing/compression_sizes.txt
             analysis/unique_eval/local_route_packing/resource_usage.txt
+            analysis/unique_eval/local_route_packing/exact_local_route_table.bin
+            analysis/unique_eval/local_route_packing/exact_local_route_table.sha256
+            analysis/unique_eval/local_route_packing/validation.json
+            analysis/unique_eval/local_route_packing/build_table_resource_usage.txt
+            analysis/unique_eval/local_route_packing/validation_resource_usage.txt
           if-no-files-found: warn
           retention-days: 14
