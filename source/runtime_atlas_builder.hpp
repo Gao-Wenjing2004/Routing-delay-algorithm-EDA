@@ -43,6 +43,12 @@
 #ifndef SRB_HOT_INNER_RADIUS
 #define SRB_HOT_INNER_RADIUS 24
 #endif
+#ifndef SRB_BASE_MARGIN
+#define SRB_BASE_MARGIN 48
+#endif
+#ifndef SRB_HOT_MARGIN
+#define SRB_HOT_MARGIN 8
+#endif
 
 namespace srb_runtime_atlas {
 using namespace srb_local_arch;
@@ -164,6 +170,18 @@ inline bool single_seed(uint16_t port,int&route,int&dx,int&dy,int&cost){
   const auto&e=kOutputNet[port];route=e.next_route;dx=e.dx;dy=e.dy;cost=0;return route>=0;
 }
 
+inline bool endpoint_route_reuse_enabled(int radius){
+  if(radius==24)return true;
+#ifdef SRB_HOT_ROUTE_REUSE
+  if(radius==72)return true;
+#endif
+  return false;
+}
+
+inline int endpoint_route_reuse_margin(int radius){
+  return radius==24?SRB_BASE_MARGIN:SRB_HOT_MARGIN;
+}
+
 inline void run_dijkstra(std::vector<Distance>&dist,WorkHeap&heap,int width){
   while(!heap.empty()){
     auto q=heap.pop();if(dist[q.second]!=q.first)continue;
@@ -214,12 +232,6 @@ inline void pack16_extension(Writer&out,const uint16_t*v,uint64_t base,std::vect
 template<size_t NS,size_t NT>
 inline void generate_section(BufferedWriter&out,int radius,int inner,const uint16_t(&sources)[NS],const uint16_t(&targets)[NT],unsigned bits=10,std::vector<EndpointException>*exceptions=nullptr){
   static_assert(NT%16==0,"target count must align packed blocks");
-#ifndef SRB_BASE_MARGIN
-#define SRB_BASE_MARGIN 48
-#endif
-#ifndef SRB_HOT_MARGIN
-#define SRB_HOT_MARGIN 8
-#endif
   const int margin=radius==24?SRB_BASE_MARGIN:SRB_HOT_MARGIN,width=2*(radius+margin)+1,center=radius+margin;
   std::vector<Distance>dist(size_t(width)*width*ROUTES);WorkHeap heap;uint16_t values[16];auto started=std::chrono::steady_clock::now();
 #ifdef SRB_BASE_ROUTE_REUSE
@@ -234,7 +246,7 @@ inline void generate_section(BufferedWriter&out,int radius,int inner,const uint1
   for(size_t si=0;si<source_count;++si){
     const std::vector<Distance>*field=&dist;int sdx=0,sdy=0,scost=0,sroute=-1;
 #ifdef SRB_BASE_ROUTE_REUSE
-    bool reuse=radius==24&&single_seed(sources[si],sroute,sdx,sdy,scost)&&std::abs(sdx)<=margin&&std::abs(sdy)<=margin;
+    bool reuse=endpoint_route_reuse_enabled(radius)&&single_seed(sources[si],sroute,sdx,sdy,scost)&&std::abs(sdx)<=margin&&std::abs(sdy)<=margin;
     if(reuse){
       if(cached_route!=sroute){route_field.assign(size_t(width)*width*ROUTES,DIST_INF);heap.clear();uint32_t start=state_id(center,center,sroute,width);route_field[start]=0;heap.push(0,start);run_dijkstra(route_field,heap,width);cached_route=sroute;}
       field=&route_field;
@@ -264,7 +276,7 @@ inline EndpointSectionResult generate_endpoint_source(int radius,int inner,uint1
   const int margin=radius==24?SRB_BASE_MARGIN:SRB_HOT_MARGIN,width=2*(radius+margin)+1,center=radius+margin;
   std::vector<Distance>dist(size_t(width)*width*ROUTES,DIST_INF);WorkHeap heap;int sdx=0,sdy=0,scost=0,sroute=-1;
 #ifdef SRB_BASE_ROUTE_REUSE
-  const bool reuse=radius==24&&single_seed(source,sroute,sdx,sdy,scost)&&std::abs(sdx)<=margin&&std::abs(sdy)<=margin;
+  const bool reuse=endpoint_route_reuse_enabled(radius)&&single_seed(source,sroute,sdx,sdy,scost)&&std::abs(sdx)<=margin&&std::abs(sdy)<=margin;
   if(reuse){uint32_t start=state_id(center,center,sroute,width);dist[start]=0;heap.push(0,start);run_dijkstra(dist,heap,width);}
   else
 #endif
@@ -280,7 +292,7 @@ inline std::vector<EndpointSectionResult> generate_endpoint_route_group(
     uint64_t values_per_source){
   const int margin=radius==24?SRB_BASE_MARGIN:SRB_HOT_MARGIN,width=2*(radius+margin)+1,center=radius+margin;
   int route=-1,first_dx=0,first_dy=0,first_cost=0;
-  if(begin==end||radius!=24||!single_seed(*begin,route,first_dx,first_dy,first_cost)
+  if(begin==end||!endpoint_route_reuse_enabled(radius)||!single_seed(*begin,route,first_dx,first_dy,first_cost)
      ||std::abs(first_dx)>margin||std::abs(first_dy)>margin)
     throw std::runtime_error("invalid reusable Base route group");
   std::vector<Distance>dist(size_t(width)*width*ROUTES,DIST_INF);WorkHeap heap;
@@ -303,9 +315,10 @@ template<size_t NS,size_t NT>
 inline void generate_section_parallel(BufferedWriter&out,int radius,int inner,const uint16_t(&sources)[NS],const uint16_t(&targets)[NT],unsigned bits,std::vector<EndpointException>&exceptions){
   static_assert(NT%16==0,"target count must align packed blocks");const uint64_t excluded=inner>=0?uint64_t(2*inner+1)*(2*inner+1):0,cells=uint64_t(2*radius+1)*(2*radius+1)-excluded,values_per_source=cells*NT;const size_t window=atlas_parallelism(std::min<size_t>(SRB_PARALLEL_ATLAS_BUILD,NS));auto started=std::chrono::steady_clock::now();
 #if defined(SRB_PARALLEL_BASE_ROUTE_REUSE) && defined(SRB_BASE_ROUTE_REUSE)
-  if(radius==24){
+  if(endpoint_route_reuse_enabled(radius)){
+    const int reuse_margin=endpoint_route_reuse_margin(radius);
     struct Group{size_t begin,end;bool reuse;};std::vector<Group>groups;
-    for(size_t begin=0;begin<NS;){int route=-1,dx=0,dy=0,cost=0;bool reuse=single_seed(sources[begin],route,dx,dy,cost)&&std::abs(dx)<=SRB_BASE_MARGIN&&std::abs(dy)<=SRB_BASE_MARGIN;size_t end=begin+1;if(reuse)while(end<NS){int next_route=-1,next_dx=0,next_dy=0,next_cost=0;if(!single_seed(sources[end],next_route,next_dx,next_dy,next_cost)||next_route!=route||std::abs(next_dx)>SRB_BASE_MARGIN||std::abs(next_dy)>SRB_BASE_MARGIN)break;++end;}groups.push_back({begin,end,reuse});begin=end;}
+    for(size_t begin=0;begin<NS;){int route=-1,dx=0,dy=0,cost=0;bool reuse=single_seed(sources[begin],route,dx,dy,cost)&&std::abs(dx)<=reuse_margin&&std::abs(dy)<=reuse_margin;size_t end=begin+1;if(reuse)while(end<NS){int next_route=-1,next_dx=0,next_dy=0,next_cost=0;if(!single_seed(sources[end],next_route,next_dx,next_dy,next_cost)||next_route!=route||std::abs(next_dx)>reuse_margin||std::abs(next_dy)>reuse_margin)break;++end;}groups.push_back({begin,end,reuse});begin=end;}
     size_t completed=0;
     for(size_t group_begin=0;group_begin<groups.size();group_begin+=window){size_t group_end=std::min(groups.size(),group_begin+window);std::vector<std::future<std::vector<EndpointSectionResult>>>futures;futures.reserve(group_end-group_begin);for(size_t gi=group_begin;gi<group_end;++gi)futures.emplace_back(std::async(std::launch::async,[&,gi]{const Group&g=groups[gi];if(g.reuse)return generate_endpoint_route_group(radius,inner,sources+g.begin,sources+g.end,targets,bits,uint64_t(g.begin)*values_per_source,values_per_source);std::vector<EndpointSectionResult>single;single.push_back(generate_endpoint_source(radius,inner,sources[g.begin],targets,bits,uint64_t(g.begin)*values_per_source));return single;}));for(size_t gi=group_begin;gi<group_end;++gi){std::vector<EndpointSectionResult>results=futures[gi-group_begin].get();for(EndpointSectionResult&result:results){out.bytes(result.data.data(),result.data.size());exceptions.insert(exceptions.end(),result.exceptions.begin(),result.exceptions.end());++completed;double sec=std::chrono::duration<double>(std::chrono::steady_clock::now()-started).count();std::fprintf(stderr,"\ratlas shared-route radius=%d source=%zu/%zu group=%zu/%zu elapsed=%.1fs",radius,completed,size_t(NS),gi+1,groups.size(),sec);std::fflush(stderr);}}}
     std::fprintf(stderr,"\n");return;
@@ -443,11 +456,18 @@ inline std::string build(const std::string&path){
 #elif !defined(SRB_ATLAS_NO_BASE)
   const auto&ordered_base=base_sources;
 #endif
+#ifdef SRB_PARALLEL_HOT_ROUTE_REUSE
+  uint16_t ordered_hot[std::size(hot_sources)];std::copy(std::begin(hot_sources),std::end(hot_sources),ordered_hot);
+  auto hot_route_key=[](uint16_t p){int r,dx,dy,c;if(single_seed(p,r,dx,dy,c)&&std::abs(dx)<=SRB_HOT_MARGIN&&std::abs(dy)<=SRB_HOT_MARGIN)return r;return ROUTES+int(p);};
+  std::stable_sort(std::begin(ordered_hot),std::end(ordered_hot),[&](uint16_t a,uint16_t b){return hot_route_key(a)<hot_route_key(b);});
+#else
+  const auto&ordered_hot=hot_sources;
+#endif
   {BufferedWriter out(path);out.raw(&h,sizeof(h));
 #ifndef SRB_ATLAS_NO_BASE
    out.raw(ordered_base,sizeof(ordered_base));out.raw(base_targets,sizeof(base_targets));
 #endif
-   out.raw(hot_sources,sizeof(hot_sources));out.raw(hot_targets,sizeof(hot_targets));
+   out.raw(ordered_hot,sizeof(ordered_hot));out.raw(hot_targets,sizeof(hot_targets));
 #ifdef SRB_ATLAS_HYBRID_PACK
    std::vector<EndpointException>base_exceptions,hot_exceptions;
 #ifndef SRB_ATLAS_NO_BASE
@@ -458,16 +478,16 @@ inline std::string build(const std::string&path){
 #endif
 #endif
 #ifdef SRB_PARALLEL_ATLAS_BUILD
-   generate_section_parallel(out,72,SRB_HOT_INNER_RADIUS,hot_sources,hot_targets,8,hot_exceptions);
+   generate_section_parallel(out,72,SRB_HOT_INNER_RADIUS,ordered_hot,hot_targets,8,hot_exceptions);
 #else
-   generate_section(out,72,SRB_HOT_INNER_RADIUS,hot_sources,hot_targets,8,&hot_exceptions);
+   generate_section(out,72,SRB_HOT_INNER_RADIUS,ordered_hot,hot_targets,8,&hot_exceptions);
 #endif
    EndpointExceptionHeader eh{};std::memcpy(eh.magic,"SRBEXC1",7);eh.version=1;eh.base_count=uint32_t(base_exceptions.size());eh.hot_count=uint32_t(hot_exceptions.size());out.raw(&eh,sizeof(eh));out.raw(base_exceptions.data(),base_exceptions.size()*sizeof(EndpointException));out.raw(hot_exceptions.data(),hot_exceptions.size()*sizeof(EndpointException));
 #else
 #ifndef SRB_ATLAS_NO_BASE
-   generate_section(out,24,-1,ordered_base,base_targets);generate_section(out,72,SRB_HOT_INNER_RADIUS,hot_sources,hot_targets);
+   generate_section(out,24,-1,ordered_base,base_targets);generate_section(out,72,SRB_HOT_INNER_RADIUS,ordered_hot,hot_targets);
 #else
-   generate_section(out,72,SRB_HOT_INNER_RADIUS,hot_sources,hot_targets);
+   generate_section(out,72,SRB_HOT_INNER_RADIUS,ordered_hot,hot_targets);
 #endif
 #endif
    out.flush();}

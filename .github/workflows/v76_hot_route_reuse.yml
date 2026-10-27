@@ -1,0 +1,120 @@
+name: V76 Hot route reuse cold-start gate
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - benchmark/linux-unique-10m-100m
+    paths:
+      - .github/workflows/v76_hot_route_reuse.yml
+      - source/release_v76.cpp
+      - source/runtime_atlas_builder.hpp
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: v76-hot-route-reuse
+  cancel-in-progress: true
+
+jobs:
+  evaluate:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - name: Download validated P10 closure
+        uses: actions/download-artifact@v4
+        with:
+          name: p10-portal-up-packed
+          path: p10/up
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: 40496834812
+      - uses: actions/download-artifact@v4
+        with:
+          name: p10-portal-down-packed
+          path: p10/down
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: 40496834812
+
+      - name: Build radius-4 control and Hot-reuse V76
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p build bin benchmark_work/public \
+            analysis/unique_eval/local_route_packing \
+            analysis/unique_eval/p10_rebuild/up \
+            analysis/unique_eval/p10_rebuild/down \
+            analysis/unique_eval/v76
+          cp p10/up/packed_1_5.bin analysis/unique_eval/p10_rebuild/up/packed_1_5.bin
+          cp p10/down/packed_1_5.bin analysis/unique_eval/p10_rebuild/down/packed_1_5.bin
+          g++ -std=c++17 -O3 -DNDEBUG -ffp-contract=off -pthread \
+            tools/build_exact_local_route_table.cpp \
+            -o build/build_exact_local_route_table
+          build/build_exact_local_route_table \
+            analysis/unique_eval/local_route_packing/exact_local_route_table.bin 4
+          g++ -std=c++17 -O3 -DNDEBUG -ffp-contract=off -pthread \
+            -DSRB_HOT_INNER_RADIUS=4 \
+            source/release_v73.cpp source/exact_local_route_data.S \
+            -o bin/estimate_v75_r4
+          g++ -std=c++17 -O3 -DNDEBUG -ffp-contract=off -pthread \
+            source/release_v76.cpp source/exact_local_route_data.S \
+            source/p10_periodic_portal_data.S -o bin/estimate_v76
+          strip bin/estimate_v75_r4 bin/estimate_v76
+          bytes=$(stat --printf='%s' bin/estimate_v76)
+          test "${bytes}" -lt 100000000
+          printf 'v76_bytes=%s\nremaining_bytes=%s\n' \
+            "${bytes}" "$((100000000-bytes))" \
+            > analysis/unique_eval/v76/build.txt
+          sha256sum bin/estimate_v76 >> analysis/unique_eval/v76/build.txt
+
+      - name: Prepare public requests and compare cold builds
+        shell: bash
+        run: |
+          set -euo pipefail
+          unzip -q benchmark_assets/endpoint_pool.zip -d benchmark_work/public
+          python3 - <<'PY'
+          import csv
+          from pathlib import Path
+          golden = Path("benchmark_work/public/delay_estimate_ans.csv")
+          request = Path("benchmark_work/public_requests.csv")
+          with golden.open(encoding="utf-8-sig", newline="") as source, \
+               request.open("w", encoding="utf-8", newline="") as target:
+              reader = csv.DictReader(source)
+              writer = csv.writer(target, lineterminator="\n")
+              writer.writerow(["From", "To"])
+              for row in reader:
+                  writer.writerow([row["From"], row["To"]])
+          PY
+          rm -f /tmp/srb_runtime_atlas_v73.bin /tmp/srb_runtime_atlas_v73.bin.lock
+          rm -f /tmp/srb_runtime_atlas_v76.bin /tmp/srb_runtime_atlas_v76.bin.lock
+          /usr/bin/time -f 'control_wall=%e control_cpu=%U' \
+            bin/estimate_v75_r4 -in benchmark_work/public_requests.csv \
+            -out benchmark_work/control.csv \
+            2> analysis/unique_eval/v76/control_timing.txt
+          /usr/bin/time -f 'candidate_wall=%e candidate_cpu=%U' \
+            bin/estimate_v76 -in benchmark_work/public_requests.csv \
+            -out benchmark_work/candidate.csv \
+            2> analysis/unique_eval/v76/candidate_timing.txt
+          cmp benchmark_work/control.csv benchmark_work/candidate.csv
+          python3 tools/compare_prediction_accuracy.py \
+            --golden benchmark_work/public/delay_estimate_ans.csv \
+            --control benchmark_work/control.csv \
+            --candidate benchmark_work/candidate.csv \
+            --output analysis/unique_eval/v76/public_delta.json
+          tail -n 4 analysis/unique_eval/v76/control_timing.txt
+          tail -n 4 analysis/unique_eval/v76/candidate_timing.txt
+
+      - name: Upload V76 evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v76-hot-route-reuse
+          path: analysis/unique_eval/v76/
+          if-no-files-found: warn
+          retention-days: 30
