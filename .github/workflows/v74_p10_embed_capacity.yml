@@ -1,0 +1,113 @@
+name: V74 embed P10 capacity and lookup gate
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - benchmark/linux-unique-10m-100m
+    paths:
+      - .github/workflows/v74_p10_embed_capacity.yml
+      - source/release_v74.cpp
+      - source/p10_periodic_portal.hpp
+      - source/p10_periodic_portal_data.S
+      - tools/benchmark_p10_lookup.cpp
+      - source/srb_hybrid.hpp
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: v74-p10-embed-capacity
+  cancel-in-progress: true
+
+jobs:
+  capacity:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Download deterministic P10 assets from validated rebuild
+        uses: actions/download-artifact@v4
+        with:
+          name: p10-portal-up-packed
+          path: p10/up
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: 40496834812
+      - uses: actions/download-artifact@v4
+        with:
+          name: p10-portal-down-packed
+          path: p10/down
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: 40496834812
+
+      - name: Verify P10 assets and build V73/V74
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p analysis/unique_eval/p10_rebuild/up \
+                   analysis/unique_eval/p10_rebuild/down \
+                   analysis/unique_eval/local_route_packing \
+                   analysis/unique_eval/v74 build bin benchmark_work
+          cp p10/up/packed_1_5.bin analysis/unique_eval/p10_rebuild/up/packed_1_5.bin
+          cp p10/down/packed_1_5.bin analysis/unique_eval/p10_rebuild/down/packed_1_5.bin
+          echo '98e24b337f47d2783a306afa2c59a118af693cba95f43aec56175e1515a0b6d8  analysis/unique_eval/p10_rebuild/up/packed_1_5.bin' | sha256sum -c -
+          echo '06ddcd9385c36fd8005ceede82fdb5356ead00384476ccc8aaefc8dd730b7ae9  analysis/unique_eval/p10_rebuild/down/packed_1_5.bin' | sha256sum -c -
+          g++ -std=c++17 -O3 -DNDEBUG -ffp-contract=off -pthread \
+            tools/build_exact_local_route_table.cpp \
+            -o build/build_exact_local_route_table
+          build/build_exact_local_route_table \
+            analysis/unique_eval/local_route_packing/exact_local_route_table.bin 16
+          g++ -std=c++17 -O3 -DNDEBUG -ffp-contract=off -pthread \
+            source/release_v73.cpp source/exact_local_route_data.S \
+            -o bin/estimate_v73
+          g++ -std=c++17 -O3 -DNDEBUG -ffp-contract=off -pthread \
+            source/release_v74.cpp source/exact_local_route_data.S \
+            source/p10_periodic_portal_data.S -o bin/estimate_v74
+          g++ -std=c++17 -O3 -DNDEBUG -ffp-contract=off \
+            tools/benchmark_p10_lookup.cpp source/p10_periodic_portal_data.S \
+            -o build/benchmark_p10_lookup
+          strip bin/estimate_v73 bin/estimate_v74 build/benchmark_p10_lookup
+          v73_bytes=$(stat --printf='%s' bin/estimate_v73)
+          v74_bytes=$(stat --printf='%s' bin/estimate_v74)
+          test "${v74_bytes}" -lt 100000000
+          printf 'v73_bytes=%s\nv74_bytes=%s\nremaining_bytes=%s\n' \
+            "${v73_bytes}" "${v74_bytes}" "$((100000000-v74_bytes))" \
+            > analysis/unique_eval/v74/build.txt
+          sha256sum bin/estimate_v74 >> analysis/unique_eval/v74/build.txt
+          build/benchmark_p10_lookup > analysis/unique_eval/v74/lookup.json
+          cat analysis/unique_eval/v74/build.txt
+          cat analysis/unique_eval/v74/lookup.json
+
+      - name: Require byte-equivalent predictions before connectors exist
+        shell: bash
+        run: |
+          set -euo pipefail
+          zstd -q -d -c benchmark_assets/unique_teacher_requests_608k.csv.zst \
+            > benchmark_work/requests.csv
+          rm -f /tmp/srb_runtime_atlas_v73.bin /tmp/srb_runtime_atlas_v73.bin.lock
+          rm -f /tmp/srb_runtime_atlas_v74.bin /tmp/srb_runtime_atlas_v74.bin.lock
+          /usr/bin/time -f 'v73_wall=%e v73_cpu=%U' \
+            bin/estimate_v73 -in benchmark_work/requests.csv -out benchmark_work/v73.csv \
+            2> analysis/unique_eval/v74/v73_timing.txt
+          /usr/bin/time -f 'v74_wall=%e v74_cpu=%U' \
+            bin/estimate_v74 -in benchmark_work/requests.csv -out benchmark_work/v74.csv \
+            2> analysis/unique_eval/v74/v74_timing.txt
+          cmp benchmark_work/v73.csv benchmark_work/v74.csv
+          sha256sum benchmark_work/v74.csv > analysis/unique_eval/v74/output_hash.txt
+          tail -n 3 analysis/unique_eval/v74/v73_timing.txt
+          tail -n 3 analysis/unique_eval/v74/v74_timing.txt
+
+      - name: Upload V74 capacity evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v74-p10-embed-capacity
+          path: analysis/unique_eval/v74/
+          if-no-files-found: warn
+          retention-days: 30

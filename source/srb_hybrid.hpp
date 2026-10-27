@@ -18,6 +18,15 @@ extern const unsigned char srb_exact_local_end[];
 #ifndef SRB_HOT_INNER_RADIUS
 #define SRB_HOT_INNER_RADIUS 24
 #endif
+#ifdef SRB_P10_PERIODIC_PORTAL
+#include "p10_periodic_portal.hpp"
+extern "C" {
+extern const unsigned char srb_p10_up_begin[];
+extern const unsigned char srb_p10_up_end[];
+extern const unsigned char srb_p10_down_begin[];
+extern const unsigned char srb_p10_down_end[];
+}
+#endif
 #ifdef SRB_EMBEDDED_ATLAS
 #include "v15_dict.hpp"
 #endif
@@ -161,6 +170,12 @@ public:
   exact_local_.reset(srb_exact_local_begin,
                      size_t(srb_exact_local_end-srb_exact_local_begin));
 #endif
+#endif
+#ifdef SRB_P10_PERIODIC_PORTAL
+  p10_up_.reset(srb_p10_up_begin,
+                size_t(srb_p10_up_end - srb_p10_up_begin));
+  p10_down_.reset(srb_p10_down_begin,
+                  size_t(srb_p10_down_end - srb_p10_down_begin));
 #endif
 #ifdef SRB_ROUTE_TAIL
 #ifndef SRB_ROUTE_TAIL_PATH
@@ -470,6 +485,9 @@ public:
 #ifdef SRB_ROUTE_PERIOD_TABLE
   +route_period_bytes_.size()
 #endif
+#ifdef SRB_P10_PERIODIC_PORTAL
+  +p10_up_.size_bytes()+p10_down_.size_bytes()
+#endif
   ;}
  private:
 #ifdef SRB_ROUTE_PERIOD_TABLE
@@ -668,6 +686,9 @@ public:
  int16_t src_[496],dst_[496],hsrc_[496],hdst_[496];uint16_t annulus_[145*145];
 #ifdef SRB_EXACT_LOCAL_ROUTE_TABLE
  srb_exact_local::View exact_local_;
+#endif
+#ifdef SRB_P10_PERIODIC_PORTAL
+ srb_p10::PackedPortalClosureView p10_up_,p10_down_;
 #endif
 #ifdef SRB_SOURCE_MOVE_CACHE
  int16_t source_move_class_[496];std::vector<uint32_t>source_move_cache_;
