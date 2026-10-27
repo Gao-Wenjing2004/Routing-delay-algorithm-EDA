@@ -89,7 +89,7 @@ jobs:
                   groups[request["From"]].append((order, request, golden))
           selected = []
           for source in sorted(groups):
-              selected.extend(sorted(groups[source], key=lambda item: item[0])[:256])
+              selected.extend(sorted(groups[source], key=lambda item: item[0])[:1024])
           with (root / "selected_requests.csv").open("w", encoding="utf-8", newline="") as rf, \
                (root / "selected_golden.csv").open("w", encoding="utf-8", newline="") as gf:
               rw, gw = csv.DictWriter(rf, fieldnames=["From", "To"]), \
@@ -98,7 +98,7 @@ jobs:
               for _, request, golden in selected:
                   rw.writerow({"From": request["From"], "To": request["To"]})
                   gw.writerow({"From": golden["From"], "To": golden["To"], "Delay": golden["Delay"]})
-          manifest = {"sources": len(groups), "rows": len(selected), "per_source_cap": 256}
+          manifest = {"sources": len(groups), "rows": len(selected), "per_source_cap": 1024}
           Path("analysis/unique_eval/p10_connector/selection.json").write_text(
               json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
           print(json.dumps(manifest, indent=2))

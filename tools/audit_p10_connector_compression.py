@@ -63,6 +63,23 @@ CONDITIONAL_LEVELS = (
     ("direction", "periods", "entry"),
 )
 
+JOINT_LEVELS = (
+    ("source_port", "target_port", "source_x8", "target_x8", "source_phase", "target_phase", "direction", "periods"),
+    ("source_stem", "target_stem", "source_x8", "target_x8", "source_phase", "target_phase", "direction", "periods"),
+    ("source_port", "target_port", "dx8", "source_phase", "target_phase", "direction", "periods"),
+    ("source_stem", "target_stem", "dx8", "source_phase", "target_phase", "direction", "periods"),
+    ("source_port", "target_port", "direction", "periods"),
+    ("source_stem", "target_stem", "direction", "periods"),
+    ("source_port", "target_stem", "direction", "periods"),
+    ("source_stem", "target_port", "direction", "periods"),
+    ("source_x8", "target_x8", "source_phase", "target_phase", "direction", "periods"),
+    ("dx8", "source_phase", "target_phase", "direction", "periods"),
+    ("source_x8", "target_x8", "direction", "periods"),
+    ("dx8", "direction", "periods"),
+    ("direction", "periods"),
+    ("direction",),
+)
+
 
 def features(row: dict[str, str], role: str) -> dict[str, object]:
     x, y, port = endpoint(row["From"] if role == "source" else row["To"])
@@ -75,6 +92,24 @@ def features(row: dict[str, str], role: str) -> dict[str, object]:
         "direction": int(row["Direction"]),
         "periods": int(row["Periods"]),
         "entry": int(row["EntryIndex"]),
+    }
+
+
+def joint_features(row: dict[str, str]) -> dict[str, object]:
+    sx, sy, source_port = endpoint(row["From"])
+    tx, ty, target_port = endpoint(row["To"])
+    return {
+        "source_port": source_port,
+        "target_port": target_port,
+        "source_stem": stem(source_port),
+        "target_stem": stem(target_port),
+        "source_x8": sx // 8,
+        "target_x8": tx // 8,
+        "source_phase": sy % 100,
+        "target_phase": ty % 100,
+        "dx8": max(-20, min(20, (tx - sx) // 8)),
+        "direction": int(row["Direction"]),
+        "periods": int(row["Periods"]),
     }
 
 
@@ -174,6 +209,75 @@ def evaluate(rows: list[dict[str, str]], fold_kind: str, folds: int) -> dict[str
     }
 
 
+def evaluate_joint(rows: list[dict[str, str]], fold_kind: str, folds: int) -> dict[str, object]:
+    metrics = {
+        name: Counter() for name in (
+            "entry_event", "exit_event", "pair_event",
+            "entry_x", "exit_x", "pair_x", "entry_state", "exit_state", "pair_state",
+        )
+    }
+    evaluated = 0
+
+    def row_fold(row: dict[str, str]) -> int:
+        sx, sy, _ = endpoint(row["From"])
+        token = row["From"] if fold_kind == "source" else f"{sx // 16}:{sy // 100}"
+        return stable_fold(token, folds)
+
+    assigned = [row_fold(row) for row in rows]
+    for fold in range(folds):
+        models = {name: Hierarchy(JOINT_LEVELS) for name in (
+            "entry_event", "exit_event", "entry_x", "exit_x", "entry_state", "exit_state"
+        )}
+        for row, owner in zip(rows, assigned, strict=True):
+            if owner == fold:
+                continue
+            item = joint_features(row)
+            entry, exit_event = int(row["EntryIndex"]), int(row["ExitIndex"])
+            labels = {
+                "entry_event": entry, "exit_event": exit_event,
+                "entry_x": entry // 160, "exit_x": exit_event // 160,
+                "entry_state": entry % 160, "exit_state": exit_event % 160,
+            }
+            for name, label in labels.items():
+                models[name].add(item, label)
+        for row, owner in zip(rows, assigned, strict=True):
+            if owner != fold:
+                continue
+            item = joint_features(row)
+            entry, exit_event = int(row["EntryIndex"]), int(row["ExitIndex"])
+            labels = {
+                "entry_event": entry, "exit_event": exit_event,
+                "entry_x": entry // 160, "exit_x": exit_event // 160,
+                "entry_state": entry % 160, "exit_state": exit_event % 160,
+            }
+            candidates = {name: model.candidates(item) for name, model in models.items()}
+            evaluated += 1
+            for beam in BEAMS:
+                entry_event_ok = labels["entry_event"] in candidates["entry_event"][:beam]
+                exit_event_ok = labels["exit_event"] in candidates["exit_event"][:beam]
+                entry_x_ok = labels["entry_x"] in candidates["entry_x"][:beam]
+                exit_x_ok = labels["exit_x"] in candidates["exit_x"][:beam]
+                entry_state_ok = labels["entry_state"] in candidates["entry_state"][:beam]
+                exit_state_ok = labels["exit_state"] in candidates["exit_state"][:beam]
+                metrics["entry_event"][beam] += entry_event_ok
+                metrics["exit_event"][beam] += exit_event_ok
+                metrics["pair_event"][beam] += entry_event_ok and exit_event_ok
+                metrics["entry_x"][beam] += entry_x_ok
+                metrics["exit_x"][beam] += exit_x_ok
+                metrics["pair_x"][beam] += entry_x_ok and exit_x_ok
+                metrics["entry_state"][beam] += entry_state_ok
+                metrics["exit_state"][beam] += exit_state_ok
+                metrics["pair_state"][beam] += entry_state_ok and exit_state_ok
+    return {
+        "fold_kind": fold_kind,
+        "rows": evaluated,
+        **{
+            name + "_recall": {str(beam): counter[beam] / evaluated for beam in BEAMS}
+            for name, counter in metrics.items()
+        },
+    }
+
+
 def empirical_dictionary(rows: list[dict[str, str]], role: str, beam: int) -> dict[str, object]:
     model = Hierarchy(LEVELS)
     items: list[dict[str, object]] = []
@@ -227,6 +331,10 @@ def main() -> None:
         "validation": {
             "source_holdout": evaluate(rows, "source", args.folds),
             "region_holdout": evaluate(rows, "region", args.folds),
+        },
+        "joint_query_validation": {
+            "source_holdout": evaluate_joint(rows, "source", args.folds),
+            "region_holdout": evaluate_joint(rows, "region", args.folds),
         },
         "dictionary_lower_bounds": [
             empirical_dictionary(rows, role, beam)
