@@ -61,6 +61,6 @@
   ],
   "sha256": "BE9020CCD7B8B43DAC0D82E34494F25279A919CC0BC8AEFAF4B159A169A8F11F",
   "bytes": 1767632165,
-  "generation_seconds": 231.38882849900006,
+  "generation_seconds": 227.62115601300002,
   "note": "Generated directly into external hash buckets; no grouped full-size copy was retained."
 }
