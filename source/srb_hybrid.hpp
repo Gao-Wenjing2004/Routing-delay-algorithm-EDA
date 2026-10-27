@@ -7,10 +7,12 @@
 #include "e2e_format.hpp"
 #ifdef SRB_EXACT_LOCAL_ROUTE_TABLE
 #include "exact_local_route_table.hpp"
+#ifndef _WIN32
 extern "C" {
 extern const unsigned char srb_exact_local_begin[];
 extern const unsigned char srb_exact_local_end[];
 }
+#endif
 #endif
 #ifdef SRB_EMBEDDED_ATLAS
 #include "v15_dict.hpp"
@@ -139,8 +141,22 @@ public:
   }else{hot_=base_+h_.base_values;if(reinterpret_cast<const char*>(hot_+h_.hot_values)!=data_+endpoint_bytes)throw std::runtime_error("truncated endpoint Atlas");}
   unsigned k=0;for(int y=-72;y<=72;++y)for(int x=-72;x<=72;++x)annulus_[(y+72)*145+x+72]=(std::abs(x)<=24&&std::abs(y)<=24)?65535:k++;
 #ifdef SRB_EXACT_LOCAL_ROUTE_TABLE
+#ifdef _WIN32
+#ifndef SRB_EXACT_LOCAL_RESOURCE_ID
+#define SRB_EXACT_LOCAL_RESOURCE_ID 101
+#endif
+  HRSRC exact_resource=FindResourceA(nullptr,
+      MAKEINTRESOURCEA(SRB_EXACT_LOCAL_RESOURCE_ID),RT_RCDATA);
+  if(!exact_resource)throw std::runtime_error("missing exact local table resource");
+  HGLOBAL exact_loaded=LoadResource(nullptr,exact_resource);
+  const void*exact_data=exact_loaded?LockResource(exact_loaded):nullptr;
+  const DWORD exact_size=SizeofResource(nullptr,exact_resource);
+  if(!exact_data||!exact_size)throw std::runtime_error("cannot load exact local table resource");
+  exact_local_.reset(static_cast<const unsigned char*>(exact_data),size_t(exact_size));
+#else
   exact_local_.reset(srb_exact_local_begin,
                      size_t(srb_exact_local_end-srb_exact_local_begin));
+#endif
 #endif
 #ifdef SRB_ROUTE_TAIL
 #ifndef SRB_ROUTE_TAIL_PATH
@@ -436,7 +452,11 @@ public:
  }
  size_t atlas_memory_bytes()const{return bytes_
 #ifdef SRB_EXACT_LOCAL_ROUTE_TABLE
+#ifdef _WIN32
+  +exact_local_.size_bytes()
+#else
   +size_t(srb_exact_local_end-srb_exact_local_begin)
+#endif
 #endif
 #ifdef SRB_ENDPOINT_EXTENSION
   +extension_.size()

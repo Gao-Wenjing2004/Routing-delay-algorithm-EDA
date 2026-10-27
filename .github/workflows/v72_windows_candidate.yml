@@ -1,0 +1,79 @@
+name: V72 Windows candidate
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - benchmark/linux-unique-10m-100m
+    paths:
+      - .github/workflows/v72_windows_candidate.yml
+      - source/exact_local_route_data.rc
+
+permissions:
+  contents: read
+
+concurrency:
+  group: v72-windows-candidate
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: windows-2022
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: false
+          fetch-depth: 1
+
+      - uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
+      - name: Build exact table and V72 resource candidate
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          New-Item -ItemType Directory -Force build, bin, analysis\unique_eval\local_route_packing | Out-Null
+          clang-cl /nologo /std:c++17 /O2 /DNDEBUG /EHsc tools\build_exact_local_route_table.cpp /Fe:build\build_exact_local_route_table.exe
+          if ($LASTEXITCODE -ne 0) { throw 'table generator compile failed' }
+          & build\build_exact_local_route_table.exe analysis\unique_eval\local_route_packing\exact_local_route_table.bin
+          if ($LASTEXITCODE -ne 0) { throw 'table generation failed' }
+          rc.exe /nologo /fo build\exact_local_route_data.res source\exact_local_route_data.rc
+          if ($LASTEXITCODE -ne 0) { throw 'resource compile failed' }
+          clang-cl /nologo /std:c++17 /O2 /DNDEBUG /EHsc /D_CRT_SECURE_NO_WARNINGS source\release_v72.cpp build\exact_local_route_data.res /Fe:bin\estimate_v72.exe
+          if ($LASTEXITCODE -ne 0) { throw 'V72 compile failed' }
+          $candidate = Get-Item -LiteralPath bin\estimate_v72.exe
+          if ($candidate.Length -ge 100000000) {
+            throw "V72 exceeds submission limit: $($candidate.Length)"
+          }
+          $hash = (Get-FileHash -Algorithm SHA256 -LiteralPath $candidate.FullName).Hash
+          "candidate_bytes=$($candidate.Length)" | Set-Content -LiteralPath build\v72_windows_build.txt
+          "candidate_sha256=$hash" | Add-Content -LiteralPath build\v72_windows_build.txt
+          Get-Content -LiteralPath build\v72_windows_build.txt
+
+      - name: Smoke test resource and Hot-only Atlas
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          Remove-Item -LiteralPath srb_runtime_atlas_v72.tmp -Force -ErrorAction SilentlyContinue
+          @(
+            'From,To',
+            'SRB_84_356/ZLE[0],SRB_46_116/ZSSB[6]'
+          ) | Set-Content -LiteralPath build\smoke.csv -Encoding utf8
+          & bin\estimate_v72.exe -in build\smoke.csv -out build\smoke_prediction.csv
+          if ($LASTEXITCODE -ne 0) { throw 'V72 smoke test failed' }
+          Get-Content -LiteralPath build\smoke_prediction.csv
+
+      - name: Upload Windows candidate
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v72-exact-local-windows
+          path: |
+            bin/estimate_v72.exe
+            build/v72_windows_build.txt
+            build/smoke_prediction.csv
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 14

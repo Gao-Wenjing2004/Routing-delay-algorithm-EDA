@@ -170,6 +170,7 @@ class View {
   }
 
   const Header& header() const { return header_; }
+  size_t size_bytes() const { return size_; }
 
  private:
   static constexpr uint16_t kInf = 65535;
