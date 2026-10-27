@@ -20,6 +20,10 @@ def delay(row: dict[str, str]) -> int:
 
 
 def score(prediction: int, golden: int) -> float:
+    if golden < 0 or prediction < 0:
+        raise ValueError("negative delay")
+    if golden == 0:
+        return float(prediction == 0)
     return 1.0 - math.tanh(4.0 * abs(prediction - golden) / golden)
 
 
