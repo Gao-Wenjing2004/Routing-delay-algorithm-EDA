@@ -56,7 +56,7 @@ class View {
       throw std::runtime_error("truncated exact local route table");
     std::memcpy(&header_, bytes_, sizeof(header_));
     if (std::memcmp(header_.magic, "SRBLRT1", 7) || header_.version != 1 ||
-        header_.routes != 160 || header_.radius != 24 ||
+        header_.routes != 160 || header_.radius < 1 || header_.radius > 24 ||
         header_.row_bytes != 182 || header_.values != header_.rows * 160u ||
         header_.metadata_offset < sizeof(Header) ||
         header_.data_offset < header_.metadata_offset + 161u * sizeof(RouteMetadata) ||
@@ -170,14 +170,15 @@ class View {
   }
 
   const Header& header() const { return header_; }
+  uint32_t radius() const { return header_.radius; }
   size_t size_bytes() const { return size_; }
 
  private:
   static constexpr uint16_t kInf = 65535;
 
   int cell_index(int route, int dx, int dy) const {
-    constexpr int radius = 24;
-    constexpr int width = 49;
+    const int radius = int(header_.radius);
+    const int width = 2 * radius + 1;
     if (dx >= -radius && dx <= radius && dy >= -radius && dy <= radius)
       return (dy + radius) * width + dx + radius;
 

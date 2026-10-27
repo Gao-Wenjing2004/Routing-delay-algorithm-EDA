@@ -27,10 +27,11 @@ int main(int argc, char** argv) {
 
     using namespace srb_local_arch;
     using namespace srb_runtime_atlas;
-    constexpr int radius = 24, maximum_seed = 12, margin = 32;
-    constexpr int extent = radius + maximum_seed + margin;
-    constexpr int width = 2 * extent + 1;
-    constexpr int center = extent;
+    const int radius = int(table.radius());
+    constexpr int maximum_seed = 12, margin = 32;
+    const int extent = radius + maximum_seed + margin;
+    const int width = 2 * extent + 1;
+    const int center = extent;
     std::vector<Distance> dist(size_t(width) * width * ROUTES, DIST_INF);
     WorkHeap heap;
     uint64_t sampled = 0, exact = 0, under = 0, over = 0;
@@ -104,6 +105,7 @@ int main(int argc, char** argv) {
     report.precision(12);
     report << "{\n"
            << "  \"schema\": 1,\n"
+           << "  \"radius\": " << radius << ",\n"
            << "  \"sampled\": " << sampled << ",\n"
            << "  \"exact\": " << exact << ",\n"
            << "  \"under\": " << under << ",\n"

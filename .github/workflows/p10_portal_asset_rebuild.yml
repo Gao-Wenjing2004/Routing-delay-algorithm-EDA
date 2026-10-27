@@ -1,0 +1,170 @@
+name: Rebuild validated P10 Portal closure
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - benchmark/linux-unique-10m-100m
+    paths:
+      - .github/workflows/p10_portal_asset_rebuild.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: p10-portal-asset-rebuild
+  cancel-in-progress: false
+
+jobs:
+  rebuild:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - direction: up
+            raw_sha256: 8cb81795981fdef109b5590974f4ce7885c3cac748a95ad5331c521225f44b61
+          - direction: down
+            raw_sha256: 6ef3c298f224a653ad453dbab91251f6ca1e5029bd4bb089f36f4c475663bfe3
+    runs-on: ubuntu-22.04
+    timeout-minutes: 180
+    steps:
+      - name: Checkout current benchmark branch
+        uses: actions/checkout@v4
+        with:
+          path: current
+          fetch-depth: 1
+
+      - name: Checkout the validated V9/P10 implementation
+        uses: actions/checkout@v4
+        with:
+          ref: v9-hybrid
+          path: legacy
+          fetch-depth: 1
+
+      - name: Build graph and P10 offline tools
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p legacy/srb_hybrid_v9/build current/analysis/unique_eval/p10_rebuild/${{ matrix.direction }}
+          g++ -std=c++17 -O3 -DNDEBUG -pthread \
+            legacy/srb_hybrid_v9/src/preprocess_v9.cpp \
+            -o legacy/srb_hybrid_v9/build/preprocess_v9
+          g++ -std=c++17 -O3 -DNDEBUG -pthread \
+            legacy/srb_hybrid_v9/src/offline_periodic_portal_matrix.cpp \
+            -o legacy/srb_hybrid_v9/build/offline_periodic_portal_matrix
+          g++ -std=c++17 -O3 -DNDEBUG -pthread \
+            legacy/srb_hybrid_v9/src/offline_portal_closure.cpp \
+            -o legacy/srb_hybrid_v9/build/offline_portal_closure
+          legacy/srb_hybrid_v9/build/preprocess_v9 \
+            legacy/legacy_versions/v3/arch/SRB_Inst.json \
+            legacy/legacy_versions/v3/arch/SRB_Port.json \
+            legacy/legacy_versions/v3/arch/SRB_Arc.json \
+            legacy/legacy_versions/v3/arch/SRB_Net.json \
+            legacy/legacy_versions/v3/arch/SRB_Gap.json \
+            legacy/srb_hybrid_v9/build/srb_graph.bin
+
+      - name: Regenerate exact single-period matrix
+        shell: bash
+        run: |
+          set -euo pipefail
+          output=current/analysis/unique_eval/p10_rebuild/${{ matrix.direction }}
+          /usr/bin/time -v legacy/srb_hybrid_v9/build/offline_periodic_portal_matrix \
+            --graph legacy/srb_hybrid_v9/build/srb_graph.bin \
+            --states legacy/srb_prpr_v8/analysis/prpr/state_equivalence.csv \
+            --direction ${{ matrix.direction }} \
+            --side-band 6 \
+            --output "${output}/single_period.bin" \
+            2> "${output}/matrix_build.log"
+          actual=$(sha256sum "${output}/single_period.bin" | cut -d' ' -f1)
+          if [[ "${actual}" != "${{ matrix.raw_sha256 }}" ]]; then
+            echo "P10 raw matrix digest mismatch: ${actual}" >&2
+            exit 1
+          fi
+          printf 'raw_sha256=%s\n' "${actual}" > "${output}/manifest.txt"
+          stat --printf='raw_bytes=%s\n' "${output}/single_period.bin" >> "${output}/manifest.txt"
+
+      - name: Close 1-5 periods and losslessly pack to 10 bit
+        shell: bash
+        run: |
+          set -euo pipefail
+          output=current/analysis/unique_eval/p10_rebuild/${{ matrix.direction }}
+          /usr/bin/time -v legacy/srb_hybrid_v9/build/offline_portal_closure \
+            "${output}/single_period.bin" "${output}/closure_1_5.bin" 5 \
+            2> "${output}/closure_build.log"
+          python3 legacy/srb_hybrid_v9/tools/pack_periodic_portal_closure.py \
+            --input "${output}/closure_1_5.bin" \
+            --output "${output}/packed_1_5.bin" \
+            --report "${output}/packing.json"
+          sha256sum "${output}/packed_1_5.bin" >> "${output}/manifest.txt"
+          stat --printf='packed_bytes=%s\n' "${output}/packed_1_5.bin" >> "${output}/manifest.txt"
+          cat "${output}/manifest.txt"
+          cat "${output}/packing.json"
+
+      - name: Upload packed P10 direction artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: p10-portal-${{ matrix.direction }}-packed
+          path: |
+            current/analysis/unique_eval/p10_rebuild/${{ matrix.direction }}/packed_1_5.bin
+            current/analysis/unique_eval/p10_rebuild/${{ matrix.direction }}/packing.json
+            current/analysis/unique_eval/p10_rebuild/${{ matrix.direction }}/manifest.txt
+            current/analysis/unique_eval/p10_rebuild/${{ matrix.direction }}/matrix_build.log
+            current/analysis/unique_eval/p10_rebuild/${{ matrix.direction }}/closure_build.log
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 30
+
+  summarize:
+    needs: rebuild
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Download rebuilt directions
+        uses: actions/download-artifact@v4
+        with:
+          pattern: p10-portal-*-packed
+          path: p10
+      - name: Build machine-readable aggregate report
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import hashlib
+          import json
+          from pathlib import Path
+
+          records = {}
+          total = 0
+          for direction in ("up", "down"):
+              root = Path("p10") / f"p10-portal-{direction}-packed"
+              binary = root / "packed_1_5.bin"
+              report = json.loads((root / "packing.json").read_text())
+              payload = binary.read_bytes()
+              records[direction] = {
+                  "bytes": len(payload),
+                  "sha256": hashlib.sha256(payload).hexdigest(),
+                  "dimension": report["dimension"],
+                  "periods": report["embedded_periods"],
+                  "residual_maxima": report["residual_maxima"],
+              }
+              total += len(payload)
+          aggregate = {
+              "schema": 1,
+              "kind": "validated-p10-periodic-portal-closure",
+              "records": records,
+              "total_bytes": total,
+              "expected_total_bytes": 46156860,
+              "matches_documented_size": total == 46156860,
+          }
+          Path("p10/p10_rebuild_summary.json").write_text(
+              json.dumps(aggregate, indent=2) + "\n", encoding="utf-8"
+          )
+          print(json.dumps(aggregate, indent=2))
+          if total != 46156860:
+              raise SystemExit("unexpected combined P10 size")
+          PY
+      - name: Upload small aggregate report
+        uses: actions/upload-artifact@v4
+        with:
+          name: p10-portal-rebuild-report
+          path: p10/p10_rebuild_summary.json
+          if-no-files-found: error
+          retention-days: 30

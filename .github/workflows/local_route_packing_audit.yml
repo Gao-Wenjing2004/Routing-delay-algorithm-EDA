@@ -68,6 +68,23 @@ jobs:
           cat analysis/unique_eval/local_route_packing/build_table_resource_usage.txt
           cat analysis/unique_eval/local_route_packing/validation_resource_usage.txt
           echo "validation_exit=${validation_status}"
+      - name: Audit a radius-16 capacity option for P10 coexistence
+        shell: bash
+        run: |
+          set -euo pipefail
+          /usr/bin/time -v build/build_exact_local_route_table \
+            analysis/unique_eval/local_route_packing/exact_local_route_table_r16.bin 16 \
+            2> analysis/unique_eval/local_route_packing/build_table_r16_resource_usage.txt
+          validation_status=0
+          /usr/bin/time -v build/validate_exact_local_route_table \
+            analysis/unique_eval/local_route_packing/exact_local_route_table_r16.bin \
+            analysis/unique_eval/local_route_packing/validation_r16.json \
+            2> analysis/unique_eval/local_route_packing/validation_r16_resource_usage.txt \
+            || validation_status=$?
+          sha256sum analysis/unique_eval/local_route_packing/exact_local_route_table_r16.bin \
+            > analysis/unique_eval/local_route_packing/exact_local_route_table_r16.sha256
+          cat analysis/unique_eval/local_route_packing/validation_r16.json
+          echo "validation_r16_exit=${validation_status}"
       - name: Require exact connector equivalence
         shell: bash
         run: |
@@ -81,6 +98,14 @@ jobs:
               raise SystemExit(
                   f"not exact: {report['exact']}/{report['sampled']} "
                   f"under={report['under']} over={report['over']}"
+              )
+          report16 = json.loads(Path(
+              "analysis/unique_eval/local_route_packing/validation_r16.json"
+          ).read_text())
+          if report16["sampled"] != report16["exact"]:
+              raise SystemExit(
+                  f"radius16 not exact: {report16['exact']}/{report16['sampled']} "
+                  f"under={report16['under']} over={report16['over']}"
               )
           PY
       - name: Build and smoke-test V72 hot-only Atlas
@@ -137,6 +162,10 @@ jobs:
             analysis/unique_eval/local_route_packing/validation.json
             analysis/unique_eval/local_route_packing/build_table_resource_usage.txt
             analysis/unique_eval/local_route_packing/validation_resource_usage.txt
+            analysis/unique_eval/local_route_packing/exact_local_route_table_r16.sha256
+            analysis/unique_eval/local_route_packing/validation_r16.json
+            analysis/unique_eval/local_route_packing/build_table_r16_resource_usage.txt
+            analysis/unique_eval/local_route_packing/validation_r16_resource_usage.txt
             analysis/unique_eval/local_route_packing/v72_build.txt
             analysis/unique_eval/local_route_packing/smoke_prediction.csv
           if-no-files-found: warn

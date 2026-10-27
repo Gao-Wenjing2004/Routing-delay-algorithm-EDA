@@ -1,4 +1,4 @@
-// Build the lossless radius-24 route-state table used by the O(1) local
+// Build a lossless route-state table used by the O(1) local
 // connector branch.  Each route stores the base 49x49 square plus only the
 // strip needed by its compulsory Output Net displacement.
 
@@ -14,6 +14,7 @@
 #include <fstream>
 #include <limits>
 #include <stdexcept>
+#include <string>
 #include <vector>
 
 namespace {
@@ -23,16 +24,12 @@ using srb_exact_local::Header;
 using srb_exact_local::RouteMetadata;
 using srb_exact_local::ValueException;
 
-constexpr int kRadius = 24;
 constexpr int kMaxSeed = 12;
 // Use a generous offline halo.  The old endpoint Base Atlas used only eight
 // cells and marked some physically reachable boundary combinations as INF.
 // The stored coordinate domain is unchanged; only Golden generation gets the
 // wider field.
 constexpr int kMargin = 32;
-constexpr int kExtent = kRadius + kMaxSeed + kMargin;
-constexpr int kWidth = 2 * kExtent + 1;
-constexpr int kCenter = kExtent;
 constexpr int kRowBytes = 182;
 
 void pack_row(const std::array<uint16_t, ROUTES>& values, uint32_t row,
@@ -62,32 +59,39 @@ void pack_row(const std::array<uint16_t, ROUTES>& values, uint32_t row,
 }
 
 template <class Function>
-void each_cell(int seed_dx, int seed_dy, Function&& function) {
-  for (int dy = -kRadius; dy <= kRadius; ++dy)
-    for (int dx = -kRadius; dx <= kRadius; ++dx) function(dx, dy);
+void each_cell(int radius, int seed_dx, int seed_dy, Function&& function) {
+  for (int dy = -radius; dy <= radius; ++dy)
+    for (int dx = -radius; dx <= radius; ++dx) function(dx, dy);
   if (seed_dx > 0)
-    for (int dy = -kRadius; dy <= kRadius; ++dy)
-      for (int dx = -kRadius - seed_dx; dx < -kRadius; ++dx)
+    for (int dy = -radius; dy <= radius; ++dy)
+      for (int dx = -radius - seed_dx; dx < -radius; ++dx)
         function(dx, dy);
   else if (seed_dx < 0)
-    for (int dy = -kRadius; dy <= kRadius; ++dy)
-      for (int dx = kRadius + 1; dx <= kRadius - seed_dx; ++dx)
+    for (int dy = -radius; dy <= radius; ++dy)
+      for (int dx = radius + 1; dx <= radius - seed_dx; ++dx)
         function(dx, dy);
   else if (seed_dy > 0)
-    for (int dx = -kRadius; dx <= kRadius; ++dx)
-      for (int dy = -kRadius - seed_dy; dy < -kRadius; ++dy)
+    for (int dx = -radius; dx <= radius; ++dx)
+      for (int dy = -radius - seed_dy; dy < -radius; ++dy)
         function(dx, dy);
   else if (seed_dy < 0)
-    for (int dx = -kRadius; dx <= kRadius; ++dx)
-      for (int dy = kRadius + 1; dy <= kRadius - seed_dy; ++dy)
+    for (int dx = -radius; dx <= radius; ++dx)
+      for (int dy = radius + 1; dy <= radius - seed_dy; ++dy)
         function(dx, dy);
 }
 }  // namespace
 
 int main(int argc, char** argv) {
   try {
-    if (argc != 2)
-      throw std::runtime_error("usage: build_exact_local_route_table output.bin");
+    if (argc < 2 || argc > 3)
+      throw std::runtime_error(
+          "usage: build_exact_local_route_table output.bin [radius]");
+    const int radius = argc == 3 ? std::stoi(argv[2]) : 24;
+    if (radius < 1 || radius > 24)
+      throw std::runtime_error("exact local radius must be in [1,24]");
+    const int extent = radius + kMaxSeed + kMargin;
+    const int width = 2 * extent + 1;
+    const int center = extent;
 
     std::array<int8_t, ROUTES> seed_dx{};
     std::array<int8_t, ROUTES> seed_dy{};
@@ -123,8 +127,8 @@ int main(int argc, char** argv) {
     uint32_t rows = 0;
     for (int route = 0; route < ROUTES; ++route) {
       metadata[route] = {rows, seed_dx[route], seed_dy[route], 0};
-      rows += uint32_t((2 * kRadius + 1) * (2 * kRadius + 1) +
-                       (2 * kRadius + 1) *
+      rows += uint32_t((2 * radius + 1) * (2 * radius + 1) +
+                       (2 * radius + 1) *
                            (std::abs(int(seed_dx[route])) +
                             std::abs(int(seed_dy[route]))));
     }
@@ -134,7 +138,7 @@ int main(int argc, char** argv) {
     std::memcpy(header.magic, "SRBLRT1", 7);
     header.version = 1;
     header.routes = ROUTES;
-    header.radius = kRadius;
+    header.radius = uint32_t(radius);
     header.row_bytes = kRowBytes;
     header.rows = rows;
     header.values = rows * ROUTES;
@@ -151,7 +155,7 @@ int main(int argc, char** argv) {
                 metadata.size() * sizeof(RouteMetadata));
     out.write(reinterpret_cast<const char*>(prefix.data()), prefix.size());
 
-    std::vector<Distance> dist(size_t(kWidth) * kWidth * ROUTES, DIST_INF);
+    std::vector<Distance> dist(size_t(width) * width * ROUTES, DIST_INF);
     WorkHeap heap;
     std::array<uint16_t, ROUTES> values{};
     std::array<unsigned char, kRowBytes> packed{};
@@ -162,12 +166,12 @@ int main(int argc, char** argv) {
     for (int source = 0; source < ROUTES; ++source) {
       std::fill(dist.begin(), dist.end(), DIST_INF);
       heap.clear();
-      const uint32_t start = state_id(kCenter, kCenter, source, kWidth);
+      const uint32_t start = state_id(center, center, source, width);
       dist[start] = 0;
       heap.push(0, start);
-      run_dijkstra(dist, heap, kWidth);
-      each_cell(seed_dx[source], seed_dy[source], [&](int dx, int dy) {
-        const uint32_t base = state_id(kCenter + dx, kCenter + dy, 0, kWidth);
+      run_dijkstra(dist, heap, width);
+      each_cell(radius, seed_dx[source], seed_dy[source], [&](int dx, int dy) {
+        const uint32_t base = state_id(center + dx, center + dy, 0, width);
         for (int target = 0; target < ROUTES; ++target)
           values[target] = dist[base + target];
         pack_row(values, row++, packed, exceptions);

@@ -275,10 +275,12 @@ public:
      safe(a,b)
 #endif
      ){
-   if(d<=24
+   if(d<=
 #ifdef SRB_EXACT_LOCAL_ROUTE_TABLE
+      int(exact_local_.radius())
       )value=exact_local_.predict(a.port,b.port,dx,dy);
 #else
+      24
       &&src_[a.port]>=0&&dst_[b.port]>=0)value=get(base_,(uint64_t(src_[a.port])*49*49+(dy+24)*49+dx+24)*h_.targets+dst_[b.port]);
 #endif
    else if(d>24&&d<=72&&hsrc_[a.port]>=0&&hdst_[b.port]>=0
