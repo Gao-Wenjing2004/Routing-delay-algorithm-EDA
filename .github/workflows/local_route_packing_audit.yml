@@ -30,7 +30,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 1
-      - name: Build and audit exact radius-24 route table
+      - name: Build exact local-table tools
         shell: bash
         run: |
           set -euo pipefail
@@ -44,31 +44,6 @@ jobs:
           g++ -std=c++17 -O3 -DNDEBUG -ffp-contract=off -pthread \
             tools/validate_exact_local_route_table.cpp \
             -o build/validate_exact_local_route_table
-          /usr/bin/time -v build/audit_exact_local_route_packing \
-            analysis/unique_eval/local_route_packing/report.json \
-            analysis/unique_eval/local_route_packing/route_radius24_u16.bin \
-            2> analysis/unique_eval/local_route_packing/resource_usage.txt
-          gzip -1 -c analysis/unique_eval/local_route_packing/route_radius24_u16.bin \
-            > analysis/unique_eval/local_route_packing/route_radius24_u16.bin.gz1
-          gzip -9 -c analysis/unique_eval/local_route_packing/route_radius24_u16.bin \
-            > analysis/unique_eval/local_route_packing/route_radius24_u16.bin.gz9
-          {
-            stat --printf='raw_bytes=%s\n' analysis/unique_eval/local_route_packing/route_radius24_u16.bin
-            stat --printf='gzip1_bytes=%s\n' analysis/unique_eval/local_route_packing/route_radius24_u16.bin.gz1
-            stat --printf='gzip9_bytes=%s\n' analysis/unique_eval/local_route_packing/route_radius24_u16.bin.gz9
-            if command -v zstd >/dev/null 2>&1; then
-              zstd -q -1 -f analysis/unique_eval/local_route_packing/route_radius24_u16.bin \
-                -o analysis/unique_eval/local_route_packing/route_radius24_u16.bin.zst1
-              zstd -q -19 -f analysis/unique_eval/local_route_packing/route_radius24_u16.bin \
-                -o analysis/unique_eval/local_route_packing/route_radius24_u16.bin.zst19
-              stat --printf='zstd1_bytes=%s\n' analysis/unique_eval/local_route_packing/route_radius24_u16.bin.zst1
-              stat --printf='zstd19_bytes=%s\n' analysis/unique_eval/local_route_packing/route_radius24_u16.bin.zst19
-            fi
-          } > analysis/unique_eval/local_route_packing/compression_sizes.txt
-          rm analysis/unique_eval/local_route_packing/route_radius24_u16.bin
-          cat analysis/unique_eval/local_route_packing/report.json
-          cat analysis/unique_eval/local_route_packing/compression_sizes.txt
-          cat analysis/unique_eval/local_route_packing/resource_usage.txt
       - name: Build and validate augmented direct-mapped table
         shell: bash
         run: |
@@ -113,9 +88,6 @@ jobs:
             build/audit_exact_local_route_packing
             build/build_exact_local_route_table
             build/validate_exact_local_route_table
-            analysis/unique_eval/local_route_packing/report.json
-            analysis/unique_eval/local_route_packing/compression_sizes.txt
-            analysis/unique_eval/local_route_packing/resource_usage.txt
             analysis/unique_eval/local_route_packing/exact_local_route_table.sha256
             analysis/unique_eval/local_route_packing/validation.json
             analysis/unique_eval/local_route_packing/build_table_resource_usage.txt

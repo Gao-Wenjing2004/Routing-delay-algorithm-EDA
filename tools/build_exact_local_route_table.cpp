@@ -25,7 +25,11 @@ using srb_exact_local::ValueException;
 
 constexpr int kRadius = 24;
 constexpr int kMaxSeed = 12;
-constexpr int kMargin = 8;
+// Use a generous offline halo.  The old endpoint Base Atlas used only eight
+// cells and marked some physically reachable boundary combinations as INF.
+// The stored coordinate domain is unchanged; only Golden generation gets the
+// wider field.
+constexpr int kMargin = 32;
 constexpr int kExtent = kRadius + kMaxSeed + kMargin;
 constexpr int kWidth = 2 * kExtent + 1;
 constexpr int kCenter = kExtent;

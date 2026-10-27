@@ -2,7 +2,6 @@
 // endpoint-seeded Dijkstra fields over a deterministic 1/64 Base-Atlas sample.
 
 #define SRB_DIST16
-#define SRB_BASE_MARGIN 8
 #include "../source/runtime_atlas_builder.hpp"
 #include "../source/exact_local_route_table.hpp"
 
@@ -28,12 +27,16 @@ int main(int argc, char** argv) {
 
     using namespace srb_local_arch;
     using namespace srb_runtime_atlas;
-    constexpr int radius = 24, margin = 8;
-    constexpr int width = 2 * (radius + margin) + 1;
-    constexpr int center = radius + margin;
+    constexpr int radius = 24, maximum_seed = 12, margin = 32;
+    constexpr int extent = radius + maximum_seed + margin;
+    constexpr int width = 2 * extent + 1;
+    constexpr int center = extent;
     std::vector<Distance> dist(size_t(width) * width * ROUTES, DIST_INF);
     WorkHeap heap;
     uint64_t sampled = 0, exact = 0, under = 0, over = 0;
+    uint64_t golden_inf_predicted_finite = 0;
+    uint64_t golden_finite_predicted_inf = 0;
+    uint64_t finite_value_mismatch = 0;
     std::array<uint64_t, 3> class_sampled{}, class_mismatch{};
     uint32_t printed_mismatches = 0;
     uint64_t absolute_error = 0;
@@ -66,6 +69,12 @@ int main(int argc, char** argv) {
               continue;
             }
             ++class_mismatch[source_class];
+            if (golden == INF16 && predicted != INF16)
+              ++golden_inf_predicted_finite;
+            else if (golden != INF16 && predicted == INF16)
+              ++golden_finite_predicted_inf;
+            else
+              ++finite_value_mismatch;
             if (printed_mismatches < 32) {
               std::fprintf(stderr,
                            "\nmismatch source=%u class=%d target=%u dx=%d dy=%d "
@@ -99,6 +108,12 @@ int main(int argc, char** argv) {
            << "  \"exact\": " << exact << ",\n"
            << "  \"under\": " << under << ",\n"
            << "  \"over\": " << over << ",\n"
+           << "  \"golden_inf_predicted_finite\": "
+           << golden_inf_predicted_finite << ",\n"
+           << "  \"golden_finite_predicted_inf\": "
+           << golden_finite_predicted_inf << ",\n"
+           << "  \"finite_value_mismatch\": " << finite_value_mismatch
+           << ",\n"
            << "  \"source_classes\": {\n"
            << "    \"direct_input\": {\"sampled\": " << class_sampled[0]
            << ", \"mismatch\": " << class_mismatch[0] << "},\n"
