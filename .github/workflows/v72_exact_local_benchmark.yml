@@ -87,12 +87,17 @@ jobs:
             --profile official-like --seed 20261030 --shuffle-seed 20261099 \
             --fold-count 5 --fold-index 4 --buckets 256
           rm -f /tmp/srb_runtime_atlas_v72.bin /tmp/srb_runtime_atlas_v72.bin.lock
+          head -n 2 benchmark_work/perf_1m_asan.csv > benchmark_work/smoke_asan.csv
+          bin/estimate_v72 \
+            -in benchmark_work/smoke_asan.csv \
+            -out benchmark_outputs/smoke_asan.csv
           ASAN_OPTIONS=abort_on_error=1:detect_leaks=0:strict_string_checks=1 \
           UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
             bin/estimate_v72_asan \
               -in benchmark_work/perf_1m_asan.csv \
               -out benchmark_outputs/perf_1m_asan.csv
-          rm -f benchmark_work/perf_1m_asan.csv benchmark_outputs/perf_1m_asan.csv
+          rm -f benchmark_work/perf_1m_asan.csv benchmark_work/smoke_asan.csv \
+            benchmark_outputs/perf_1m_asan.csv benchmark_outputs/smoke_asan.csv
 
       - name: Generate and benchmark 10M cold plus warm
         shell: bash
