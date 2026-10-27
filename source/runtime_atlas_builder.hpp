@@ -40,6 +40,10 @@
 #define SRB_EXTENSION_ROUTE_GROUP_LIMIT 1024
 #endif
 
+#ifndef SRB_HOT_INNER_RADIUS
+#define SRB_HOT_INNER_RADIUS 24
+#endif
+
 namespace srb_runtime_atlas {
 using namespace srb_local_arch;
 
@@ -419,7 +423,7 @@ inline std::string build(const std::string&path){
 #else
   h.sources=uint32_t(std::size(base_sources));h.targets=uint32_t(std::size(base_targets));
 #endif
-  h.hot_sources=uint32_t(std::size(hot_sources));h.hot_targets=uint32_t(std::size(hot_targets));h.hot_cells=145*145-49*49;
+  h.hot_sources=uint32_t(std::size(hot_sources));h.hot_targets=uint32_t(std::size(hot_targets));h.hot_cells=145*145-(2*SRB_HOT_INNER_RADIUS+1)*(2*SRB_HOT_INNER_RADIUS+1);
 #ifdef SRB_ATLAS_HYBRID_PACK
   h.reserved=9u|(8u<<8);
 #else
@@ -454,16 +458,16 @@ inline std::string build(const std::string&path){
 #endif
 #endif
 #ifdef SRB_PARALLEL_ATLAS_BUILD
-   generate_section_parallel(out,72,24,hot_sources,hot_targets,8,hot_exceptions);
+   generate_section_parallel(out,72,SRB_HOT_INNER_RADIUS,hot_sources,hot_targets,8,hot_exceptions);
 #else
-   generate_section(out,72,24,hot_sources,hot_targets,8,&hot_exceptions);
+   generate_section(out,72,SRB_HOT_INNER_RADIUS,hot_sources,hot_targets,8,&hot_exceptions);
 #endif
    EndpointExceptionHeader eh{};std::memcpy(eh.magic,"SRBEXC1",7);eh.version=1;eh.base_count=uint32_t(base_exceptions.size());eh.hot_count=uint32_t(hot_exceptions.size());out.raw(&eh,sizeof(eh));out.raw(base_exceptions.data(),base_exceptions.size()*sizeof(EndpointException));out.raw(hot_exceptions.data(),hot_exceptions.size()*sizeof(EndpointException));
 #else
 #ifndef SRB_ATLAS_NO_BASE
-   generate_section(out,24,-1,ordered_base,base_targets);generate_section(out,72,24,hot_sources,hot_targets);
+   generate_section(out,24,-1,ordered_base,base_targets);generate_section(out,72,SRB_HOT_INNER_RADIUS,hot_sources,hot_targets);
 #else
-   generate_section(out,72,24,hot_sources,hot_targets);
+   generate_section(out,72,SRB_HOT_INNER_RADIUS,hot_sources,hot_targets);
 #endif
 #endif
    out.flush();}

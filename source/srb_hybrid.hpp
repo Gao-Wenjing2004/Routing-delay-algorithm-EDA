@@ -14,6 +14,10 @@ extern const unsigned char srb_exact_local_end[];
 }
 #endif
 #endif
+
+#ifndef SRB_HOT_INNER_RADIUS
+#define SRB_HOT_INNER_RADIUS 24
+#endif
 #ifdef SRB_EMBEDDED_ATLAS
 #include "v15_dict.hpp"
 #endif
@@ -104,7 +108,7 @@ public:
      ||!h_.sources||h_.sources>496||!h_.targets||h_.targets>496
 #endif
      ||!h_.hot_sources||h_.hot_sources>496||!h_.hot_targets||h_.hot_targets>496
-     ||h_.hot_cells!=145*145-49*49
+     ||h_.hot_cells!=145*145-(2*SRB_HOT_INNER_RADIUS+1)*(2*SRB_HOT_INNER_RADIUS+1)
      ||h_.base_values!=uint64_t(h_.sources)*49*49*h_.targets
      ||h_.hot_values!=uint64_t(h_.hot_sources)*h_.hot_cells*h_.hot_targets)throw std::runtime_error("invalid endpoint Atlas");
   uint64_t prefix=64+2ull*(h_.sources+h_.targets+h_.hot_sources+h_.hot_targets);
@@ -139,7 +143,7 @@ public:
    hot_=reinterpret_cast<const uint16_t*>(reinterpret_cast<const char*>(base_)+(h_.base_values/16)*base_record_bytes_);
    if(reinterpret_cast<const char*>(hot_)+(h_.hot_values/16)*hot_record_bytes_!=reinterpret_cast<const char*>(data_)+prefix+(h_.base_values/16)*base_record_bytes_+(h_.hot_values/16)*hot_record_bytes_)throw std::runtime_error("truncated hybrid packed Atlas");
   }else{hot_=base_+h_.base_values;if(reinterpret_cast<const char*>(hot_+h_.hot_values)!=data_+endpoint_bytes)throw std::runtime_error("truncated endpoint Atlas");}
-  unsigned k=0;for(int y=-72;y<=72;++y)for(int x=-72;x<=72;++x)annulus_[(y+72)*145+x+72]=(std::abs(x)<=24&&std::abs(y)<=24)?65535:k++;
+  unsigned k=0;for(int y=-72;y<=72;++y)for(int x=-72;x<=72;++x)annulus_[(y+72)*145+x+72]=(std::abs(x)<=SRB_HOT_INNER_RADIUS&&std::abs(y)<=SRB_HOT_INNER_RADIUS)?65535:k++;
 #ifdef SRB_EXACT_LOCAL_ROUTE_TABLE
 #ifdef _WIN32
 #ifndef SRB_EXACT_LOCAL_RESOURCE_ID
@@ -283,7 +287,7 @@ public:
       24
       &&src_[a.port]>=0&&dst_[b.port]>=0)value=get(base_,(uint64_t(src_[a.port])*49*49+(dy+24)*49+dx+24)*h_.targets+dst_[b.port]);
 #endif
-   else if(d>24&&d<=72&&hsrc_[a.port]>=0&&hdst_[b.port]>=0
+   else if(d>SRB_HOT_INNER_RADIUS&&d<=72&&hsrc_[a.port]>=0&&hdst_[b.port]>=0
 #ifdef SRB_HOT_ANCHORS_ONLY
      &&false
 #endif

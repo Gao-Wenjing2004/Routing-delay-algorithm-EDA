@@ -1,0 +1,103 @@
+name: V73 radius16 capacity equivalence
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - benchmark/linux-unique-10m-100m
+    paths:
+      - .github/workflows/v73_capacity_equivalence.yml
+      - source/release_v73.cpp
+      - source/runtime_atlas_builder.hpp
+      - source/srb_hybrid.hpp
+      - source/exact_local_route_table.hpp
+      - tools/build_exact_local_route_table.cpp
+
+permissions:
+  contents: read
+
+concurrency:
+  group: v73-capacity-equivalence
+  cancel-in-progress: true
+
+jobs:
+  equivalence:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Build radius-16 V73 and V69 control
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p build bin benchmark_work analysis/unique_eval/v73
+          g++ -std=c++17 -O3 -DNDEBUG -ffp-contract=off -pthread \
+            tools/build_exact_local_route_table.cpp \
+            -o build/build_exact_local_route_table
+          build/build_exact_local_route_table \
+            analysis/unique_eval/local_route_packing/exact_local_route_table.bin 16
+          g++ -std=c++17 -O3 -DNDEBUG -ffp-contract=off -pthread \
+            source/release_v69.cpp -o bin/estimate_v69
+          g++ -std=c++17 -O3 -DNDEBUG -ffp-contract=off -pthread \
+            source/release_v73.cpp source/exact_local_route_data.S \
+            -o bin/estimate_v73
+          strip bin/estimate_v69 bin/estimate_v73
+          v73_bytes=$(stat --printf='%s' bin/estimate_v73)
+          test "${v73_bytes}" -lt 100000000
+          printf 'v73_bytes=%s\n' "${v73_bytes}" > analysis/unique_eval/v73/build.txt
+          sha256sum bin/estimate_v73 >> analysis/unique_eval/v73/build.txt
+          sha256sum analysis/unique_eval/local_route_packing/exact_local_route_table.bin \
+            >> analysis/unique_eval/v73/build.txt
+
+      - name: Prepare public and independent requests
+        shell: bash
+        run: |
+          set -euo pipefail
+          unzip -q benchmark_assets/endpoint_pool.zip -d benchmark_work/public
+          python3 - <<'PY'
+          import csv
+          from pathlib import Path
+
+          golden = Path("benchmark_work/public/delay_estimate_ans.csv")
+          request = Path("benchmark_work/public_requests.csv")
+          with golden.open(encoding="utf-8-sig", newline="") as source, \
+               request.open("w", encoding="utf-8", newline="") as target:
+              reader = csv.DictReader(source)
+              writer = csv.writer(target, lineterminator="\n")
+              writer.writerow(["From", "To"])
+              for row in reader:
+                  writer.writerow([row["From"], row["To"]])
+          PY
+          zstd -q -d -c benchmark_assets/unique_teacher_requests_608k.csv.zst \
+            > benchmark_work/independent_requests.csv
+
+      - name: Require byte-equivalent predictions on both distributions
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -f /tmp/srb_runtime_atlas_v69.bin /tmp/srb_runtime_atlas_v69.bin.lock
+          rm -f /tmp/srb_runtime_atlas_v73.bin /tmp/srb_runtime_atlas_v73.bin.lock
+          bin/estimate_v69 -in benchmark_work/public_requests.csv -out benchmark_work/public_v69.csv
+          bin/estimate_v73 -in benchmark_work/public_requests.csv -out benchmark_work/public_v73.csv
+          cmp benchmark_work/public_v69.csv benchmark_work/public_v73.csv
+          bin/estimate_v69 -in benchmark_work/independent_requests.csv -out benchmark_work/independent_v69.csv
+          bin/estimate_v73 -in benchmark_work/independent_requests.csv -out benchmark_work/independent_v73.csv
+          cmp benchmark_work/independent_v69.csv benchmark_work/independent_v73.csv
+          sha256sum benchmark_work/public_v73.csv \
+            > analysis/unique_eval/v73/output_hashes.txt
+          sha256sum benchmark_work/independent_v73.csv \
+            >> analysis/unique_eval/v73/output_hashes.txt
+          cat analysis/unique_eval/v73/build.txt
+          cat analysis/unique_eval/v73/output_hashes.txt
+
+      - name: Upload capacity evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v73-radius16-capacity-equivalence
+          path: analysis/unique_eval/v73/
+          if-no-files-found: warn
+          retention-days: 30
