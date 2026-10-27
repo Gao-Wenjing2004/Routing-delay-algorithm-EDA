@@ -1,0 +1,154 @@
+name: P10 independent connector Teacher audit
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: p10-independent-connector-teacher
+  cancel-in-progress: false
+
+jobs:
+  audit:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 360
+    steps:
+      - name: Checkout current research branch
+        uses: actions/checkout@v4
+        with:
+          path: current
+          fetch-depth: 1
+      - name: Checkout validated exact graph implementation
+        uses: actions/checkout@v4
+        with:
+          ref: v9-hybrid
+          path: legacy
+          fetch-depth: 1
+
+      - name: Build exact graph and path labeler
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p legacy/srb_hybrid_v9/build current/benchmark_work/p10_connector \
+            current/analysis/unique_eval/p10_connector
+          g++ -std=c++17 -O3 -DNDEBUG -pthread \
+            legacy/srb_hybrid_v9/src/preprocess_v9.cpp \
+            -o legacy/srb_hybrid_v9/build/preprocess_v9
+          g++ -std=c++17 -O3 -DNDEBUG -pthread \
+            legacy/srb_hybrid_v9/src/offline_exact_labeler.cpp \
+            -o legacy/srb_hybrid_v9/build/offline_exact_labeler
+          legacy/srb_hybrid_v9/build/preprocess_v9 \
+            legacy/legacy_versions/v3/arch/SRB_Inst.json \
+            legacy/legacy_versions/v3/arch/SRB_Port.json \
+            legacy/legacy_versions/v3/arch/SRB_Arc.json \
+            legacy/legacy_versions/v3/arch/SRB_Net.json \
+            legacy/legacy_versions/v3/arch/SRB_Gap.json \
+            legacy/srb_hybrid_v9/build/srb_graph.bin
+
+      - name: Select source-grouped long-distance independent requests
+        shell: bash
+        working-directory: current
+        run: |
+          set -euo pipefail
+          zstd -q -d -c benchmark_assets/unique_teacher_requests_608k.csv.zst \
+            > benchmark_work/p10_connector/all_requests.csv
+          zstd -q -d -c benchmark_assets/unique_teacher_golden_608k.csv.zst \
+            > benchmark_work/p10_connector/all_golden.csv
+          python3 - <<'PY'
+          import csv, hashlib, json, re
+          from collections import defaultdict
+          from pathlib import Path
+          root = Path("benchmark_work/p10_connector")
+          endpoint = re.compile(r"SRB_(\d+)_(\d+)/")
+          groups = defaultdict(list)
+          with (root / "all_requests.csv").open(encoding="utf-8-sig", newline="") as rf, \
+               (root / "all_golden.csv").open(encoding="utf-8-sig", newline="") as gf:
+              requests, goldens = csv.DictReader(rf), csv.DictReader(gf)
+              for request, golden in zip(requests, goldens, strict=True):
+                  if request["From"] != golden["From"] or request["To"] != golden["To"]:
+                      raise SystemExit("request/Golden alignment failure")
+                  source = endpoint.match(request["From"])
+                  target = endpoint.match(request["To"])
+                  if not source or not target:
+                      raise SystemExit("bad endpoint")
+                  sy, ty = int(source[2]), int(target[2])
+                  distance = max(abs(int(source[1]) - int(target[1])), abs(sy - ty))
+                  boundaries = abs(ty // 100 - sy // 100)
+                  if distance < 129 or boundaries < 1 or sy == ty:
+                      continue
+                  token = (request["From"] + "\0" + request["To"]).encode()
+                  order = hashlib.blake2b(token, digest_size=8, person=b"P10pick").digest()
+                  groups[request["From"]].append((order, request, golden))
+          selected = []
+          for source in sorted(groups):
+              selected.extend(sorted(groups[source], key=lambda item: item[0])[:256])
+          with (root / "selected_requests.csv").open("w", encoding="utf-8", newline="") as rf, \
+               (root / "selected_golden.csv").open("w", encoding="utf-8", newline="") as gf:
+              rw, gw = csv.DictWriter(rf, fieldnames=["From", "To"]), \
+                       csv.DictWriter(gf, fieldnames=["From", "To", "Delay"])
+              rw.writeheader(); gw.writeheader()
+              for _, request, golden in selected:
+                  rw.writerow({"From": request["From"], "To": request["To"]})
+                  gw.writerow({"From": golden["From"], "To": golden["To"], "Delay": golden["Delay"]})
+          manifest = {"sources": len(groups), "rows": len(selected), "per_source_cap": 256}
+          Path("analysis/unique_eval/p10_connector/selection.json").write_text(
+              json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
+          print(json.dumps(manifest, indent=2))
+          PY
+
+      - name: Generate complete Dijkstra paths and verify Golden
+        shell: bash
+        run: |
+          set -euo pipefail
+          root=current/benchmark_work/p10_connector
+          /usr/bin/time -v legacy/srb_hybrid_v9/build/offline_exact_labeler \
+            --graph legacy/srb_hybrid_v9/build/srb_graph.bin \
+            --gap legacy/legacy_versions/v3/arch/SRB_Gap.json \
+            --input "${root}/selected_requests.csv" \
+            --labels "${root}/dijkstra_golden.csv" \
+            --summaries "${root}/dijkstra_summaries.csv" \
+            --grouped --max-group-expanded 100000000 \
+            2> current/analysis/unique_eval/p10_connector/dijkstra_resource.txt
+          python3 current/tools/compare_prediction_accuracy.py \
+            --golden "${root}/selected_golden.csv" \
+            --control "${root}/selected_golden.csv" \
+            --candidate "${root}/dijkstra_golden.csv" \
+            --output current/analysis/unique_eval/p10_connector/dijkstra_golden_check.json
+
+      - name: Extract exact Portal connectors and audit held-out recall
+        shell: bash
+        run: |
+          set -euo pipefail
+          root=current/benchmark_work/p10_connector
+          python3 legacy/srb_hybrid_v9/tools/generate_periodic_portal_requests.py \
+            --states legacy/srb_prpr_v8/analysis/prpr/state_equivalence.csv \
+            --direction up --side-band 6 \
+            --manifest "${root}/up_manifest.json"
+          python3 legacy/srb_hybrid_v9/tools/generate_periodic_portal_requests.py \
+            --states legacy/srb_prpr_v8/analysis/prpr/state_equivalence.csv \
+            --direction down --side-band 6 \
+            --manifest "${root}/down_manifest.json"
+          python3 legacy/srb_hybrid_v9/tools/extract_teacher_portal_decomposition.py \
+            --summaries "${root}/dijkstra_summaries.csv" \
+            --requests "${root}/selected_requests.csv" \
+            --up-manifest "${root}/up_manifest.json" \
+            --down-manifest "${root}/down_manifest.json" \
+            --arc legacy/legacy_versions/v3/arch/SRB_Arc.json \
+            --net legacy/legacy_versions/v3/arch/SRB_Net.json \
+            --gap legacy/legacy_versions/v3/arch/SRB_Gap.json \
+            --output "${root}/decomposition.csv" \
+            --report current/analysis/unique_eval/p10_connector/decomposition.json
+          python3 current/tools/audit_p10_connector_compression.py \
+            --decomposition "${root}/decomposition.csv" \
+            --report current/analysis/unique_eval/p10_connector/compression.json
+
+      - name: Upload small connector evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: p10-independent-connector-audit
+          path: current/analysis/unique_eval/p10_connector/
+          if-no-files-found: warn
+          retention-days: 30
