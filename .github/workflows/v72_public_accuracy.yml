@@ -1,0 +1,148 @@
+name: V72 public 1M accuracy A-B
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - benchmark/linux-unique-10m-100m
+    paths:
+      - .github/workflows/v72_public_accuracy.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: v72-public-accuracy
+  cancel-in-progress: true
+
+jobs:
+  evaluate:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: false
+          fetch-depth: 1
+
+      - name: Build V69 and V72
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p build bin analysis/unique_eval/v72/public benchmark_work
+          g++ -std=c++17 -O3 -DNDEBUG -ffp-contract=off -pthread \
+            tools/build_exact_local_route_table.cpp \
+            -o build/build_exact_local_route_table
+          build/build_exact_local_route_table \
+            analysis/unique_eval/local_route_packing/exact_local_route_table.bin
+          g++ -std=c++17 -O3 -DNDEBUG -ffp-contract=off -pthread \
+            source/release_v69.cpp -o bin/estimate_v69
+          g++ -std=c++17 -O3 -DNDEBUG -ffp-contract=off -pthread \
+            source/release_v72.cpp source/exact_local_route_data.S \
+            -o bin/estimate_v72
+          strip bin/estimate_v69 bin/estimate_v72
+          test "$(stat --printf='%s' bin/estimate_v72)" -lt 100000000
+
+      - name: Prepare public 1M requests
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo '2657E2E6983D6356EF8EBB5FF20B469A2D264045A6D2E89BA44662DCCCC541E3  benchmark_assets/endpoint_pool.zip' | sha256sum -c -
+          unzip -q benchmark_assets/endpoint_pool.zip -d benchmark_work
+          python3 - <<'PY'
+          import csv
+          from pathlib import Path
+
+          golden = Path("benchmark_work/delay_estimate_ans.csv")
+          requests = Path("benchmark_work/public_1m_requests.csv")
+          with golden.open("r", encoding="utf-8-sig", newline="") as source, \
+               requests.open("w", encoding="utf-8", newline="") as destination:
+              reader = csv.DictReader(source)
+              writer = csv.writer(destination, lineterminator="\n")
+              writer.writerow(["From", "To"])
+              rows = 0
+              for row in reader:
+                  writer.writerow([row["From"], row["To"]])
+                  rows += 1
+          if rows != 1_000_000:
+              raise SystemExit(f"unexpected public rows: {rows}")
+          PY
+
+      - name: Predict and score exact local replacement
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -f /tmp/srb_runtime_atlas_v69.bin /tmp/srb_runtime_atlas_v69.bin.lock
+          rm -f /tmp/srb_runtime_atlas_v72.bin /tmp/srb_runtime_atlas_v72.bin.lock
+          bin/estimate_v69 \
+            -in benchmark_work/public_1m_requests.csv \
+            -out benchmark_work/public_v69.csv
+          bin/estimate_v72 \
+            -in benchmark_work/public_1m_requests.csv \
+            -out benchmark_work/public_v72.csv
+          python3 tools/unique_eval.py evaluate \
+            --golden benchmark_work/delay_estimate_ans.csv \
+            --prediction benchmark_work/public_v69.csv \
+            --average-seconds 117.7096 \
+            --bootstrap-samples 1000 \
+            --output analysis/unique_eval/v72/public/v69_public_1m.json
+          python3 tools/unique_eval.py evaluate \
+            --golden benchmark_work/delay_estimate_ans.csv \
+            --prediction benchmark_work/public_v72.csv \
+            --average-seconds 118.12975298783277 \
+            --bootstrap-samples 1000 \
+            --output analysis/unique_eval/v72/public/v72_public_1m.json
+          python3 - <<'PY'
+          import csv
+          import json
+          import math
+          from itertools import zip_longest
+          from pathlib import Path
+
+          root = Path("benchmark_work")
+          changed = improved = worsened = equal_score = 0
+          delta_sum = 0.0
+          with (root / "delay_estimate_ans.csv").open(encoding="utf-8-sig", newline="") as gf, \
+               (root / "public_v69.csv").open(encoding="utf-8-sig", newline="") as af, \
+               (root / "public_v72.csv").open(encoding="utf-8-sig", newline="") as bf:
+              gr, ar, br = csv.DictReader(gf), csv.DictReader(af), csv.DictReader(bf)
+              for rows in zip_longest(gr, ar, br):
+                  if any(row is None for row in rows):
+                      raise SystemExit("row mismatch")
+                  g, a, b = rows
+                  golden = int(g["delay"])
+                  va, vb = int(a["Delay"]), int(b["Delay"])
+                  if va == vb:
+                      continue
+                  changed += 1
+                  score_a = 1.0 - math.tanh(4.0 * abs(va - golden) / golden)
+                  score_b = 1.0 - math.tanh(4.0 * abs(vb - golden) / golden)
+                  delta_sum += score_b - score_a
+                  if score_b > score_a:
+                      improved += 1
+                  elif score_b < score_a:
+                      worsened += 1
+                  else:
+                      equal_score += 1
+          payload = {
+              "rows": 1_000_000,
+              "changed_rows": changed,
+              "improved_rows": improved,
+              "worsened_rows": worsened,
+              "equal_score_changed_rows": equal_score,
+              "accuracy_delta_points": 100.0 * delta_sum / 1_000_000,
+          }
+          Path("analysis/unique_eval/v72/public/v69_v72_delta.json").write_text(
+              json.dumps(payload, indent=2) + "\n", encoding="utf-8"
+          )
+          print(json.dumps(payload, indent=2))
+          PY
+
+      - name: Upload aggregate accuracy reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v72-public-1m-accuracy
+          path: analysis/unique_eval/v72/public/
+          if-no-files-found: warn
+          retention-days: 14
