@@ -1,0 +1,230 @@
+{
+  "schema": 2,
+  "kind": "unique-srb-benchmark",
+  "executable": "/home/runner/work/Routing-delay-algorithm-EDA/Routing-delay-algorithm-EDA/bin/estimate_v72",
+  "runs_per_size": 5,
+  "all_consistent": true,
+  "host_platform": "Linux-6.8.0-1064-azure-x86_64-with-glibc2.35",
+  "python_platform": "linux",
+  "executable_format": "ELF",
+  "cold_start_overhead_seconds": 14.806916329499927,
+  "formal_timing_gate": true,
+  "reference_quality": "release-reference",
+  "cases": [
+    {
+      "input": "/home/runner/work/Routing-delay-algorithm-EDA/Routing-delay-algorithm-EDA/benchmark_work/perf_10m.csv",
+      "rows": 10000000,
+      "input_bytes": 353716954,
+      "input_sha256": "81EE0F713FE48E6DF4BF50CE5628EE8E64E8A0882F79D0EDB2C4B3CA06442B1D",
+      "input_scan_seconds": 0.34847141900002043,
+      "consistent": true,
+      "runs": [
+        {
+          "run": 1,
+          "wall_seconds": 15.78790521399992,
+          "child_cpu_seconds": 60.43,
+          "output_sha256": "243F0BD6215DE126BA359DDFC3F867DCAB33F1B5F47D3A029733455579F1AA23",
+          "output_bytes": 403097824,
+          "output_verify_seconds": 0.3807680129999653,
+          "stderr_tail": "2 source=101/117 elapsed=13.0s\natlas parallel radius=72 source=102/117 elapsed=13.0s\natlas parallel radius=72 source=103/117 elapsed=13.0s\natlas parallel radius=72 source=104/117 elapsed=13.0s\natlas parallel radius=72 source=105/117 elapsed=13.5s\natlas parallel radius=72 source=106/117 elapsed=13.5s\natlas parallel radius=72 source=107/117 elapsed=13.5s\natlas parallel radius=72 source=108/117 elapsed=13.5s\natlas parallel radius=72 source=109/117 elapsed=13.9s\natlas parallel radius=72 source=110/117 elapsed=14.0s\natlas parallel radius=72 source=111/117 elapsed=14.0s\natlas parallel radius=72 source=112/117 elapsed=14.0s\natlas parallel radius=72 source=113/117 elapsed=14.5s\natlas parallel radius=72 source=114/117 elapsed=14.5s\natlas parallel radius=72 source=115/117 elapsed=14.5s\natlas parallel radius=72 source=116/117 elapsed=14.5s\natlas parallel radius=72 source=117/117 elapsed=14.8s\nprocessed=10000000 bad_rows=0 exact_hits=8990042 repeated_period=0 elapsed=15.7731 throughput=633992 q/s\n",
+          "output": null
+        },
+        {
+          "run": 2,
+          "wall_seconds": 1.023389179999981,
+          "child_cpu_seconds": 3.690000000000005,
+          "output_sha256": "243F0BD6215DE126BA359DDFC3F867DCAB33F1B5F47D3A029733455579F1AA23",
+          "output_bytes": 403097824,
+          "output_verify_seconds": 0.366140360999907,
+          "stderr_tail": "processed=10000000 bad_rows=0 exact_hits=8990042 repeated_period=0 elapsed=1.01043 throughput=9.89676e+06 q/s\n",
+          "output": null
+        },
+        {
+          "run": 3,
+          "wall_seconds": 0.9786388320000015,
+          "child_cpu_seconds": 3.609999999999985,
+          "output_sha256": "243F0BD6215DE126BA359DDFC3F867DCAB33F1B5F47D3A029733455579F1AA23",
+          "output_bytes": 403097824,
+          "output_verify_seconds": 0.37232036799991874,
+          "stderr_tail": "processed=10000000 bad_rows=0 exact_hits=8990042 repeated_period=0 elapsed=0.967182 throughput=1.03393e+07 q/s\n",
+          "output": null
+        },
+        {
+          "run": 4,
+          "wall_seconds": 0.9821866049999244,
+          "child_cpu_seconds": 3.660000000000011,
+          "output_sha256": "243F0BD6215DE126BA359DDFC3F867DCAB33F1B5F47D3A029733455579F1AA23",
+          "output_bytes": 403097824,
+          "output_verify_seconds": 0.3700816840000698,
+          "stderr_tail": "processed=10000000 bad_rows=0 exact_hits=8990042 repeated_period=0 elapsed=0.971417 throughput=1.02942e+07 q/s\n",
+          "output": null
+        },
+        {
+          "run": 5,
+          "wall_seconds": 0.979791164000062,
+          "child_cpu_seconds": 3.6299999999999955,
+          "output_sha256": "243F0BD6215DE126BA359DDFC3F867DCAB33F1B5F47D3A029733455579F1AA23",
+          "output_bytes": 403097824,
+          "output_verify_seconds": 0.3699018419999902,
+          "stderr_tail": "processed=10000000 bad_rows=0 exact_hits=8990042 repeated_period=0 elapsed=0.968449 throughput=1.03258e+07 q/s\n",
+          "output": null
+        }
+      ],
+      "steady_run_count": 4,
+      "median_wall_seconds": 0.9809888844999932,
+      "min_wall_seconds": 0.9786388320000015,
+      "max_wall_seconds": 1.023389179999981,
+      "cold_start_overhead_seconds": 14.806916329499927
+    },
+    {
+      "input": "/home/runner/work/Routing-delay-algorithm-EDA/Routing-delay-algorithm-EDA/benchmark_work/perf_50m.csv",
+      "rows": 50000000,
+      "input_bytes": 1767632165,
+      "input_sha256": "BE9020CCD7B8B43DAC0D82E34494F25279A919CC0BC8AEFAF4B159A169A8F11F",
+      "input_scan_seconds": 1.7031802610000568,
+      "consistent": true,
+      "runs": [
+        {
+          "run": 1,
+          "wall_seconds": 5.303228761000014,
+          "child_cpu_seconds": 17.490000000000002,
+          "output_sha256": "CD53D0D0CC2A1100BD3139B20B11E25DBF13D01811A91AAEC89D76BCC560BE5B",
+          "output_bytes": 2014535976,
+          "output_verify_seconds": 1.8571745780000128,
+          "stderr_tail": "processed=50000000 bad_rows=0 exact_hits=45041095 repeated_period=0 elapsed=5.29166 throughput=9.44884e+06 q/s\n",
+          "output": null
+        },
+        {
+          "run": 2,
+          "wall_seconds": 4.812798274999977,
+          "child_cpu_seconds": 18.019999999999996,
+          "output_sha256": "CD53D0D0CC2A1100BD3139B20B11E25DBF13D01811A91AAEC89D76BCC560BE5B",
+          "output_bytes": 2014535976,
+          "output_verify_seconds": 1.8617755080000506,
+          "stderr_tail": "processed=50000000 bad_rows=0 exact_hits=45041095 repeated_period=0 elapsed=4.80116 throughput=1.04141e+07 q/s\n",
+          "output": null
+        },
+        {
+          "run": 3,
+          "wall_seconds": 4.813349442999993,
+          "child_cpu_seconds": 18.11,
+          "output_sha256": "CD53D0D0CC2A1100BD3139B20B11E25DBF13D01811A91AAEC89D76BCC560BE5B",
+          "output_bytes": 2014535976,
+          "output_verify_seconds": 1.8434851179999896,
+          "stderr_tail": "processed=50000000 bad_rows=0 exact_hits=45041095 repeated_period=0 elapsed=4.80228 throughput=1.04117e+07 q/s\n",
+          "output": null
+        },
+        {
+          "run": 4,
+          "wall_seconds": 4.758796953000001,
+          "child_cpu_seconds": 18.040000000000013,
+          "output_sha256": "CD53D0D0CC2A1100BD3139B20B11E25DBF13D01811A91AAEC89D76BCC560BE5B",
+          "output_bytes": 2014535976,
+          "output_verify_seconds": 1.8143489689999797,
+          "stderr_tail": "processed=50000000 bad_rows=0 exact_hits=45041095 repeated_period=0 elapsed=4.74749 throughput=1.05319e+07 q/s\n",
+          "output": null
+        },
+        {
+          "run": 5,
+          "wall_seconds": 4.692458359000057,
+          "child_cpu_seconds": 17.69999999999999,
+          "output_sha256": "CD53D0D0CC2A1100BD3139B20B11E25DBF13D01811A91AAEC89D76BCC560BE5B",
+          "output_bytes": 2014535976,
+          "output_verify_seconds": 1.9085305749999861,
+          "stderr_tail": "processed=50000000 bad_rows=0 exact_hits=45041095 repeated_period=0 elapsed=4.68104 throughput=1.06814e+07 q/s\n",
+          "output": null
+        }
+      ],
+      "steady_run_count": 5,
+      "median_wall_seconds": 4.812798274999977,
+      "min_wall_seconds": 4.692458359000057,
+      "max_wall_seconds": 5.303228761000014,
+      "cold_start_overhead_seconds": 0.0
+    },
+    {
+      "input": "/home/runner/work/Routing-delay-algorithm-EDA/Routing-delay-algorithm-EDA/benchmark_work/perf_100m.csv",
+      "rows": 100000000,
+      "input_bytes": 3535340292,
+      "input_sha256": "D10A0FD0261C2D5DE247F5691B66F6B63ED3D6FE1E23593ACD93E33586085926",
+      "input_scan_seconds": 3.3950040019999506,
+      "consistent": true,
+      "runs": [
+        {
+          "run": 1,
+          "wall_seconds": 14.497070172000122,
+          "child_cpu_seconds": 33.339999999999996,
+          "output_sha256": "6F177501C772A6B30C301DBDB81FB77CC05D1B9E29C0F015FC661E66D6AC35AC",
+          "output_bytes": 4029148476,
+          "output_verify_seconds": 3.8391523099999176,
+          "stderr_tail": "processed=100000000 bad_rows=0 exact_hits=90118704 repeated_period=0 elapsed=14.4855 throughput=6.90345e+06 q/s\n",
+          "output": null
+        },
+        {
+          "run": 2,
+          "wall_seconds": 10.51417939299995,
+          "child_cpu_seconds": 36.220000000000006,
+          "output_sha256": "6F177501C772A6B30C301DBDB81FB77CC05D1B9E29C0F015FC661E66D6AC35AC",
+          "output_bytes": 4029148476,
+          "output_verify_seconds": 3.7773054500000853,
+          "stderr_tail": "processed=100000000 bad_rows=0 exact_hits=90118704 repeated_period=0 elapsed=10.503 throughput=9.52109e+06 q/s\n",
+          "output": null
+        },
+        {
+          "run": 3,
+          "wall_seconds": 10.55244142000015,
+          "child_cpu_seconds": 35.56999999999999,
+          "output_sha256": "6F177501C772A6B30C301DBDB81FB77CC05D1B9E29C0F015FC661E66D6AC35AC",
+          "output_bytes": 4029148476,
+          "output_verify_seconds": 3.7663559239999813,
+          "stderr_tail": "processed=100000000 bad_rows=0 exact_hits=90118704 repeated_period=0 elapsed=10.5407 throughput=9.48706e+06 q/s\n",
+          "output": null
+        },
+        {
+          "run": 4,
+          "wall_seconds": 9.859863442000005,
+          "child_cpu_seconds": 37.18000000000001,
+          "output_sha256": "6F177501C772A6B30C301DBDB81FB77CC05D1B9E29C0F015FC661E66D6AC35AC",
+          "output_bytes": 4029148476,
+          "output_verify_seconds": 3.7476565409999694,
+          "stderr_tail": "processed=100000000 bad_rows=0 exact_hits=90118704 repeated_period=0 elapsed=9.84822 throughput=1.01541e+07 q/s\n",
+          "output": null
+        },
+        {
+          "run": 5,
+          "wall_seconds": 10.337105391000023,
+          "child_cpu_seconds": 35.73000000000002,
+          "output_sha256": "6F177501C772A6B30C301DBDB81FB77CC05D1B9E29C0F015FC661E66D6AC35AC",
+          "output_bytes": 4029148476,
+          "output_verify_seconds": 3.8074660290001248,
+          "stderr_tail": "processed=100000000 bad_rows=0 exact_hits=90118704 repeated_period=0 elapsed=10.3255 throughput=9.68479e+06 q/s\n",
+          "output": null
+        }
+      ],
+      "steady_run_count": 5,
+      "median_wall_seconds": 10.51417939299995,
+      "min_wall_seconds": 9.859863442000005,
+      "max_wall_seconds": 14.497070172000122,
+      "cold_start_overhead_seconds": 0.0
+    }
+  ],
+  "extrapolation": {
+    "method": "least-squares fixed-plus-linear projection",
+    "intercept_seconds": 0.0,
+    "seconds_per_row": 1.0332283665833285e-07,
+    "scale_rows": 1000000000,
+    "estimate_seconds": 118.12975298783277,
+    "steady_state_estimate_seconds": 103.32283665833285,
+    "cold_start_overhead_seconds": 14.806916329499927
+  },
+  "observed_run_range": {
+    "low_seconds": 112.4573647795002,
+    "high_seconds": 151.71980101600886,
+    "warning": "This is an observed run range, not a statistical confidence interval."
+  },
+  "warning": "Release timing requires Linux + ELF, five runs, consistent outputs, and at least three unique input sizes spanning 10M-100M rows. Cold-start overhead is added once.",
+  "component_reports": [
+    "/home/runner/work/Routing-delay-algorithm-EDA/Routing-delay-algorithm-EDA/analysis/unique_eval/v72/linux_components/perf_10m.json",
+    "/home/runner/work/Routing-delay-algorithm-EDA/Routing-delay-algorithm-EDA/analysis/unique_eval/v72/linux_components/perf_50m.json",
+    "/home/runner/work/Routing-delay-algorithm-EDA/Routing-delay-algorithm-EDA/analysis/unique_eval/v72/linux_components/perf_100m.json"
+  ]
+}

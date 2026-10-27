@@ -1,0 +1,133 @@
+name: V72 independent 608K Teacher A-B
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - benchmark/linux-unique-10m-100m
+    paths:
+      - .github/workflows/v72_independent_teacher_accuracy.yml
+      - benchmark_assets/unique_teacher_requests_608k.csv.zst
+      - benchmark_assets/unique_teacher_golden_608k.csv.zst
+
+permissions:
+  contents: read
+
+concurrency:
+  group: v72-independent-teacher-accuracy
+  cancel-in-progress: true
+
+jobs:
+  evaluate:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: false
+          fetch-depth: 1
+
+      - name: Verify and unpack independent Teacher
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p benchmark_work analysis/unique_eval/v72/independent_608k build bin
+          echo '08FDEC6A81DD073202990C736479D3B09A945B7722710E80F649F6111D41FBEE  benchmark_assets/unique_teacher_requests_608k.csv.zst' | sha256sum -c -
+          echo '684DF05B667D09EB5B14BB0073C6A323E1E28A28F57BF3AC4781B88831A2B796  benchmark_assets/unique_teacher_golden_608k.csv.zst' | sha256sum -c -
+          zstd -q -d -c benchmark_assets/unique_teacher_requests_608k.csv.zst > benchmark_work/requests_608k.csv
+          zstd -q -d -c benchmark_assets/unique_teacher_golden_608k.csv.zst > benchmark_work/golden_608k.csv
+          test "$(($(wc -l < benchmark_work/requests_608k.csv) - 1))" -eq 608000
+          test "$(($(wc -l < benchmark_work/golden_608k.csv) - 1))" -eq 608000
+
+      - name: Build V69 and V72
+        shell: bash
+        run: |
+          set -euo pipefail
+          g++ -std=c++17 -O3 -DNDEBUG -ffp-contract=off -pthread \
+            tools/build_exact_local_route_table.cpp \
+            -o build/build_exact_local_route_table
+          build/build_exact_local_route_table \
+            analysis/unique_eval/local_route_packing/exact_local_route_table.bin
+          g++ -std=c++17 -O3 -DNDEBUG -ffp-contract=off -pthread \
+            source/release_v69.cpp -o bin/estimate_v69
+          g++ -std=c++17 -O3 -DNDEBUG -ffp-contract=off -pthread \
+            source/release_v72.cpp source/exact_local_route_data.S \
+            -o bin/estimate_v72
+          strip bin/estimate_v69 bin/estimate_v72
+          test "$(stat --printf='%s' bin/estimate_v72)" -lt 100000000
+
+      - name: Predict, score and compare
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -f /tmp/srb_runtime_atlas_v69.bin /tmp/srb_runtime_atlas_v69.bin.lock
+          rm -f /tmp/srb_runtime_atlas_v72.bin /tmp/srb_runtime_atlas_v72.bin.lock
+          bin/estimate_v69 -in benchmark_work/requests_608k.csv -out benchmark_work/v69.csv
+          bin/estimate_v72 -in benchmark_work/requests_608k.csv -out benchmark_work/v72.csv
+          python3 tools/unique_eval.py evaluate \
+            --golden benchmark_work/golden_608k.csv \
+            --prediction benchmark_work/v69.csv \
+            --average-seconds 117.7096 \
+            --bootstrap-samples 1000 \
+            --output analysis/unique_eval/v72/independent_608k/v69.json
+          python3 tools/unique_eval.py evaluate \
+            --golden benchmark_work/golden_608k.csv \
+            --prediction benchmark_work/v72.csv \
+            --average-seconds 118.12975298783277 \
+            --bootstrap-samples 1000 \
+            --output analysis/unique_eval/v72/independent_608k/v72.json
+          python3 - <<'PY'
+          import csv
+          import json
+          import math
+          from itertools import zip_longest
+          from pathlib import Path
+
+          root = Path("benchmark_work")
+          changed = improved = worsened = equal_score = 0
+          delta_sum = 0.0
+          with (root / "golden_608k.csv").open(encoding="utf-8-sig", newline="") as gf, \
+               (root / "v69.csv").open(encoding="utf-8-sig", newline="") as af, \
+               (root / "v72.csv").open(encoding="utf-8-sig", newline="") as bf:
+              gr, ar, br = csv.DictReader(gf), csv.DictReader(af), csv.DictReader(bf)
+              rows = 0
+              for triple in zip_longest(gr, ar, br):
+                  if any(row is None for row in triple):
+                      raise SystemExit("row mismatch")
+                  g, a, b = triple
+                  rows += 1
+                  golden = int(g["Delay"])
+                  va, vb = int(a["Delay"]), int(b["Delay"])
+                  if va == vb:
+                      continue
+                  changed += 1
+                  score_a = 1.0 - math.tanh(4.0 * abs(va - golden) / golden)
+                  score_b = 1.0 - math.tanh(4.0 * abs(vb - golden) / golden)
+                  delta_sum += score_b - score_a
+                  if score_b > score_a:
+                      improved += 1
+                  elif score_b < score_a:
+                      worsened += 1
+                  else:
+                      equal_score += 1
+          payload = {
+              "rows": rows,
+              "changed_rows": changed,
+              "improved_rows": improved,
+              "worsened_rows": worsened,
+              "equal_score_changed_rows": equal_score,
+              "accuracy_delta_points": 100.0 * delta_sum / rows,
+          }
+          output = Path("analysis/unique_eval/v72/independent_608k/v69_v72_delta.json")
+          output.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+          print(json.dumps(payload, indent=2))
+          PY
+
+      - name: Upload aggregate accuracy reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v72-independent-608k-accuracy
+          path: analysis/unique_eval/v72/independent_608k/
+          if-no-files-found: warn
+          retention-days: 30

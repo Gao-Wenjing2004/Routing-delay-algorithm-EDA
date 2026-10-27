@@ -1,0 +1,184 @@
+{
+  "schema": 1,
+  "kind": "unique-srb-evaluation",
+  "golden": "/home/runner/work/Routing-delay-algorithm-EDA/Routing-delay-algorithm-EDA/benchmark_work/delay_estimate_ans.csv",
+  "prediction": "/home/runner/work/Routing-delay-algorithm-EDA/Routing-delay-algorithm-EDA/benchmark_work/public_v72.csv",
+  "accuracy": {
+    "overall": {
+      "rows": 1000000,
+      "accuracy": 98.37810315014,
+      "mae_ps": 13.649233,
+      "rmse_ps": 30.59143316355087,
+      "mean_relative_error": 0.0040973068554577595,
+      "exact_share_pct": 51.4963,
+      "within_5pct_pct": 99.42049942049943,
+      "within_10pct_pct": 99.9020999020999
+    },
+    "bootstrap_95": {
+      "source": {
+        "groups": 903129,
+        "samples": 1000,
+        "lower_95": 98.37112243575483,
+        "median": 98.37803737426259,
+        "upper_95": 98.38526761111183
+      },
+      "source_region": {
+        "groups": 36,
+        "samples": 1000,
+        "lower_95": 98.23082912237804,
+        "median": 98.37962702661959,
+        "upper_95": 98.5135687993567
+      },
+      "target_region": {
+        "groups": 36,
+        "samples": 1000,
+        "lower_95": 98.25207634766876,
+        "median": 98.38079935717965,
+        "upper_95": 98.48943444019359
+      }
+    },
+    "conservative_accuracy_interval": {
+      "lower_95": 98.23082912237804,
+      "upper_95": 98.5135687993567,
+      "method": "conservative envelope of source/source-region/target-region cluster bootstraps"
+    },
+    "group_diagnostics": {
+      "source": {
+        "groups": 903129,
+        "minimum_accuracy": 0.0,
+        "p10_accuracy": 95.21209679724424,
+        "median_accuracy": 99.90059655243282,
+        "maximum_accuracy": 100.0
+      },
+      "source_region": {
+        "groups": 36,
+        "minimum_accuracy": 96.85192548359872,
+        "p10_accuracy": 97.65484954770086,
+        "median_accuracy": 98.34743269413386,
+        "maximum_accuracy": 99.02275040969936
+      },
+      "target_region": {
+        "groups": 36,
+        "minimum_accuracy": 97.44332525292769,
+        "p10_accuracy": 97.8151591866552,
+        "median_accuracy": 98.46053063587011,
+        "maximum_accuracy": 98.8162040934878
+      }
+    },
+    "reference_quality": "release-reference",
+    "quality_warnings": [],
+    "segments": {
+      "distance": {
+        "0-16": {
+          "rows": 15611,
+          "accuracy": 98.3615396531685,
+          "mae_ps": 3.1260008968035358,
+          "rmse_ps": 17.052624596731462,
+          "mean_relative_error": 0.005203250841485937,
+          "exact_share_pct": 92.18499775799116,
+          "within_5pct_pct": 96.91223574631647,
+          "within_10pct_pct": 98.53939782190903
+        },
+        "129-256": {
+          "rows": 306892,
+          "accuracy": 98.14475584936848,
+          "mae_ps": 14.852130391147375,
+          "rmse_ps": 28.946428376514486,
+          "mean_relative_error": 0.0046507793916771775,
+          "exact_share_pct": 46.069301252557906,
+          "within_5pct_pct": 99.8074241101104,
+          "within_10pct_pct": 99.9944605919998
+        },
+        "17-32": {
+          "rows": 38602,
+          "accuracy": 98.87459779075371,
+          "mae_ps": 2.7654007564374905,
+          "rmse_ps": 15.038826836767846,
+          "mean_relative_error": 0.0029615597748450366,
+          "exact_share_pct": 91.67659706750946,
+          "within_5pct_pct": 97.88611989016113,
+          "within_10pct_pct": 99.24097197036423
+        },
+        "257+": {
+          "rows": 272711,
+          "accuracy": 97.88466516008668,
+          "mae_ps": 25.500669206595994,
+          "rmse_ps": 45.325633222022134,
+          "mean_relative_error": 0.0053011898064734735,
+          "exact_share_pct": 28.198349168167034,
+          "within_5pct_pct": 99.8434239909648,
+          "within_10pct_pct": 99.99596642599676
+        },
+        "33-64": {
+          "rows": 121672,
+          "accuracy": 98.88880423312375,
+          "mae_ps": 4.064977973568282,
+          "rmse_ps": 16.611808538446653,
+          "mean_relative_error": 0.002838361764217538,
+          "exact_share_pct": 83.30018410151884,
+          "within_5pct_pct": 98.4154119271484,
+          "within_10pct_pct": 99.74275100269577
+        },
+        "65-128": {
+          "rows": 244512,
+          "accuracy": 98.88987047443548,
+          "mae_ps": 6.080585001963094,
+          "rmse_ps": 17.110499386115116,
+          "mean_relative_error": 0.002795073317985029,
+          "exact_share_pct": 59.52550386075121,
+          "within_5pct_pct": 99.36567530427955,
+          "within_10pct_pct": 99.9521495877503
+        }
+      },
+      "block_count": {
+        "0": {
+          "rows": 1000000,
+          "accuracy": 98.37810315014,
+          "mae_ps": 13.649233,
+          "rmse_ps": 30.59143316355087,
+          "mean_relative_error": 0.0040973068554577595,
+          "exact_share_pct": 51.4963,
+          "within_5pct_pct": 99.42049942049943,
+          "within_10pct_pct": 99.9020999020999
+        }
+      },
+      "gap_count": {
+        "0": {
+          "rows": 1000000,
+          "accuracy": 98.37810315014,
+          "mae_ps": 13.649233,
+          "rmse_ps": 30.59143316355087,
+          "mean_relative_error": 0.0040973068554577595,
+          "exact_share_pct": 51.4963,
+          "within_5pct_pct": 99.42049942049943,
+          "within_10pct_pct": 99.9020999020999
+        }
+      }
+    }
+  },
+  "official_formula": "total = 0.80*accuracy + 0.15*(100-100*seconds/1800) + 0.05*consistency",
+  "score": {
+    "reference_quality": "scenario-only",
+    "center": {
+      "accuracy": 98.37810315014,
+      "seconds": 118.12975298783277,
+      "time_score": 93.4372359451204,
+      "consistency_score": 100.0,
+      "total_score": 97.71806791188007
+    },
+    "conservative_lower": {
+      "accuracy": 98.23082912237804,
+      "seconds": 118.12975298783277,
+      "time_score": 93.4372359451204,
+      "consistency_score": 100.0,
+      "total_score": 97.6002486896705
+    },
+    "conservative_upper": {
+      "accuracy": 98.5135687993567,
+      "seconds": 118.12975298783277,
+      "time_score": 93.4372359451204,
+      "consistency_score": 100.0,
+      "total_score": 97.82644043125343
+    }
+  }
+}

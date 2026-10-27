@@ -1,0 +1,83 @@
+{
+  "schema": 2,
+  "kind": "unique-srb-benchmark",
+  "executable": "/home/runner/work/Routing-delay-algorithm-EDA/Routing-delay-algorithm-EDA/bin/estimate_v72",
+  "runs_per_size": 5,
+  "all_consistent": true,
+  "host_platform": "Linux-6.8.0-1064-azure-x86_64-with-glibc2.35",
+  "python_platform": "linux",
+  "executable_format": "ELF",
+  "cold_start_overhead_seconds": 14.806916329499927,
+  "formal_timing_gate": false,
+  "reference_quality": "pilot",
+  "cases": [
+    {
+      "input": "/home/runner/work/Routing-delay-algorithm-EDA/Routing-delay-algorithm-EDA/benchmark_work/perf_10m.csv",
+      "rows": 10000000,
+      "input_bytes": 353716954,
+      "input_sha256": "81EE0F713FE48E6DF4BF50CE5628EE8E64E8A0882F79D0EDB2C4B3CA06442B1D",
+      "input_scan_seconds": 0.34847141900002043,
+      "consistent": true,
+      "runs": [
+        {
+          "run": 1,
+          "wall_seconds": 15.78790521399992,
+          "child_cpu_seconds": 60.43,
+          "output_sha256": "243F0BD6215DE126BA359DDFC3F867DCAB33F1B5F47D3A029733455579F1AA23",
+          "output_bytes": 403097824,
+          "output_verify_seconds": 0.3807680129999653,
+          "stderr_tail": "2 source=101/117 elapsed=13.0s\natlas parallel radius=72 source=102/117 elapsed=13.0s\natlas parallel radius=72 source=103/117 elapsed=13.0s\natlas parallel radius=72 source=104/117 elapsed=13.0s\natlas parallel radius=72 source=105/117 elapsed=13.5s\natlas parallel radius=72 source=106/117 elapsed=13.5s\natlas parallel radius=72 source=107/117 elapsed=13.5s\natlas parallel radius=72 source=108/117 elapsed=13.5s\natlas parallel radius=72 source=109/117 elapsed=13.9s\natlas parallel radius=72 source=110/117 elapsed=14.0s\natlas parallel radius=72 source=111/117 elapsed=14.0s\natlas parallel radius=72 source=112/117 elapsed=14.0s\natlas parallel radius=72 source=113/117 elapsed=14.5s\natlas parallel radius=72 source=114/117 elapsed=14.5s\natlas parallel radius=72 source=115/117 elapsed=14.5s\natlas parallel radius=72 source=116/117 elapsed=14.5s\natlas parallel radius=72 source=117/117 elapsed=14.8s\nprocessed=10000000 bad_rows=0 exact_hits=8990042 repeated_period=0 elapsed=15.7731 throughput=633992 q/s\n",
+          "output": null
+        },
+        {
+          "run": 2,
+          "wall_seconds": 1.023389179999981,
+          "child_cpu_seconds": 3.690000000000005,
+          "output_sha256": "243F0BD6215DE126BA359DDFC3F867DCAB33F1B5F47D3A029733455579F1AA23",
+          "output_bytes": 403097824,
+          "output_verify_seconds": 0.366140360999907,
+          "stderr_tail": "processed=10000000 bad_rows=0 exact_hits=8990042 repeated_period=0 elapsed=1.01043 throughput=9.89676e+06 q/s\n",
+          "output": null
+        },
+        {
+          "run": 3,
+          "wall_seconds": 0.9786388320000015,
+          "child_cpu_seconds": 3.609999999999985,
+          "output_sha256": "243F0BD6215DE126BA359DDFC3F867DCAB33F1B5F47D3A029733455579F1AA23",
+          "output_bytes": 403097824,
+          "output_verify_seconds": 0.37232036799991874,
+          "stderr_tail": "processed=10000000 bad_rows=0 exact_hits=8990042 repeated_period=0 elapsed=0.967182 throughput=1.03393e+07 q/s\n",
+          "output": null
+        },
+        {
+          "run": 4,
+          "wall_seconds": 0.9821866049999244,
+          "child_cpu_seconds": 3.660000000000011,
+          "output_sha256": "243F0BD6215DE126BA359DDFC3F867DCAB33F1B5F47D3A029733455579F1AA23",
+          "output_bytes": 403097824,
+          "output_verify_seconds": 0.3700816840000698,
+          "stderr_tail": "processed=10000000 bad_rows=0 exact_hits=8990042 repeated_period=0 elapsed=0.971417 throughput=1.02942e+07 q/s\n",
+          "output": null
+        },
+        {
+          "run": 5,
+          "wall_seconds": 0.979791164000062,
+          "child_cpu_seconds": 3.6299999999999955,
+          "output_sha256": "243F0BD6215DE126BA359DDFC3F867DCAB33F1B5F47D3A029733455579F1AA23",
+          "output_bytes": 403097824,
+          "output_verify_seconds": 0.3699018419999902,
+          "stderr_tail": "processed=10000000 bad_rows=0 exact_hits=8990042 repeated_period=0 elapsed=0.968449 throughput=1.03258e+07 q/s\n",
+          "output": null
+        }
+      ],
+      "steady_run_count": 4,
+      "median_wall_seconds": 0.9809888844999932,
+      "min_wall_seconds": 0.9786388320000015,
+      "max_wall_seconds": 1.023389179999981,
+      "cold_start_overhead_seconds": 14.806916329499927
+    }
+  ],
+  "extrapolation": null,
+  "observed_run_range": null,
+  "warning": "Release timing requires Linux + ELF, five runs, consistent outputs, and at least three unique input sizes spanning 10M-100M rows. Cold-start overhead is added once."
+}
