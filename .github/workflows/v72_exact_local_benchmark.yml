@@ -71,6 +71,29 @@ jobs:
           } > analysis/unique_eval/v72/linux_host.txt
           python3 -m unittest tests.test_unique_eval -v
 
+      - name: AddressSanitizer diagnostic on 1M unique requests
+        shell: bash
+        run: |
+          set -euo pipefail
+          g++ -std=c++17 -O1 -g -DNDEBUG -ffp-contract=off -pthread \
+            -fsanitize=address,undefined -fno-omit-frame-pointer \
+            source/release_v72.cpp source/exact_local_route_data.S \
+            -o bin/estimate_v72_asan
+          python3 tools/unique_eval.py generate-perf \
+            --pool benchmark_work/delay_estimate_ans.csv \
+            --output benchmark_work/perf_1m_asan.csv \
+            --manifest analysis/unique_eval/v72/perf_1m_asan.manifest.json \
+            --sources 1000 --targets-per-source 1000 \
+            --profile official-like --seed 20261030 --shuffle-seed 20261099 \
+            --fold-count 5 --fold-index 4 --buckets 256
+          rm -f /tmp/srb_runtime_atlas_v72.bin /tmp/srb_runtime_atlas_v72.bin.lock
+          ASAN_OPTIONS=abort_on_error=1:detect_leaks=0:strict_string_checks=1 \
+          UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
+            bin/estimate_v72_asan \
+              -in benchmark_work/perf_1m_asan.csv \
+              -out benchmark_outputs/perf_1m_asan.csv
+          rm -f benchmark_work/perf_1m_asan.csv benchmark_outputs/perf_1m_asan.csv
+
       - name: Generate and benchmark 10M cold plus warm
         shell: bash
         run: |
