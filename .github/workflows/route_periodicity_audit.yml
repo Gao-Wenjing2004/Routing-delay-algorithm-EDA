@@ -34,11 +34,18 @@ jobs:
           mkdir -p build analysis/unique_eval/route_periodicity
           g++ -std=c++17 -O3 -DNDEBUG -ffp-contract=off -pthread \
             tools/audit_route_periodicity.cpp -o build/audit_route_periodicity
+          g++ -std=c++17 -O3 -DNDEBUG -ffp-contract=off -pthread \
+            tools/audit_route_full_distance.cpp -o build/audit_route_full_distance
           /usr/bin/time -v build/audit_route_periodicity \
             analysis/unique_eval/route_periodicity/route_periodicity.json \
             2> analysis/unique_eval/route_periodicity/resource_usage.txt
+          /usr/bin/time -v build/audit_route_full_distance \
+            analysis/unique_eval/route_periodicity/route_full_distance.json \
+            2> analysis/unique_eval/route_periodicity/full_distance_resource_usage.txt
           cat analysis/unique_eval/route_periodicity/route_periodicity.json
+          cat analysis/unique_eval/route_periodicity/route_full_distance.json
           cat analysis/unique_eval/route_periodicity/resource_usage.txt
+          cat analysis/unique_eval/route_periodicity/full_distance_resource_usage.txt
       - name: Upload audit executable and report
         if: always()
         uses: actions/upload-artifact@v4
@@ -46,6 +53,7 @@ jobs:
           name: exact-route-periodicity-audit
           path: |
             build/audit_route_periodicity
+            build/audit_route_full_distance
             analysis/unique_eval/route_periodicity/
           if-no-files-found: warn
           retention-days: 14
