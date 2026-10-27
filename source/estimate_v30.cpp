@@ -37,6 +37,9 @@
 #ifndef SRB_RUNTIME_RADIUS
 #define SRB_RUNTIME_RADIUS 72
 #endif
+#ifndef SRB_RUNTIME_ATLAS_MIN_BYTES
+#define SRB_RUNTIME_ATLAS_MIN_BYTES 1000000000ull
+#endif
 
 using srb_fast::Slice;
 
@@ -122,7 +125,7 @@ class UnifiedEstimator {
       throw std::runtime_error("cannot lock shared runtime Atlas");
     }
     struct stat st{};
-    if (::stat(path.c_str(), &st) != 0 || uint64_t(st.st_size) < 1000000000ull) {
+    if (::stat(path.c_str(), &st) != 0 || uint64_t(st.st_size) < SRB_RUNTIME_ATLAS_MIN_BYTES) {
       const std::string partial = path + "." + std::to_string(::getpid()) + ".partial";
       std::remove(partial.c_str());
       srb_runtime_atlas::build(partial);
@@ -136,7 +139,7 @@ class UnifiedEstimator {
     ::flock(lock_fd, LOCK_UN); ::close(lock_fd);
 #else
     std::ifstream existing(path, std::ios::binary | std::ios::ate);
-    if (!existing || uint64_t(existing.tellg()) < 1000000000ull) {
+    if (!existing || uint64_t(existing.tellg()) < SRB_RUNTIME_ATLAS_MIN_BYTES) {
       existing.close();
       srb_runtime_atlas::build(path);
     }

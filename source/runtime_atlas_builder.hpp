@@ -413,14 +413,20 @@ inline std::string build(const std::string&path){
 #else
   h.version=2;
 #endif
-  h.ports=496;h.base_radius=24;h.hot_radius=72;h.sources=uint32_t(std::size(base_sources));h.targets=uint32_t(std::size(base_targets));h.hot_sources=uint32_t(std::size(hot_sources));h.hot_targets=uint32_t(std::size(hot_targets));h.hot_cells=145*145-49*49;
+  h.ports=496;h.base_radius=24;h.hot_radius=72;
+#ifdef SRB_ATLAS_NO_BASE
+  h.sources=0;h.targets=0;
+#else
+  h.sources=uint32_t(std::size(base_sources));h.targets=uint32_t(std::size(base_targets));
+#endif
+  h.hot_sources=uint32_t(std::size(hot_sources));h.hot_targets=uint32_t(std::size(hot_targets));h.hot_cells=145*145-49*49;
 #ifdef SRB_ATLAS_HYBRID_PACK
   h.reserved=9u|(8u<<8);
 #else
   h.reserved=10;
 #endif
   h.base_values=uint64_t(h.sources)*49*49*h.targets;h.hot_values=uint64_t(h.hot_sources)*h.hot_cells*h.hot_targets;
-#ifdef SRB_BASE_ROUTE_REUSE
+#if defined(SRB_BASE_ROUTE_REUSE) && !defined(SRB_ATLAS_NO_BASE)
   uint16_t ordered_base[std::size(base_sources)];std::copy(std::begin(base_sources),std::end(base_sources),ordered_base);
   auto route_key=[](uint16_t p){int r,dx,dy,c;
 #ifdef SRB_FULL_BASE_ROUTE_REUSE
@@ -430,16 +436,22 @@ inline std::string build(const std::string&path){
 #endif
     if(single_seed(p,r,dx,dy,c)&&std::abs(dx)<=reorder_margin&&std::abs(dy)<=reorder_margin)return r;return ROUTES+int(p);};
   std::stable_sort(std::begin(ordered_base),std::end(ordered_base),[&](uint16_t a,uint16_t b){return route_key(a)<route_key(b);});
-#else
+#elif !defined(SRB_ATLAS_NO_BASE)
   const auto&ordered_base=base_sources;
 #endif
-  {BufferedWriter out(path);out.raw(&h,sizeof(h));out.raw(ordered_base,sizeof(ordered_base));out.raw(base_targets,sizeof(base_targets));out.raw(hot_sources,sizeof(hot_sources));out.raw(hot_targets,sizeof(hot_targets));
+  {BufferedWriter out(path);out.raw(&h,sizeof(h));
+#ifndef SRB_ATLAS_NO_BASE
+   out.raw(ordered_base,sizeof(ordered_base));out.raw(base_targets,sizeof(base_targets));
+#endif
+   out.raw(hot_sources,sizeof(hot_sources));out.raw(hot_targets,sizeof(hot_targets));
 #ifdef SRB_ATLAS_HYBRID_PACK
    std::vector<EndpointException>base_exceptions,hot_exceptions;
+#ifndef SRB_ATLAS_NO_BASE
 #ifdef SRB_PARALLEL_BASE_ATLAS_BUILD
    generate_section_parallel(out,24,-1,ordered_base,base_targets,9,base_exceptions);
 #else
    generate_section(out,24,-1,ordered_base,base_targets,9,&base_exceptions);
+#endif
 #endif
 #ifdef SRB_PARALLEL_ATLAS_BUILD
    generate_section_parallel(out,72,24,hot_sources,hot_targets,8,hot_exceptions);
@@ -448,7 +460,11 @@ inline std::string build(const std::string&path){
 #endif
    EndpointExceptionHeader eh{};std::memcpy(eh.magic,"SRBEXC1",7);eh.version=1;eh.base_count=uint32_t(base_exceptions.size());eh.hot_count=uint32_t(hot_exceptions.size());out.raw(&eh,sizeof(eh));out.raw(base_exceptions.data(),base_exceptions.size()*sizeof(EndpointException));out.raw(hot_exceptions.data(),hot_exceptions.size()*sizeof(EndpointException));
 #else
+#ifndef SRB_ATLAS_NO_BASE
    generate_section(out,24,-1,ordered_base,base_targets);generate_section(out,72,24,hot_sources,hot_targets);
+#else
+   generate_section(out,72,24,hot_sources,hot_targets);
+#endif
 #endif
    out.flush();}
 #ifndef SRB_ATLAS_NO_EXTENSION

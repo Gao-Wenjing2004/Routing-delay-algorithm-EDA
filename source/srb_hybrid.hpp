@@ -5,6 +5,13 @@
 #include SRB_FAST_HEADER
 #include "local_arch_data.hpp"
 #include "e2e_format.hpp"
+#ifdef SRB_EXACT_LOCAL_ROUTE_TABLE
+#include "exact_local_route_table.hpp"
+extern "C" {
+extern const unsigned char srb_exact_local_begin[];
+extern const unsigned char srb_exact_local_end[];
+}
+#endif
 #ifdef SRB_EMBEDDED_ATLAS
 #include "v15_dict.hpp"
 #endif
@@ -89,7 +96,12 @@ public:
   if(!data_||bytes_<64)throw std::runtime_error("cannot map endpoint Atlas");
   std::memcpy(&h_,data_,64);
   if(std::memcmp(h_.magic,"SRBE2E1\0",8)||(h_.version<1||h_.version>4)||h_.ports!=496||h_.base_radius!=24||h_.hot_radius!=72
-     ||!h_.sources||h_.sources>496||!h_.targets||h_.targets>496||!h_.hot_sources||h_.hot_sources>496||!h_.hot_targets||h_.hot_targets>496
+#ifdef SRB_ATLAS_NO_BASE
+     ||h_.sources||h_.targets
+#else
+     ||!h_.sources||h_.sources>496||!h_.targets||h_.targets>496
+#endif
+     ||!h_.hot_sources||h_.hot_sources>496||!h_.hot_targets||h_.hot_targets>496
      ||h_.hot_cells!=145*145-49*49
      ||h_.base_values!=uint64_t(h_.sources)*49*49*h_.targets
      ||h_.hot_values!=uint64_t(h_.hot_sources)*h_.hot_cells*h_.hot_targets)throw std::runtime_error("invalid endpoint Atlas");
@@ -126,6 +138,10 @@ public:
    if(reinterpret_cast<const char*>(hot_)+(h_.hot_values/16)*hot_record_bytes_!=reinterpret_cast<const char*>(data_)+prefix+(h_.base_values/16)*base_record_bytes_+(h_.hot_values/16)*hot_record_bytes_)throw std::runtime_error("truncated hybrid packed Atlas");
   }else{hot_=base_+h_.base_values;if(reinterpret_cast<const char*>(hot_+h_.hot_values)!=data_+endpoint_bytes)throw std::runtime_error("truncated endpoint Atlas");}
   unsigned k=0;for(int y=-72;y<=72;++y)for(int x=-72;x<=72;++x)annulus_[(y+72)*145+x+72]=(std::abs(x)<=24&&std::abs(y)<=24)?65535:k++;
+#ifdef SRB_EXACT_LOCAL_ROUTE_TABLE
+  exact_local_.reset(srb_exact_local_begin,
+                     size_t(srb_exact_local_end-srb_exact_local_begin));
+#endif
 #ifdef SRB_ROUTE_TAIL
 #ifndef SRB_ROUTE_TAIL_PATH
 #define SRB_ROUTE_TAIL_PATH "route_tail.bin"
@@ -243,7 +259,12 @@ public:
      safe(a,b)
 #endif
      ){
-   if(d<=24&&src_[a.port]>=0&&dst_[b.port]>=0)value=get(base_,(uint64_t(src_[a.port])*49*49+(dy+24)*49+dx+24)*h_.targets+dst_[b.port]);
+   if(d<=24
+#ifdef SRB_EXACT_LOCAL_ROUTE_TABLE
+      )value=exact_local_.predict(a.port,b.port,dx,dy);
+#else
+      &&src_[a.port]>=0&&dst_[b.port]>=0)value=get(base_,(uint64_t(src_[a.port])*49*49+(dy+24)*49+dx+24)*h_.targets+dst_[b.port]);
+#endif
    else if(d>24&&d<=72&&hsrc_[a.port]>=0&&hdst_[b.port]>=0
 #ifdef SRB_HOT_ANCHORS_ONLY
      &&false
@@ -414,6 +435,9 @@ public:
 #endif
  }
  size_t atlas_memory_bytes()const{return bytes_
+#ifdef SRB_EXACT_LOCAL_ROUTE_TABLE
+  +size_t(srb_exact_local_end-srb_exact_local_begin)
+#endif
 #ifdef SRB_ENDPOINT_EXTENSION
   +extension_.size()
 #endif
@@ -616,6 +640,9 @@ public:
  const EndpointException*base_exceptions_=nullptr,*hot_exceptions_=nullptr;uint32_t base_exception_count_=0,hot_exception_count_=0;
  const uint8_t*base_offsets_=nullptr,*base_widths_=nullptr,*base_records_=nullptr,*hot_offsets_=nullptr,*hot_widths_=nullptr,*hot_records_=nullptr;
  int16_t src_[496],dst_[496],hsrc_[496],hdst_[496];uint16_t annulus_[145*145];
+#ifdef SRB_EXACT_LOCAL_ROUTE_TABLE
+ srb_exact_local::View exact_local_;
+#endif
 #ifdef SRB_SOURCE_MOVE_CACHE
  int16_t source_move_class_[496];std::vector<uint32_t>source_move_cache_;
 #endif

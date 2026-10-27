@@ -1,0 +1,26 @@
+{
+  "schema": 1,
+  "sampled": 6184976,
+  "exact": 6184976,
+  "under": 0,
+  "over": 0,
+  "golden_inf_predicted_finite": 0,
+  "golden_finite_predicted_inf": 0,
+  "finite_value_mismatch": 0,
+  "source_classes": {
+    "direct_input": {"sampled": 2689120, "mismatch": 0},
+    "output": {"sampled": 2689120, "mismatch": 0},
+    "indirect_input": {"sampled": 806736, "mismatch": 0}
+  },
+  "mae_ps": 0,
+  "max_error_ps": 0,
+  "table_bytes": 75632920,
+  "rows": 413952,
+  "exceptions": 48260,
+  "table_sha256": "70093f7b5ab259f70412535ddb76f956bfd91a0c8b4dca05ac2d54c20c4ff752",
+  "build_elapsed_seconds": 41.686,
+  "build_max_rss_kbytes": 22944,
+  "validation_elapsed_seconds": 87.253249888,
+  "validation_max_rss_kbytes": 134492,
+  "github_actions_run": 40461411363
+}

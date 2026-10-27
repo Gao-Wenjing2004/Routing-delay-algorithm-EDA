@@ -11,6 +11,10 @@ on:
       - tools/build_exact_local_route_table.cpp
       - tools/validate_exact_local_route_table.cpp
       - source/exact_local_route_table.hpp
+      - source/exact_local_route_data.S
+      - source/release_v72.cpp
+      - source/srb_hybrid.hpp
+      - source/estimate_v30.cpp
       - source/local_arch_data.hpp
       - source/runtime_atlas_builder.hpp
 
@@ -79,6 +83,47 @@ jobs:
                   f"under={report['under']} over={report['over']}"
               )
           PY
+      - name: Build and smoke-test V72 hot-only Atlas
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p bin
+          g++ -std=c++17 -O3 -DNDEBUG -ffp-contract=off -pthread \
+            source/release_v72.cpp source/exact_local_route_data.S \
+            -o bin/estimate_v72
+          strip bin/estimate_v72
+          candidate_bytes=$(stat --printf='%s' bin/estimate_v72)
+          if (( candidate_bytes >= 100000000 )); then
+            echo "V72 exceeds submission limit: ${candidate_bytes}" >&2
+            exit 1
+          fi
+          python3 - <<'PY'
+          import csv
+          import io
+          import zipfile
+          from pathlib import Path
+
+          with zipfile.ZipFile("benchmark_assets/endpoint_pool.zip") as archive:
+              name = next(name for name in archive.namelist() if name.endswith(".csv"))
+              text = io.TextIOWrapper(archive.open(name), encoding="utf-8", newline="")
+              row = next(csv.DictReader(text))
+          with Path("analysis/unique_eval/local_route_packing/smoke.csv").open(
+              "w", encoding="utf-8", newline=""
+          ) as stream:
+              writer = csv.writer(stream, lineterminator="\n")
+              writer.writerow(["From", "To"])
+              writer.writerow([row["From"], row["To"]])
+          PY
+          rm -f /tmp/srb_runtime_atlas_v72.bin /tmp/srb_runtime_atlas_v72.bin.lock
+          bin/estimate_v72 \
+            -in analysis/unique_eval/local_route_packing/smoke.csv \
+            -out analysis/unique_eval/local_route_packing/smoke_prediction.csv
+          printf 'candidate_bytes=%s\n' "${candidate_bytes}" \
+            > analysis/unique_eval/local_route_packing/v72_build.txt
+          sha256sum bin/estimate_v72 \
+            >> analysis/unique_eval/local_route_packing/v72_build.txt
+          cat analysis/unique_eval/local_route_packing/v72_build.txt
+          cat analysis/unique_eval/local_route_packing/smoke_prediction.csv
       - name: Upload aggregate packing report
         if: always()
         uses: actions/upload-artifact@v4
@@ -92,6 +137,8 @@ jobs:
             analysis/unique_eval/local_route_packing/validation.json
             analysis/unique_eval/local_route_packing/build_table_resource_usage.txt
             analysis/unique_eval/local_route_packing/validation_resource_usage.txt
+            analysis/unique_eval/local_route_packing/v72_build.txt
+            analysis/unique_eval/local_route_packing/smoke_prediction.csv
           if-no-files-found: warn
           retention-days: 14
       - name: Upload validated direct-mapped table
@@ -100,6 +147,15 @@ jobs:
         with:
           name: exact-local-route-table-bin
           path: analysis/unique_eval/local_route_packing/exact_local_route_table.bin
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 14
+      - name: Upload V72 Linux candidate
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v72-exact-local-linux
+          path: bin/estimate_v72
           if-no-files-found: error
           compression-level: 0
           retention-days: 14

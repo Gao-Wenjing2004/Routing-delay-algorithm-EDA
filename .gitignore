@@ -14,6 +14,7 @@
 /analysis/unique_eval/local_route_packing_artifact/
 /analysis/unique_eval/local_route_packing_v2_artifact/
 /analysis/unique_eval/local_route_packing_v2b_artifact/
+/analysis/unique_eval/local_route_packing_v3_artifact/
 
 # Local build and generated assets
 **/build/
