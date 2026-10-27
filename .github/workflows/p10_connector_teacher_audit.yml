@@ -2,6 +2,12 @@ name: P10 independent connector Teacher audit
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - benchmark/linux-unique-10m-100m
+    paths:
+      - .github/workflows/p10_connector_teacher_audit.yml
+      - tools/audit_p10_connector_compression.py
 
 permissions:
   contents: read
