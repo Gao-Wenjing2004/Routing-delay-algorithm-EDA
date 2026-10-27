@@ -1,0 +1,74 @@
+name: Exact local route packing audit
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - benchmark/linux-unique-10m-100m
+    paths:
+      - .github/workflows/local_route_packing_audit.yml
+      - tools/audit_exact_local_route_packing.cpp
+      - source/local_arch_data.hpp
+      - source/runtime_atlas_builder.hpp
+
+permissions:
+  contents: read
+
+concurrency:
+  group: exact-local-route-packing-audit
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-22.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - name: Build and audit exact radius-24 route table
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p build analysis/unique_eval/local_route_packing
+          g++ -std=c++17 -O3 -DNDEBUG -ffp-contract=off -pthread \
+            tools/audit_exact_local_route_packing.cpp \
+            -o build/audit_exact_local_route_packing
+          /usr/bin/time -v build/audit_exact_local_route_packing \
+            analysis/unique_eval/local_route_packing/report.json \
+            analysis/unique_eval/local_route_packing/route_radius24_u16.bin \
+            2> analysis/unique_eval/local_route_packing/resource_usage.txt
+          gzip -1 -c analysis/unique_eval/local_route_packing/route_radius24_u16.bin \
+            > analysis/unique_eval/local_route_packing/route_radius24_u16.bin.gz1
+          gzip -9 -c analysis/unique_eval/local_route_packing/route_radius24_u16.bin \
+            > analysis/unique_eval/local_route_packing/route_radius24_u16.bin.gz9
+          {
+            stat --printf='raw_bytes=%s\n' analysis/unique_eval/local_route_packing/route_radius24_u16.bin
+            stat --printf='gzip1_bytes=%s\n' analysis/unique_eval/local_route_packing/route_radius24_u16.bin.gz1
+            stat --printf='gzip9_bytes=%s\n' analysis/unique_eval/local_route_packing/route_radius24_u16.bin.gz9
+            if command -v zstd >/dev/null 2>&1; then
+              zstd -q -1 -f analysis/unique_eval/local_route_packing/route_radius24_u16.bin \
+                -o analysis/unique_eval/local_route_packing/route_radius24_u16.bin.zst1
+              zstd -q -19 -f analysis/unique_eval/local_route_packing/route_radius24_u16.bin \
+                -o analysis/unique_eval/local_route_packing/route_radius24_u16.bin.zst19
+              stat --printf='zstd1_bytes=%s\n' analysis/unique_eval/local_route_packing/route_radius24_u16.bin.zst1
+              stat --printf='zstd19_bytes=%s\n' analysis/unique_eval/local_route_packing/route_radius24_u16.bin.zst19
+            fi
+          } > analysis/unique_eval/local_route_packing/compression_sizes.txt
+          rm analysis/unique_eval/local_route_packing/route_radius24_u16.bin
+          cat analysis/unique_eval/local_route_packing/report.json
+          cat analysis/unique_eval/local_route_packing/compression_sizes.txt
+          cat analysis/unique_eval/local_route_packing/resource_usage.txt
+      - name: Upload aggregate packing report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: exact-local-route-packing-audit
+          path: |
+            build/audit_exact_local_route_packing
+            analysis/unique_eval/local_route_packing/report.json
+            analysis/unique_eval/local_route_packing/compression_sizes.txt
+            analysis/unique_eval/local_route_packing/resource_usage.txt
+          if-no-files-found: warn
+          retention-days: 14

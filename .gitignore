@@ -9,6 +9,7 @@
 .zig-cache/
 .zig-global-cache/
 **/route_period_table.bin
+/analysis/unique_eval/exact_axis_split_artifact/
 
 # Local build and generated assets
 **/build/
