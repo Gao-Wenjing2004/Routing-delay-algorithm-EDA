@@ -7,6 +7,7 @@
 #include "../source/exact_local_route_table.hpp"
 
 #include <chrono>
+#include <array>
 #include <cstdint>
 #include <cstdio>
 #include <fstream>
@@ -33,6 +34,8 @@ int main(int argc, char** argv) {
     std::vector<Distance> dist(size_t(width) * width * ROUTES, DIST_INF);
     WorkHeap heap;
     uint64_t sampled = 0, exact = 0, under = 0, over = 0;
+    std::array<uint64_t, 3> class_sampled{}, class_mismatch{};
+    uint32_t printed_mismatches = 0;
     uint64_t absolute_error = 0;
     uint32_t max_error = 0;
     const auto started = std::chrono::steady_clock::now();
@@ -50,13 +53,26 @@ int main(int argc, char** argv) {
                ++ti) {
             if (((si * 131u + cell * 17u + ti * 7u) & 63u) != 0) continue;
             const uint16_t target = srb_runtime_ids::base_targets[ti];
+            const int source_input = kPortToInput[source];
+            const int source_class =
+                source_input < 0 ? 1 : kInputToRoute[source_input] >= 0 ? 0 : 2;
             const uint16_t golden =
                 target_value(dist, width, center, dx, dy, target);
             const uint16_t predicted = table.predict(source, target, dx, dy);
             ++sampled;
+            ++class_sampled[source_class];
             if (golden == predicted) {
               ++exact;
               continue;
+            }
+            ++class_mismatch[source_class];
+            if (printed_mismatches < 32) {
+              std::fprintf(stderr,
+                           "\nmismatch source=%u class=%d target=%u dx=%d dy=%d "
+                           "golden=%u predicted=%u",
+                           unsigned(source), source_class, unsigned(target), dx,
+                           dy, unsigned(golden), unsigned(predicted));
+              ++printed_mismatches;
             }
             if (predicted < golden) ++under;
             else ++over;
@@ -83,6 +99,14 @@ int main(int argc, char** argv) {
            << "  \"exact\": " << exact << ",\n"
            << "  \"under\": " << under << ",\n"
            << "  \"over\": " << over << ",\n"
+           << "  \"source_classes\": {\n"
+           << "    \"direct_input\": {\"sampled\": " << class_sampled[0]
+           << ", \"mismatch\": " << class_mismatch[0] << "},\n"
+           << "    \"output\": {\"sampled\": " << class_sampled[1]
+           << ", \"mismatch\": " << class_mismatch[1] << "},\n"
+           << "    \"indirect_input\": {\"sampled\": " << class_sampled[2]
+           << ", \"mismatch\": " << class_mismatch[2] << "}\n"
+           << "  },\n"
            << "  \"mae_ps\": "
            << (sampled ? double(absolute_error) / sampled : 0.0) << ",\n"
            << "  \"max_error_ps\": " << max_error << ",\n"

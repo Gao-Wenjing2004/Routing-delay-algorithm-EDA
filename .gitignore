@@ -12,6 +12,8 @@
 **/exact_local_route_table.bin
 /analysis/unique_eval/exact_axis_split_artifact/
 /analysis/unique_eval/local_route_packing_artifact/
+/analysis/unique_eval/local_route_packing_v2_artifact/
+/analysis/unique_eval/local_route_packing_v2b_artifact/
 
 # Local build and generated assets
 **/build/

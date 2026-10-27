@@ -76,16 +76,34 @@ jobs:
           /usr/bin/time -v build/build_exact_local_route_table \
             analysis/unique_eval/local_route_packing/exact_local_route_table.bin \
             2> analysis/unique_eval/local_route_packing/build_table_resource_usage.txt
+          validation_status=0
           /usr/bin/time -v build/validate_exact_local_route_table \
             analysis/unique_eval/local_route_packing/exact_local_route_table.bin \
             analysis/unique_eval/local_route_packing/validation.json \
-            2> analysis/unique_eval/local_route_packing/validation_resource_usage.txt
+            2> analysis/unique_eval/local_route_packing/validation_resource_usage.txt \
+            || validation_status=$?
           sha256sum analysis/unique_eval/local_route_packing/exact_local_route_table.bin \
             > analysis/unique_eval/local_route_packing/exact_local_route_table.sha256
           cat analysis/unique_eval/local_route_packing/validation.json
           cat analysis/unique_eval/local_route_packing/exact_local_route_table.sha256
           cat analysis/unique_eval/local_route_packing/build_table_resource_usage.txt
           cat analysis/unique_eval/local_route_packing/validation_resource_usage.txt
+          echo "validation_exit=${validation_status}"
+      - name: Require exact connector equivalence
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          report = json.loads(Path(
+              "analysis/unique_eval/local_route_packing/validation.json"
+          ).read_text())
+          if report["sampled"] != report["exact"]:
+              raise SystemExit(
+                  f"not exact: {report['exact']}/{report['sampled']} "
+                  f"under={report['under']} over={report['over']}"
+              )
+          PY
       - name: Upload aggregate packing report
         if: always()
         uses: actions/upload-artifact@v4
@@ -98,10 +116,18 @@ jobs:
             analysis/unique_eval/local_route_packing/report.json
             analysis/unique_eval/local_route_packing/compression_sizes.txt
             analysis/unique_eval/local_route_packing/resource_usage.txt
-            analysis/unique_eval/local_route_packing/exact_local_route_table.bin
             analysis/unique_eval/local_route_packing/exact_local_route_table.sha256
             analysis/unique_eval/local_route_packing/validation.json
             analysis/unique_eval/local_route_packing/build_table_resource_usage.txt
             analysis/unique_eval/local_route_packing/validation_resource_usage.txt
           if-no-files-found: warn
+          retention-days: 14
+      - name: Upload validated direct-mapped table
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: exact-local-route-table-bin
+          path: analysis/unique_eval/local_route_packing/exact_local_route_table.bin
+          if-no-files-found: error
+          compression-level: 0
           retention-days: 14
