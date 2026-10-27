@@ -1,0 +1,172 @@
+name: V72 exact-local Linux 10M-100M benchmark
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - benchmark/linux-unique-10m-100m
+    paths:
+      - .github/workflows/v72_exact_local_benchmark.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: v72-exact-local-linux-benchmark
+  cancel-in-progress: true
+
+jobs:
+  benchmark:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-22.04
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: false
+          fetch-depth: 1
+
+      - name: Verify immutable endpoint pool
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo '2657E2E6983D6356EF8EBB5FF20B469A2D264045A6D2E89BA44662DCCCC541E3  benchmark_assets/endpoint_pool.zip' | sha256sum -c -
+
+      - name: Build V72 and exact local table
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p build bin analysis/unique_eval/v72/linux_components benchmark_work benchmark_outputs
+          g++ -std=c++17 -O3 -DNDEBUG -ffp-contract=off -pthread \
+            tools/build_exact_local_route_table.cpp \
+            -o build/build_exact_local_route_table
+          /usr/bin/time -f 'table_elapsed=%e table_max_rss_kbytes=%M' \
+            build/build_exact_local_route_table \
+            analysis/unique_eval/local_route_packing/exact_local_route_table.bin \
+            2> analysis/unique_eval/v72/table_build.txt
+          g++ -std=c++17 -O3 -DNDEBUG -ffp-contract=off -pthread \
+            source/release_v72.cpp source/exact_local_route_data.S \
+            -o bin/estimate_v72
+          strip bin/estimate_v72
+          candidate_bytes=$(stat --printf='%s' bin/estimate_v72)
+          if (( candidate_bytes >= 100000000 )); then
+            echo "V72 exceeds submission limit: ${candidate_bytes}" >&2
+            exit 1
+          fi
+          {
+            printf 'candidate_bytes=%s\n' "${candidate_bytes}"
+            sha256sum bin/estimate_v72
+            sha256sum analysis/unique_eval/local_route_packing/exact_local_route_table.bin
+          } > analysis/unique_eval/v72/build.txt
+          chmod +x bin/estimate_v72
+          unzip -q benchmark_assets/endpoint_pool.zip -d benchmark_work
+          {
+            uname -a
+            lscpu
+            free -h
+            df -h
+            python3 --version
+            printf 'runner_image=%s\n' "${ImageOS:-unknown}"
+            printf 'runner_image_version=%s\n' "${ImageVersion:-unknown}"
+          } > analysis/unique_eval/v72/linux_host.txt
+          python3 -m unittest tests.test_unique_eval -v
+
+      - name: Generate and benchmark 10M cold plus warm
+        shell: bash
+        run: |
+          set -euo pipefail
+          ulimit -n 4096
+          python3 tools/unique_eval.py generate-perf \
+            --pool benchmark_work/delay_estimate_ans.csv \
+            --output benchmark_work/perf_10m.csv \
+            --manifest analysis/unique_eval/v72/perf_10m.manifest.json \
+            --sources 10000 --targets-per-source 1000 \
+            --profile official-like --seed 20261030 --shuffle-seed 20261100 \
+            --fold-count 5 --fold-index 0 --buckets 1024
+          rm -f /tmp/srb_runtime_atlas_v72.bin /tmp/srb_runtime_atlas_v72.bin.lock
+          python3 tools/unique_eval.py benchmark \
+            --executable bin/estimate_v72 \
+            --input benchmark_work/perf_10m.csv \
+            --output-dir benchmark_outputs \
+            --report analysis/unique_eval/v72/linux_components/perf_10m.json \
+            --runs 5 --timeout 3600 --cold-first-run
+          rm -f benchmark_work/perf_10m.csv
+          df -h
+
+      - name: Generate and benchmark 50M warm
+        shell: bash
+        run: |
+          set -euo pipefail
+          ulimit -n 4096
+          python3 tools/unique_eval.py generate-perf \
+            --pool benchmark_work/delay_estimate_ans.csv \
+            --output benchmark_work/perf_50m.csv \
+            --manifest analysis/unique_eval/v72/perf_50m.manifest.json \
+            --sources 50000 --targets-per-source 1000 \
+            --profile official-like --seed 20261030 --shuffle-seed 20261101 \
+            --fold-count 5 --fold-index 1 --buckets 1024
+          python3 tools/unique_eval.py benchmark \
+            --executable bin/estimate_v72 \
+            --input benchmark_work/perf_50m.csv \
+            --output-dir benchmark_outputs \
+            --report analysis/unique_eval/v72/linux_components/perf_50m.json \
+            --runs 5 --timeout 3600
+          rm -f benchmark_work/perf_50m.csv
+          df -h
+
+      - name: Generate and benchmark 100M warm
+        shell: bash
+        run: |
+          set -euo pipefail
+          ulimit -n 4096
+          python3 tools/unique_eval.py generate-perf \
+            --pool benchmark_work/delay_estimate_ans.csv \
+            --output benchmark_work/perf_100m.csv \
+            --manifest analysis/unique_eval/v72/perf_100m.manifest.json \
+            --sources 100000 --targets-per-source 1000 \
+            --profile official-like --seed 20261030 --shuffle-seed 20261102 \
+            --fold-count 5 --fold-index 2 --buckets 1024
+          python3 tools/unique_eval.py benchmark \
+            --executable bin/estimate_v72 \
+            --input benchmark_work/perf_100m.csv \
+            --output-dir benchmark_outputs \
+            --report analysis/unique_eval/v72/linux_components/perf_100m.json \
+            --runs 5 --timeout 3600
+          rm -f benchmark_work/perf_100m.csv
+          df -h
+
+      - name: Combine and enforce timing gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tools/unique_eval.py combine-benchmarks \
+            --input analysis/unique_eval/v72/linux_components/perf_10m.json \
+            --input analysis/unique_eval/v72/linux_components/perf_50m.json \
+            --input analysis/unique_eval/v72/linux_components/perf_100m.json \
+            --report analysis/unique_eval/v72/v72_linux_unique_10m_100m.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          root = Path("analysis/unique_eval/v72")
+          timing = json.loads((root / "v72_linux_unique_10m_100m.json").read_text())
+          assert timing["formal_timing_gate"] is True, timing
+          assert timing["reference_quality"] == "release-reference", timing
+          projection = timing["extrapolation"]
+          print(
+              "V72 projected 1B: "
+              f"steady={projection['steady_state_estimate_seconds']:.6f}s "
+              f"cold={projection['cold_start_overhead_seconds']:.6f}s "
+              f"total={projection['estimate_seconds']:.6f}s"
+          )
+          PY
+
+      - name: Upload V72 benchmark evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v72-exact-local-linux-benchmark
+          path: |
+            analysis/unique_eval/v72/
+          if-no-files-found: warn
+          retention-days: 14
