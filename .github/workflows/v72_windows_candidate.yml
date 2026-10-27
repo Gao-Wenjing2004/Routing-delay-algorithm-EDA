@@ -65,6 +65,25 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'V72 smoke test failed' }
           Get-Content -LiteralPath build\smoke_prediction.csv
 
+      - name: Split candidate for constrained downloads
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          New-Item -ItemType Directory -Force build\parts | Out-Null
+          $data = [System.IO.File]::ReadAllBytes((Resolve-Path -LiteralPath bin\estimate_v72.exe))
+          $chunkSize = 16000000
+          for ($index = 0; $index -lt 6; ++$index) {
+            $offset = $index * $chunkSize
+            $count = [Math]::Min($chunkSize, $data.Length - $offset)
+            if ($count -le 0) { throw "missing part $index" }
+            $part = New-Object byte[] $count
+            [Array]::Copy($data, $offset, $part, 0, $count)
+            [System.IO.File]::WriteAllBytes(
+              (Join-Path (Resolve-Path build\parts) ("estimate_v72.part{0:D2}" -f $index)),
+              $part
+            )
+          }
+
       - name: Upload Windows candidate
         if: success()
         uses: actions/upload-artifact@v4
@@ -75,5 +94,48 @@ jobs:
             build/v72_windows_build.txt
             build/smoke_prediction.csv
           if-no-files-found: error
+          compression-level: 0
+          retention-days: 14
+
+      - name: Upload candidate part 00
+        uses: actions/upload-artifact@v4
+        with:
+          name: v72-windows-part00
+          path: build/parts/estimate_v72.part00
+          compression-level: 0
+          retention-days: 14
+      - name: Upload candidate part 01
+        uses: actions/upload-artifact@v4
+        with:
+          name: v72-windows-part01
+          path: build/parts/estimate_v72.part01
+          compression-level: 0
+          retention-days: 14
+      - name: Upload candidate part 02
+        uses: actions/upload-artifact@v4
+        with:
+          name: v72-windows-part02
+          path: build/parts/estimate_v72.part02
+          compression-level: 0
+          retention-days: 14
+      - name: Upload candidate part 03
+        uses: actions/upload-artifact@v4
+        with:
+          name: v72-windows-part03
+          path: build/parts/estimate_v72.part03
+          compression-level: 0
+          retention-days: 14
+      - name: Upload candidate part 04
+        uses: actions/upload-artifact@v4
+        with:
+          name: v72-windows-part04
+          path: build/parts/estimate_v72.part04
+          compression-level: 0
+          retention-days: 14
+      - name: Upload candidate part 05
+        uses: actions/upload-artifact@v4
+        with:
+          name: v72-windows-part05
+          path: build/parts/estimate_v72.part05
           compression-level: 0
           retention-days: 14
