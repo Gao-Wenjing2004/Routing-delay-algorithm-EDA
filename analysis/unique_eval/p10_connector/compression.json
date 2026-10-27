@@ -1,0 +1,183 @@
+{
+  "schema": 1,
+  "kind": "p10-local-connector-compression-audit",
+  "rows": 3808,
+  "directions": {
+    "1": 1516,
+    "-1": 2292
+  },
+  "periods": {
+    "2": 1361,
+    "1": 1793,
+    "3": 471,
+    "4": 183
+  },
+  "unique_entries": 785,
+  "unique_exits": 879,
+  "validation": {
+    "source_holdout": {
+      "fold_kind": "source",
+      "folds": 5,
+      "rows": 3808,
+      "fold_rows": {
+        "0": 461,
+        "1": 832,
+        "2": 668,
+        "3": 908,
+        "4": 939
+      },
+      "source_event_recall": {
+        "1": 0.0007878151260504202,
+        "2": 0.004464285714285714,
+        "4": 0.009191176470588236,
+        "8": 0.011029411764705883,
+        "16": 0.024422268907563025,
+        "32": 0.07641806722689076,
+        "64": 0.12867647058823528
+      },
+      "target_event_recall": {
+        "1": 0.0015756302521008404,
+        "2": 0.005252100840336135,
+        "4": 0.008665966386554622,
+        "8": 0.013392857142857142,
+        "16": 0.029411764705882353,
+        "32": 0.06039915966386555,
+        "64": 0.15204831932773108
+      },
+      "independent_pair_recall": {
+        "1": 0.0007878151260504202,
+        "2": 0.0021008403361344537,
+        "4": 0.002888655462184874,
+        "8": 0.004726890756302521,
+        "16": 0.007352941176470588,
+        "32": 0.022846638655462184,
+        "64": 0.06932773109243698
+      },
+      "entry_conditioned_pair_recall": {
+        "1": 0.0007878151260504202,
+        "2": 0.004201680672268907,
+        "4": 0.007878151260504201,
+        "8": 0.009716386554621849,
+        "16": 0.020483193277310924,
+        "32": 0.054884453781512604,
+        "64": 0.08534663865546219
+      }
+    },
+    "region_holdout": {
+      "fold_kind": "region",
+      "folds": 5,
+      "rows": 3808,
+      "fold_rows": {
+        "0": 441,
+        "1": 769,
+        "2": 618,
+        "3": 1036,
+        "4": 944
+      },
+      "source_event_recall": {
+        "1": 0.0007878151260504202,
+        "2": 0.002888655462184874,
+        "4": 0.0063025210084033615,
+        "8": 0.008403361344537815,
+        "16": 0.018119747899159665,
+        "32": 0.04726890756302521,
+        "64": 0.10688025210084033
+      },
+      "target_event_recall": {
+        "1": 0.0021008403361344537,
+        "2": 0.003676470588235294,
+        "4": 0.004989495798319327,
+        "8": 0.01444327731092437,
+        "16": 0.030199579831932773,
+        "32": 0.05908613445378151,
+        "64": 0.148109243697479
+      },
+      "independent_pair_recall": {
+        "1": 0.0002626050420168067,
+        "2": 0.0005252100840336134,
+        "4": 0.0010504201680672268,
+        "8": 0.0031512605042016808,
+        "16": 0.006565126050420168,
+        "32": 0.017331932773109245,
+        "64": 0.050945378151260504
+      },
+      "entry_conditioned_pair_recall": {
+        "1": 0.0007878151260504202,
+        "2": 0.0023634453781512603,
+        "4": 0.004726890756302521,
+        "8": 0.006565126050420168,
+        "16": 0.014180672268907563,
+        "32": 0.030987394957983194,
+        "64": 0.06433823529411764
+      }
+    }
+  },
+  "dictionary_lower_bounds": [
+    {
+      "role": "source",
+      "beam": 8,
+      "ports": 63,
+      "observed_finest_keys": 117,
+      "unique_candidate_patterns": 50,
+      "observed_pattern_dedup_ratio": 0.42735042735042733,
+      "dense_key_count": 2091600,
+      "id_only_lower_bound_bytes": 4184000,
+      "warning": "candidate IDs only; local connector costs require additional encoding"
+    },
+    {
+      "role": "source",
+      "beam": 16,
+      "ports": 63,
+      "observed_finest_keys": 117,
+      "unique_candidate_patterns": 69,
+      "observed_pattern_dedup_ratio": 0.5897435897435898,
+      "dense_key_count": 2091600,
+      "id_only_lower_bound_bytes": 4185408,
+      "warning": "candidate IDs only; local connector costs require additional encoding"
+    },
+    {
+      "role": "source",
+      "beam": 32,
+      "ports": 63,
+      "observed_finest_keys": 117,
+      "unique_candidate_patterns": 97,
+      "observed_pattern_dedup_ratio": 0.8290598290598291,
+      "dense_key_count": 2091600,
+      "id_only_lower_bound_bytes": 4189408,
+      "warning": "candidate IDs only; local connector costs require additional encoding"
+    },
+    {
+      "role": "target",
+      "beam": 8,
+      "ports": 256,
+      "observed_finest_keys": 3792,
+      "unique_candidate_patterns": 2,
+      "observed_pattern_dedup_ratio": 0.0005274261603375527,
+      "dense_key_count": 8499200,
+      "id_only_lower_bound_bytes": 16998432,
+      "warning": "candidate IDs only; local connector costs require additional encoding"
+    },
+    {
+      "role": "target",
+      "beam": 16,
+      "ports": 256,
+      "observed_finest_keys": 3792,
+      "unique_candidate_patterns": 4,
+      "observed_pattern_dedup_ratio": 0.0010548523206751054,
+      "dense_key_count": 8499200,
+      "id_only_lower_bound_bytes": 16998528,
+      "warning": "candidate IDs only; local connector costs require additional encoding"
+    },
+    {
+      "role": "target",
+      "beam": 32,
+      "ports": 256,
+      "observed_finest_keys": 3792,
+      "unique_candidate_patterns": 4,
+      "observed_pattern_dedup_ratio": 0.0010548523206751054,
+      "dense_key_count": 8499200,
+      "id_only_lower_bound_bytes": 16998656,
+      "warning": "candidate IDs only; local connector costs require additional encoding"
+    }
+  ]
+}

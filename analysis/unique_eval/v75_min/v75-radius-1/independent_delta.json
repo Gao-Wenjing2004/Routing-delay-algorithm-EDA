@@ -1,0 +1,10 @@
+{
+  "rows": 608000,
+  "changed_rows": 0,
+  "improved_rows": 0,
+  "worsened_rows": 0,
+  "equal_score_changed_rows": 0,
+  "control_accuracy": 98.30275767678401,
+  "candidate_accuracy": 98.30275767678401,
+  "accuracy_delta_points": 0.0
+}

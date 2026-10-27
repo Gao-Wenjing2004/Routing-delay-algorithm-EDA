@@ -1,0 +1,5 @@
+radius=12
+candidate_bytes=25885000
+with_p10_bytes=72041860
+remaining_after_p10_bytes=27958140
+bcd7656e9da8ec428daea53560f3b3f121318d7ae6266a88434473ff5336f111  analysis/unique_eval/local_route_packing/exact_local_route_table.bin

@@ -1,0 +1,2 @@
+processed=608000 bad_rows=0 exact_hits=551677 repeated_period=0 elapsed=0.0871183 throughput=6.97902e+06 q/s
+independent_candidate_wall=0.10 independent_candidate_cpu=0.20

@@ -1,0 +1,54 @@
+A* heuristic ready
+target-port lower bounds ready: ports=496 routes=160
+ALT landmarks ready: 26 relaxed_moves=16 relaxed_edges=937812
+cells=60200 grid=120x550 ports=496 inputs=208 routing_inputs=160 arcs=8192 nets=160 macro_edges=3968 states=9632000 spatial_items=9632000
+major persistent arrays ~= 146.373 MiB
+port structural signatures: source=369 target=449
+labeled=1000 source_row=1000 mean_expanded=9396707 mean_ms=32.9779
+labeled=2000 source_row=2000 mean_expanded=9402365 mean_ms=37.1872
+labeled=3000 source_row=3000 mean_expanded=9405140 mean_ms=38.8807
+labeled=4000 source_row=4000 mean_expanded=9402970 mean_ms=40.8822
+labeled=5000 source_row=5000 mean_expanded=9404278 mean_ms=41.4653
+labeled=6000 source_row=6000 mean_expanded=9404151 mean_ms=41.761
+labeled=7000 source_row=7000 mean_expanded=9403141 mean_ms=42.1328
+labeled=8000 source_row=8000 mean_expanded=9402842 mean_ms=41.9407
+labeled=9000 source_row=9000 mean_expanded=9402336 mean_ms=40.28
+labeled=10000 source_row=10000 mean_expanded=9401131 mean_ms=38.4945
+labeled=11000 source_row=11000 mean_expanded=9397779 mean_ms=36.8109
+labeled=12000 source_row=12000 mean_expanded=9398042 mean_ms=36.1269
+labeled=13000 source_row=13000 mean_expanded=9397987 mean_ms=34.2612
+labeled=14000 source_row=14000 mean_expanded=9394667 mean_ms=32.7281
+labeled=15000 source_row=15000 mean_expanded=9394502 mean_ms=31.334
+labeled=16000 source_row=16000 mean_expanded=9393928 mean_ms=30.1772
+labeled=17000 source_row=17000 mean_expanded=9392679 mean_ms=29.164
+labeled=18000 source_row=18000 mean_expanded=9392753 mean_ms=28.4386
+labeled=19000 source_row=19000 mean_expanded=9392373 mean_ms=27.773
+labeled=20000 source_row=20000 mean_expanded=9393194 mean_ms=27.4104
+labeled=21000 source_row=21000 mean_expanded=9393602 mean_ms=26.8594
+labeled=22000 source_row=22000 mean_expanded=9394010 mean_ms=26.3531
+labeled=23000 source_row=23000 mean_expanded=9394379 mean_ms=26.151
+labeled=24000 source_row=24000 mean_expanded=9394184 mean_ms=25.7613
+complete rows=24576 unreachable=0 expanded=230873333504 exact_seconds=629.565 wall_seconds=629.916
+	Command being timed: "legacy/srb_hybrid_v9/build/offline_exact_labeler --graph legacy/srb_hybrid_v9/build/srb_graph.bin --gap legacy/legacy_versions/v3/arch/SRB_Gap.json --input current/benchmark_work/p10_connector/selected_requests.csv --labels current/benchmark_work/p10_connector/dijkstra_golden.csv --summaries current/benchmark_work/p10_connector/dijkstra_summaries.csv --grouped --max-group-expanded 100000000"
+	User time (seconds): 630.41
+	System time (seconds): 0.07
+	Percent of CPU this job got: 99%
+	Elapsed (wall clock) time (h:mm:ss or m:ss): 10:30.51
+	Average shared text size (kbytes): 0
+	Average unshared data size (kbytes): 0
+	Average stack size (kbytes): 0
+	Average total size (kbytes): 0
+	Maximum resident set size (kbytes): 226700
+	Average resident set size (kbytes): 0
+	Major (requiring I/O) page faults: 0
+	Minor (reclaiming a frame) page faults: 57457
+	Voluntary context switches: 1
+	Involuntary context switches: 1854
+	Swaps: 0
+	File system inputs: 0
+	File system outputs: 82704
+	Socket messages sent: 0
+	Socket messages received: 0
+	Signals delivered: 0
+	Page size (bytes): 4096
+	Exit status: 0

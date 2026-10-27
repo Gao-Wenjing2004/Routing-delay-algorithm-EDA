@@ -1,0 +1,35 @@
+{
+  "schema": 1,
+  "kind": "validated-p10-periodic-portal-closure",
+  "records": {
+    "up": {
+      "bytes": 23078430,
+      "sha256": "98e24b337f47d2783a306afa2c59a118af693cba95f43aec56175e1515a0b6d8",
+      "dimension": 1920,
+      "periods": 5,
+      "residual_maxima": [
+        642,
+        630,
+        619,
+        619,
+        619
+      ]
+    },
+    "down": {
+      "bytes": 23078430,
+      "sha256": "06ddcd9385c36fd8005ceede82fdb5356ead00384476ccc8aaefc8dd730b7ae9",
+      "dimension": 1920,
+      "periods": 5,
+      "residual_maxima": [
+        659,
+        657,
+        641,
+        641,
+        641
+      ]
+    }
+  },
+  "total_bytes": 46156860,
+  "expected_total_bytes": 46156860,
+  "matches_documented_size": true
+}
