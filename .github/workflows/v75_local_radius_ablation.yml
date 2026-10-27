@@ -1,0 +1,132 @@
+name: V75 exact local radius ablation
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - benchmark/linux-unique-10m-100m
+    paths:
+      - .github/workflows/v75_local_radius_ablation.yml
+      - source/release_v73.cpp
+      - source/exact_local_route_table.hpp
+      - source/runtime_atlas_builder.hpp
+      - source/srb_hybrid.hpp
+      - tools/build_exact_local_route_table.cpp
+      - tools/compare_prediction_accuracy.py
+
+permissions:
+  contents: read
+
+concurrency:
+  group: v75-local-radius-ablation
+  cancel-in-progress: true
+
+jobs:
+  evaluate:
+    strategy:
+      fail-fast: false
+      matrix:
+        radius: [4, 8, 12, 16]
+    runs-on: ubuntu-22.04
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: false
+          fetch-depth: 1
+
+      - name: Prepare public and independent requests
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p build bin benchmark_work/public \
+            analysis/unique_eval/v75/radius_${{ matrix.radius }} \
+            analysis/unique_eval/local_route_packing
+          unzip -q benchmark_assets/endpoint_pool.zip -d benchmark_work/public
+          python3 - <<'PY'
+          import csv
+          from pathlib import Path
+          golden = Path("benchmark_work/public/delay_estimate_ans.csv")
+          request = Path("benchmark_work/public_requests.csv")
+          with golden.open(encoding="utf-8-sig", newline="") as source, \
+               request.open("w", encoding="utf-8", newline="") as target:
+              reader = csv.DictReader(source)
+              writer = csv.writer(target, lineterminator="\n")
+              writer.writerow(["From", "To"])
+              for row in reader:
+                  writer.writerow([row["From"], row["To"]])
+          PY
+          zstd -q -d -c benchmark_assets/unique_teacher_requests_608k.csv.zst \
+            > benchmark_work/independent_requests.csv
+          zstd -q -d -c benchmark_assets/unique_teacher_golden_608k.csv.zst \
+            > benchmark_work/independent_golden.csv
+
+      - name: Build control and radius candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          radius=${{ matrix.radius }}
+          g++ -std=c++17 -O3 -DNDEBUG -ffp-contract=off -pthread \
+            tools/build_exact_local_route_table.cpp \
+            -o build/build_exact_local_route_table
+          build/build_exact_local_route_table \
+            analysis/unique_eval/local_route_packing/exact_local_route_table.bin \
+            "${radius}"
+          g++ -std=c++17 -O3 -DNDEBUG -ffp-contract=off -pthread \
+            source/release_v69.cpp -o bin/estimate_v69
+          g++ -std=c++17 -O3 -DNDEBUG -ffp-contract=off -pthread \
+            -DSRB_HOT_INNER_RADIUS=${radius} \
+            source/release_v73.cpp source/exact_local_route_data.S \
+            -o bin/estimate_v75
+          strip bin/estimate_v69 bin/estimate_v75
+          candidate_bytes=$(stat --printf='%s' bin/estimate_v75)
+          p10_bytes=46156860
+          printf 'radius=%s\ncandidate_bytes=%s\nwith_p10_bytes=%s\nremaining_after_p10_bytes=%s\n' \
+            "${radius}" "${candidate_bytes}" "$((candidate_bytes+p10_bytes))" \
+            "$((100000000-candidate_bytes-p10_bytes))" \
+            > analysis/unique_eval/v75/radius_${radius}/build.txt
+          sha256sum analysis/unique_eval/local_route_packing/exact_local_route_table.bin \
+            >> analysis/unique_eval/v75/radius_${radius}/build.txt
+
+      - name: Predict and compare both distributions
+        shell: bash
+        run: |
+          set -euo pipefail
+          radius=${{ matrix.radius }}
+          report=analysis/unique_eval/v75/radius_${radius}
+          rm -f /tmp/srb_runtime_atlas_v69.bin /tmp/srb_runtime_atlas_v69.bin.lock
+          rm -f /tmp/srb_runtime_atlas_v73.bin /tmp/srb_runtime_atlas_v73.bin.lock
+          /usr/bin/time -f 'public_control_wall=%e public_control_cpu=%U' \
+            bin/estimate_v69 -in benchmark_work/public_requests.csv \
+            -out benchmark_work/public_control.csv 2> "${report}/public_control_timing.txt"
+          /usr/bin/time -f 'public_candidate_wall=%e public_candidate_cpu=%U' \
+            bin/estimate_v75 -in benchmark_work/public_requests.csv \
+            -out benchmark_work/public_candidate.csv 2> "${report}/public_candidate_timing.txt"
+          python3 tools/compare_prediction_accuracy.py \
+            --golden benchmark_work/public/delay_estimate_ans.csv \
+            --control benchmark_work/public_control.csv \
+            --candidate benchmark_work/public_candidate.csv \
+            --output "${report}/public_delta.json"
+          /usr/bin/time -f 'independent_control_wall=%e independent_control_cpu=%U' \
+            bin/estimate_v69 -in benchmark_work/independent_requests.csv \
+            -out benchmark_work/independent_control.csv 2> "${report}/independent_control_timing.txt"
+          /usr/bin/time -f 'independent_candidate_wall=%e independent_candidate_cpu=%U' \
+            bin/estimate_v75 -in benchmark_work/independent_requests.csv \
+            -out benchmark_work/independent_candidate.csv 2> "${report}/independent_candidate_timing.txt"
+          python3 tools/compare_prediction_accuracy.py \
+            --golden benchmark_work/independent_golden.csv \
+            --control benchmark_work/independent_control.csv \
+            --candidate benchmark_work/independent_candidate.csv \
+            --output "${report}/independent_delta.json"
+          cat "${report}/build.txt"
+          cat "${report}/public_delta.json"
+          cat "${report}/independent_delta.json"
+
+      - name: Upload radius evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v75-radius-${{ matrix.radius }}
+          path: analysis/unique_eval/v75/radius_${{ matrix.radius }}/
+          if-no-files-found: warn
+          retention-days: 30

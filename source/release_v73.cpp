@@ -4,7 +4,9 @@
 // validated P10 periodic Portal closure and compact local connectors.
 #define SRB_EXACT_LOCAL_ROUTE_TABLE
 #define SRB_ATLAS_NO_BASE
+#ifndef SRB_HOT_INNER_RADIUS
 #define SRB_HOT_INNER_RADIUS 16
+#endif
 #define SRB_RUNTIME_ATLAS_MIN_BYTES 500000000ull
 #ifndef SRB_RUNTIME_ATLAS_PATH
 #define SRB_RUNTIME_ATLAS_PATH "/tmp/srb_runtime_atlas_v73.bin"
