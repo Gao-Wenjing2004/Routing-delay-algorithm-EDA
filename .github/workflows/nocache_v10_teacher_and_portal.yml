@@ -39,8 +39,17 @@ jobs:
             tests/test_nocache_residual.py -q
       - name: Build exact graph, forward/reverse Teacher and K48 trace
         run: |
-          set -euo pipefail
           mkdir -p analysis/nocache_v10/build analysis/nocache_v10/work analysis/nocache_v10/reports
+          exec > >(tee analysis/nocache_v10/reports/build_and_preprocess.log) 2>&1
+          report_failure() {
+            message=$(tail -c 12000 analysis/nocache_v10/reports/build_and_preprocess.log)
+            message=${message//'%'/'%25'}
+            message=${message//$'\r'/'%0D'}
+            message=${message//$'\n'/'%0A'}
+            echo "::error title=V10 C++ build or preprocess failed::$message"
+          }
+          trap report_failure ERR
+          set -euo pipefail
           g++ -std=c++17 -O3 -DNDEBUG -pthread srb_hybrid_v9/src/preprocess_v9.cpp \
             -o analysis/nocache_v10/build/preprocess_v9
           g++ -std=c++17 -O3 -DNDEBUG -pthread srb_hybrid_v9/src/offline_exact_labeler.cpp \
