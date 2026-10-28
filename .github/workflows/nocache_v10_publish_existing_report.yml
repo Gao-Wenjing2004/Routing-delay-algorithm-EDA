@@ -33,7 +33,11 @@ jobs:
           residual=$(find downloaded -type f -name distillation_report.json -print -quit)
           retirement=$(find downloaded -type f -name asset_retirement_gate.json -print -quit)
           connector=$(find downloaded -type f -name connector_gate.json -print -quit)
-          test -n "$residual" && test -n "$retirement" && test -n "$connector"
+          p10_up=$(find downloaded/nocache-v10-p10-up -type f -name packing.json -print -quit)
+          p10_down=$(find downloaded/nocache-v10-p10-down -type f -name packing.json -print -quit)
+          test -n "$residual" && test -n "$retirement" && test -n "$connector" \
+            && test -n "$p10_up" && test -n "$p10_down"
           reports=$(dirname "$connector")
           python3 tools/summarize_validation_public.py \
-            --reports "$reports" --residual "$residual" --retirement "$retirement"
+            --reports "$reports" --residual "$residual" --retirement "$retirement" \
+            --p10-up "$p10_up" --p10-down "$p10_down"

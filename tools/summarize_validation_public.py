@@ -40,6 +40,8 @@ def main() -> int:
     parser.add_argument("--reports", type=Path, required=True)
     parser.add_argument("--residual", type=Path, required=True)
     parser.add_argument("--retirement", type=Path, required=True)
+    parser.add_argument("--p10-up", type=Path, required=True)
+    parser.add_argument("--p10-down", type=Path, required=True)
     args = parser.parse_args()
 
     for split in ("train", "source_holdout", "region_holdout"):
@@ -76,7 +78,38 @@ def main() -> int:
         if name == "path_gap_block_audit":
             report = report.get("overall", {})
         notice(f"V10 {name}", report)
-    notice("V10 asset retirement", load(args.retirement))
+    residual_three_way = bool(residual.get("accepted")) and all(
+        float((residual.get("selected") or {}).get("gains", {}).get(split, 0.0)) > 0.0
+        for split in ("train", "source", "region")
+    )
+    connector = load(args.reports / "connector_gate.json")
+    up, down = load(args.p10_up), load(args.p10_down)
+    p10 = {
+        "up": {key: up.get(key) for key in ("lossless", "verified_entries", "output_bytes", "bits_per_delta")},
+        "down": {key: down.get(key) for key in ("lossless", "verified_entries", "output_bytes", "bits_per_delta")},
+    }
+    notice("V10 P10 packing", p10)
+    retirement = load(args.retirement)
+    corrected_checks = {
+        "residual_three_way_positive": residual_three_way,
+        "connector_is_fixed_lookup": connector.get("lookup_kind") == "fixed-count-direct",
+        "connector_has_no_request_identity": connector.get("request_identity_stored") is False,
+        "connector_three_way_positive": all(
+            float((connector.get("selected") or {}).get("gains", {}).get(split, 0.0)) > 0.0
+            for split in ("train", "source", "region")
+        ),
+        "connector_exact_core_coverage_pct": float(connector.get("exact_core_coverage_pct", 0.0)) >= 99.0,
+        "p10_up_lossless": bool(up.get("lossless", up.get("verified_entries", 0) > 0)),
+        "p10_down_lossless": bool(down.get("lossless", down.get("verified_entries", 0) > 0)),
+    }
+    notice("V10 corrected asset gate", {
+        "authorized": all(corrected_checks.values()),
+        "checks": corrected_checks,
+        "protected_assets": retirement.get("protected_assets"),
+        "potential_reclaim_bytes": retirement.get("potential_reclaim_bytes"),
+        "action": "keep frozen K48 assets" if not all(corrected_checks.values()) else "assets may be retired",
+        "note": "corrected with packing reports discovered by content; the original release gate used wrong artifact paths",
+    })
     return 0
 
 
