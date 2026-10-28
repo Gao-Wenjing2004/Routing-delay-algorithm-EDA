@@ -35,9 +35,5 @@ jobs:
           connector=$(find downloaded -type f -name connector_gate.json -print -quit)
           test -n "$residual" && test -n "$retirement" && test -n "$connector"
           reports=$(dirname "$connector")
-          python3 tools/summarize_nocache_validation.py \
-            --reports "$reports" --residual "$residual" \
-            --output /tmp/nocache_v10_ci_summary.json --annotations
-          python3 tools/summarize_nocache_validation.py \
-            --retirement "$retirement" \
-            --output /tmp/nocache_v10_release_summary.json --annotations
+          python3 tools/summarize_validation_public.py \
+            --reports "$reports" --residual "$residual" --retirement "$retirement"
