@@ -323,12 +323,21 @@ jobs:
       - name: Fail-closed Short48, Hull and residual retirement audit
         run: |
           set +e
+          residual=$(find analysis/nocache_v10/downloaded/nocache-v10-teacher-baseline \
+            -type f -name distillation_report.json -print -quit)
+          connector=$(find analysis/nocache_v10/downloaded/nocache-v10-teacher-baseline \
+            -type f -name connector_gate.json -print -quit)
+          p10_up=$(find analysis/nocache_v10/downloaded/nocache-v10-p10-up \
+            -type f -name packing.json -print -quit)
+          p10_down=$(find analysis/nocache_v10/downloaded/nocache-v10-p10-down \
+            -type f -name packing.json -print -quit)
+          test -n "$residual" && test -n "$connector" && test -n "$p10_up" && test -n "$p10_down"
           python3 tools/gate_nocache_asset_retirement.py \
             --runtime submission_k48_20261015/bin \
-            --residual-report analysis/nocache_v10/downloaded/nocache-v10-teacher-baseline/analysis/nocache_v10/direct_residual/distillation_report.json \
-            --connector-report analysis/nocache_v10/downloaded/nocache-v10-teacher-baseline/analysis/nocache_v10/reports/connector_gate.json \
-            --p10-up-report analysis/nocache_v10/downloaded/nocache-v10-p10-up/analysis/nocache_v10/p10/up/packing.json \
-            --p10-down-report analysis/nocache_v10/downloaded/nocache-v10-p10-down/analysis/nocache_v10/p10/down/packing.json \
+            --residual-report "$residual" \
+            --connector-report "$connector" \
+            --p10-up-report "$p10_up" \
+            --p10-down-report "$p10_down" \
             --output analysis/nocache_v10/asset_retirement_gate.json
           status=$?
           set -e
