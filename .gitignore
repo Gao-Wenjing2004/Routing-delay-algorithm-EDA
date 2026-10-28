@@ -21,3 +21,12 @@
 
 # Keep this byte-exact, user-confirmed competition archive on the wufan branch.
 !/submission_k48_20261015/submission.zip
+# V10 no-cache generated work products; small manifests/reports may be force-added after review.
+/analysis/nocache_v10/build/
+/analysis/nocache_v10/work/
+/analysis/nocache_v10/p10/
+/analysis/nocache_v10/panels/
+/analysis/nocache_v10/unique_requests_608k.csv
+/analysis/unique_eval/
+/benchmark_assets/endpoint_pool.zip
+/nocache_v10/bin/

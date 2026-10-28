@@ -1,0 +1,199 @@
+{
+  "Gap": {
+    "Line": [
+      {
+        "id": 0,
+        "direction": "horizontal",
+        "site": 49,
+        "delay": 8
+      },
+      {
+        "id": 1,
+        "direction": "horizontal",
+        "site": 149,
+        "delay": 8
+      },
+      {
+        "id": 2,
+        "direction": "horizontal",
+        "site": 249,
+        "delay": 8
+      },
+      {
+        "id": 3,
+        "direction": "horizontal",
+        "site": 349,
+        "delay": 8
+      },
+      {
+        "id": 4,
+        "direction": "horizontal",
+        "site": 449,
+        "delay": 8
+      },
+      {
+        "id": 5,
+        "direction": "vertical",
+        "site": 9,
+        "delay": 78
+      },
+      {
+        "id": 6,
+        "direction": "vertical",
+        "site": 19,
+        "delay": 78
+      },
+      {
+        "id": 7,
+        "direction": "vertical",
+        "site": 33,
+        "delay": 9
+      },
+      {
+        "id": 8,
+        "direction": "vertical",
+        "site": 39,
+        "delay": 78
+      },
+      {
+        "id": 9,
+        "direction": "vertical",
+        "site": 45,
+        "delay": 78
+      },
+      {
+        "id": 10,
+        "direction": "vertical",
+        "site": 51,
+        "delay": 78
+      },
+      {
+        "id": 11,
+        "direction": "vertical",
+        "site": 57,
+        "delay": 98
+      },
+      {
+        "id": 12,
+        "direction": "vertical",
+        "site": 63,
+        "delay": 9
+      },
+      {
+        "id": 13,
+        "direction": "vertical",
+        "site": 69,
+        "delay": 78
+      },
+      {
+        "id": 15,
+        "direction": "vertical",
+        "site": 95,
+        "delay": 98
+      },
+      {
+        "id": 16,
+        "direction": "vertical",
+        "site": 99,
+        "delay": 177
+      },
+      {
+        "id": 18,
+        "direction": "vertical",
+        "site": 105,
+        "delay": 9
+      },
+      {
+        "id": 19,
+        "direction": "vertical",
+        "site": 111,
+        "delay": 78
+      },
+      {
+        "id": 14,
+        "direction": "vertical",
+        "site": 117,
+        "delay": 9
+      }
+    ],
+    "Block": [
+      {
+        "id": 0,
+        "lower": 0,
+        "upper": 99,
+        "left": 0,
+        "right": 15,
+        "vertical crossable": false,
+        "vertical cross delay": 0,
+        "horizontal crossable": false,
+        "horizontal cross delay": 0
+      },
+      {
+        "id": 1,
+        "lower": 0,
+        "upper": 49,
+        "left": 76,
+        "right": 89,
+        "vertical crossable": false,
+        "vertical cross delay": 0,
+        "horizontal crossable": true,
+        "horizontal cross delay": 292
+      },
+      {
+        "id": 2,
+        "lower": 100,
+        "upper": 149,
+        "left": 76,
+        "right": 89,
+        "vertical crossable": false,
+        "vertical cross delay": 0,
+        "horizontal crossable": true,
+        "horizontal cross delay": 292
+      },
+      {
+        "id": 3,
+        "lower": 200,
+        "upper": 249,
+        "left": 76,
+        "right": 89,
+        "vertical crossable": false,
+        "vertical cross delay": 0,
+        "horizontal crossable": true,
+        "horizontal cross delay": 292
+      },
+      {
+        "id": 4,
+        "lower": 300,
+        "upper": 349,
+        "left": 76,
+        "right": 89,
+        "vertical crossable": false,
+        "vertical cross delay": 0,
+        "horizontal crossable": true,
+        "horizontal cross delay": 292
+      },
+      {
+        "id": 5,
+        "lower": 400,
+        "upper": 449,
+        "left": 76,
+        "right": 89,
+        "vertical crossable": false,
+        "vertical cross delay": 0,
+        "horizontal crossable": true,
+        "horizontal cross delay": 292
+      },
+      {
+        "id": 6,
+        "lower": 500,
+        "upper": 549,
+        "left": 76,
+        "right": 89,
+        "vertical crossable": false,
+        "vertical cross delay": 0,
+        "horizontal crossable": true,
+        "horizontal cross delay": 292
+      }
+    ]
+  }
+}

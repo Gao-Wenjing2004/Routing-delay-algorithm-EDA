@@ -1,0 +1,325 @@
+name: V10 no-cache Teacher, connector and P10 gates
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - opt/wufan-nocache-v10
+    paths:
+      - 'nocache_v10/**'
+      - 'tools/*nocache*'
+      - 'tools/make_reverse_batch_probe.py'
+      - 'tools/analyze_teacher_path_structure.py'
+      - 'tests/**'
+      - 'srb_hybrid_v9/src/**'
+      - '.github/workflows/nocache_v10_teacher_and_portal.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  teacher-baseline:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          lfs: false
+      - name: Materialize only K48 assets
+        run: |
+          set -euo pipefail
+          git lfs pull --include='submission_k48_20261015/**' --exclude='submission_v7_20260919/**'
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq zstd g++ zlib1g-dev liblzma-dev
+      - name: Python tests
+        run: |
+          python3 -m pip install --disable-pip-version-check pytest
+          python3 -m pytest tests/test_unique_eval.py tests/test_nocache_teacher.py \
+            tests/test_nocache_residual.py -q
+      - name: Build exact graph, forward/reverse Teacher and K48 trace
+        run: |
+          set -euo pipefail
+          mkdir -p analysis/nocache_v10/build analysis/nocache_v10/work analysis/nocache_v10/reports
+          g++ -std=c++17 -O3 -DNDEBUG -pthread srb_hybrid_v9/src/preprocess_v9.cpp \
+            -o analysis/nocache_v10/build/preprocess_v9
+          g++ -std=c++17 -O3 -DNDEBUG -pthread srb_hybrid_v9/src/offline_exact_labeler.cpp \
+            -o analysis/nocache_v10/build/offline_exact_labeler
+          g++ -std=c++17 -O3 -DNDEBUG -pthread srb_hybrid_v9/src/offline_reverse_grouped_labeler.cpp \
+            -o analysis/nocache_v10/build/offline_reverse_grouped_labeler
+          g++ -std=c++17 -O3 -DNDEBUG -pthread srb_hybrid_v9/src/offline_local_connector_teacher.cpp \
+            -o analysis/nocache_v10/build/offline_local_connector_teacher
+          bash nocache_v10/build_trace.sh
+          analysis/nocache_v10/build/preprocess_v9 \
+            legacy_versions/v3/arch/SRB_Inst.json legacy_versions/v3/arch/SRB_Port.json \
+            legacy_versions/v3/arch/SRB_Arc.json legacy_versions/v3/arch/SRB_Net.json \
+            legacy_versions/v3/arch/SRB_Gap.json analysis/nocache_v10/build/srb_graph.bin
+      - name: Generate globally unique boundary and Block/Gap panels
+        run: |
+          set -euo pipefail
+          zstd -q -d -c benchmark_assets/unique_teacher_requests_608k.csv.zst \
+            > analysis/nocache_v10/work/unique_requests_608k.csv
+          zstd -q -d -c benchmark_assets/unique_teacher_golden_608k.csv.zst \
+            > analysis/nocache_v10/work/unique_golden_608k.csv
+          python3 tools/generate_nocache_teacher_requests.py \
+            --pool analysis/nocache_v10/work/unique_requests_608k.csv \
+            --gap legacy_versions/v3/arch/SRB_Gap.json \
+            --output-dir analysis/nocache_v10/panels \
+            --per-boundary 256 --environment-per-source 4096
+      - name: Label and measure all isolated panels
+        run: |
+          set -euo pipefail
+          for split in train source_holdout region_holdout; do
+            python3 tools/unique_eval.py label \
+              --labeler analysis/nocache_v10/build/offline_exact_labeler \
+              --graph analysis/nocache_v10/build/srb_graph.bin \
+              --gap legacy_versions/v3/arch/SRB_Gap.json \
+              --requests analysis/nocache_v10/panels/${split}_requests.csv \
+              --labels analysis/nocache_v10/work/${split}_golden.csv \
+              --summaries analysis/nocache_v10/work/${split}_summaries.csv \
+              --report analysis/nocache_v10/reports/${split}_teacher.json \
+              --sources-per-shard 16 --max-group-expanded 100000000
+            /usr/bin/time -v nocache_v10/bin/estimate_trace \
+              -in analysis/nocache_v10/panels/${split}_requests.csv \
+              -out analysis/nocache_v10/work/${split}_prediction.csv \
+              -trace analysis/nocache_v10/work/${split}_trace.csv \
+              -atlas submission_k48_20261015/bin/assets/lower_k32.bin \
+              2> analysis/nocache_v10/reports/${split}_timing.txt
+            python3 tools/analyze_nocache_branch_errors.py \
+              --golden analysis/nocache_v10/work/${split}_golden.csv \
+              --trace analysis/nocache_v10/work/${split}_trace.csv \
+              --metadata analysis/nocache_v10/panels/${split}_metadata.csv \
+              --split ${split} --output analysis/nocache_v10/reports/${split}_branch_errors.json
+            python3 tools/unique_eval.py evaluate \
+              --golden analysis/nocache_v10/work/${split}_golden.csv \
+              --prediction analysis/nocache_v10/work/${split}_prediction.csv \
+              --gap legacy_versions/v3/arch/SRB_Gap.json --bootstrap-samples 1000 \
+              --output analysis/nocache_v10/reports/${split}_accuracy.json \
+              --markdown analysis/nocache_v10/reports/${split}_accuracy.md
+          done
+      - name: Reconstruct a path sample and audit path-level Gap and Block Portals
+        run: |
+          set -euo pipefail
+          python3 tools/select_nocache_path_probe.py \
+            --metadata analysis/nocache_v10/panels/train_metadata.csv \
+            --output analysis/nocache_v10/work/path_probe.csv --rows 4096
+          analysis/nocache_v10/build/offline_exact_labeler \
+            --graph analysis/nocache_v10/build/srb_graph.bin \
+            --gap legacy_versions/v3/arch/SRB_Gap.json \
+            --input analysis/nocache_v10/work/path_probe.csv \
+            --labels analysis/nocache_v10/work/path_probe_golden.csv \
+            --summaries analysis/nocache_v10/work/path_probe_summaries.csv \
+            --paths analysis/nocache_v10/work/path_probe.jsonl \
+            --grouped --max-group-expanded 100000000
+          python3 tools/analyze_teacher_path_structure.py \
+            --summaries analysis/nocache_v10/work/path_probe_summaries.csv \
+            --trace analysis/nocache_v10/work/train_trace.csv \
+            --metadata analysis/nocache_v10/panels/train_metadata.csv \
+            --output analysis/nocache_v10/reports/path_gap_block_audit.json
+          python3 srb_hybrid_v9/tools/make_block_portal_audit.py \
+            --summaries analysis/nocache_v10/work/path_probe_summaries.csv \
+            --output analysis/nocache_v10/work/block_connector_requests.csv \
+            --report analysis/nocache_v10/reports/block_connector_selection.json
+          analysis/nocache_v10/build/offline_local_connector_teacher \
+            --graph analysis/nocache_v10/build/srb_graph.bin \
+            --states srb_prpr_v8/analysis/prpr/state_equivalence.csv \
+            --input analysis/nocache_v10/work/block_connector_requests.csv \
+            --output analysis/nocache_v10/work/local_connector_teacher.bin \
+            --report analysis/nocache_v10/work/local_connector_teacher.csv \
+            --side-band 6 --limit 32 --max-expanded 100000000
+          python3 tools/analyze_local_connector_teacher.py \
+            --binary analysis/nocache_v10/work/local_connector_teacher.bin \
+            --rows analysis/nocache_v10/work/local_connector_teacher.csv \
+            --output analysis/nocache_v10/reports/connector_gate.json
+      - name: Verify reverse batch Dijkstra against ordinary exact Dijkstra
+        run: |
+          set -euo pipefail
+          python3 tools/make_reverse_batch_probe.py \
+            --pool analysis/nocache_v10/work/unique_requests_608k.csv \
+            --output analysis/nocache_v10/work/reverse_probe.csv --rows 96
+          analysis/nocache_v10/build/offline_exact_labeler \
+            --graph analysis/nocache_v10/build/srb_graph.bin \
+            --gap legacy_versions/v3/arch/SRB_Gap.json \
+            --input analysis/nocache_v10/work/reverse_probe.csv \
+            --labels analysis/nocache_v10/work/reverse_forward.csv \
+            --summaries analysis/nocache_v10/work/reverse_forward_summaries.csv \
+            --delay-only --grouped --max-group-expanded 100000000
+          analysis/nocache_v10/build/offline_reverse_grouped_labeler \
+            --graph analysis/nocache_v10/build/srb_graph.bin \
+            --input analysis/nocache_v10/work/reverse_probe.csv \
+            --labels analysis/nocache_v10/work/reverse_batch.csv \
+            --statistics analysis/nocache_v10/reports/reverse_batch_stats.csv
+          python3 tools/compare_prediction_accuracy.py \
+            --golden analysis/nocache_v10/work/reverse_forward.csv \
+            --control analysis/nocache_v10/work/reverse_forward.csv \
+            --candidate analysis/nocache_v10/work/reverse_batch.csv \
+            --output analysis/nocache_v10/reports/reverse_batch_parity.json
+      - name: Distil fixed-count direct residual and enforce three-panel gate
+        id: residual
+        shell: bash
+        run: |
+          set +e
+          python3 tools/distill_nocache_residual.py \
+            --train-golden analysis/nocache_v10/work/train_golden.csv \
+            --train-trace analysis/nocache_v10/work/train_trace.csv \
+            --source-golden analysis/nocache_v10/work/source_holdout_golden.csv \
+            --source-trace analysis/nocache_v10/work/source_holdout_trace.csv \
+            --region-golden analysis/nocache_v10/work/region_holdout_golden.csv \
+            --region-trace analysis/nocache_v10/work/region_holdout_trace.csv \
+            --output-dir analysis/nocache_v10/direct_residual
+          status=$?
+          set -e
+          if [ "$status" -ne 0 ] && [ "$status" -ne 2 ]; then exit "$status"; fi
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          report=json.loads(Path('analysis/nocache_v10/direct_residual/distillation_report.json').read_text())
+          with Path('analysis/nocache_v10/reports/residual_gate.txt').open('w') as f:
+              f.write('accepted=' + str(report['accepted']).lower() + '\n')
+          print('Residual accepted:', report['accepted'])
+          PY
+          nocache_v10/bin/estimate_trace \
+            -in analysis/nocache_v10/panels/region_holdout_requests.csv \
+            -out analysis/nocache_v10/work/region_candidate_runtime.csv \
+            -trace analysis/nocache_v10/work/region_candidate_runtime_trace.csv \
+            -atlas submission_k48_20261015/bin/assets/lower_k32.bin \
+            -residual analysis/nocache_v10/direct_residual/direct_residual.bin
+          if ! cmp -s analysis/nocache_v10/work/region_candidate_runtime.csv \
+                    analysis/nocache_v10/direct_residual/region_candidate.csv; then
+            # A rejected model intentionally has no offline candidate files and
+            # is byte-identical to the baseline instead.
+            accepted=$(python3 -c "import json;print(str(json.load(open('analysis/nocache_v10/direct_residual/distillation_report.json'))['accepted']).lower())")
+            if [ "$accepted" = true ]; then
+              echo 'C++ direct residual disagrees with the distilled candidate' >&2
+              exit 1
+            fi
+            cmp analysis/nocache_v10/work/region_candidate_runtime.csv \
+                analysis/nocache_v10/work/region_holdout_prediction.csv
+          fi
+      - name: Byte-exact AVX2, batch-width and PGO ablation
+        run: |
+          set -euo pipefail
+          common='-O3 -DNDEBUG -DSRB_IO_OPTIMIZED=1 -DSRB_BATCH_PREFETCH=1 -std=c++17 -static-libgcc -static-libstdc++'
+          g++ $common -DSRB_BATCH_WIDTH=8 -march=x86-64-v3 -mtune=generic \
+            nocache_v10/src/estimate_trace.cpp -o analysis/nocache_v10/build/estimate_avx2_b8 \
+            -Wl,-Bstatic -llzma -lz -Wl,-Bdynamic
+          mkdir -p analysis/nocache_v10/work/pgo
+          g++ $common -DSRB_BATCH_WIDTH=8 -march=x86-64-v3 -mtune=generic \
+            -fprofile-generate=analysis/nocache_v10/work/pgo \
+            nocache_v10/src/estimate_trace.cpp -o analysis/nocache_v10/build/estimate_avx2_b8_pgo \
+            -Wl,-Bstatic -llzma -lz -Wl,-Bdynamic
+          analysis/nocache_v10/build/estimate_avx2_b8_pgo \
+            -in analysis/nocache_v10/panels/train_requests.csv \
+            -out analysis/nocache_v10/work/pgo_training_prediction.csv \
+            -atlas submission_k48_20261015/bin/assets/lower_k32.bin \
+            -residual analysis/nocache_v10/direct_residual/direct_residual.bin
+          g++ $common -DSRB_BATCH_WIDTH=8 -march=x86-64-v3 -mtune=generic \
+            -fprofile-use=analysis/nocache_v10/work/pgo -fprofile-correction \
+            nocache_v10/src/estimate_trace.cpp -o analysis/nocache_v10/build/estimate_avx2_b8_pgo \
+            -Wl,-Bstatic -llzma -lz -Wl,-Bdynamic
+          for variant in estimate_avx2_b8 estimate_avx2_b8_pgo; do
+            /usr/bin/time -v analysis/nocache_v10/build/$variant \
+              -in analysis/nocache_v10/panels/region_holdout_requests.csv \
+              -out analysis/nocache_v10/work/${variant}.csv \
+              -atlas submission_k48_20261015/bin/assets/lower_k32.bin \
+              -residual analysis/nocache_v10/direct_residual/direct_residual.bin \
+              2> analysis/nocache_v10/reports/${variant}_timing.txt
+            cmp analysis/nocache_v10/work/${variant}.csv \
+                analysis/nocache_v10/work/region_candidate_runtime.csv
+          done
+      - name: Score K48 on the independent 608K panel
+        run: |
+          set -euo pipefail
+          /usr/bin/time -v submission_k48_20261015/bin/estimate \
+            -in analysis/nocache_v10/work/unique_requests_608k.csv \
+            -out analysis/nocache_v10/work/k48_independent_prediction.csv \
+            2> analysis/nocache_v10/reports/k48_independent_timing.txt
+          python3 tools/unique_eval.py evaluate \
+            --golden analysis/nocache_v10/work/unique_golden_608k.csv \
+            --prediction analysis/nocache_v10/work/k48_independent_prediction.csv \
+            --gap legacy_versions/v3/arch/SRB_Gap.json --bootstrap-samples 2000 \
+            --output analysis/nocache_v10/reports/k48_independent_608k.json \
+            --markdown analysis/nocache_v10/reports/k48_independent_608k.md
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nocache-v10-teacher-baseline
+          path: |
+            analysis/nocache_v10/reports/
+            analysis/nocache_v10/panels/manifest.json
+            analysis/nocache_v10/direct_residual/
+          if-no-files-found: error
+          retention-days: 30
+
+  p10-rebuild:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 360
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - direction: up
+            raw_sha256: 8cb81795981fdef109b5590974f4ce7885c3cac748a95ad5331c521225f44b61
+          - direction: down
+            raw_sha256: 6ef3c298f224a653ad453dbab91251f6ca1e5029bd4bb089f36f4c475663bfe3
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build exact P10 closure and direct-access 10-bit asset
+        run: |
+          set -euo pipefail
+          mkdir -p analysis/nocache_v10/p10/${{ matrix.direction }}
+          g++ -std=c++17 -O3 -DNDEBUG -pthread srb_hybrid_v9/src/preprocess_v9.cpp -o /tmp/preprocess_v9
+          g++ -std=c++17 -O3 -DNDEBUG -pthread srb_hybrid_v9/src/offline_periodic_portal_matrix.cpp -o /tmp/portal_matrix
+          g++ -std=c++17 -O3 -DNDEBUG srb_hybrid_v9/src/offline_portal_closure.cpp -o /tmp/portal_closure
+          /tmp/preprocess_v9 legacy_versions/v3/arch/SRB_Inst.json legacy_versions/v3/arch/SRB_Port.json \
+            legacy_versions/v3/arch/SRB_Arc.json legacy_versions/v3/arch/SRB_Net.json \
+            legacy_versions/v3/arch/SRB_Gap.json /tmp/srb_graph.bin
+          /tmp/portal_matrix --graph /tmp/srb_graph.bin \
+            --states srb_prpr_v8/analysis/prpr/state_equivalence.csv \
+            --direction ${{ matrix.direction }} --side-band 6 \
+            --output /tmp/single_period.bin
+          echo '${{ matrix.raw_sha256 }}  /tmp/single_period.bin' | sha256sum -c -
+          /tmp/portal_closure /tmp/single_period.bin /tmp/closure.bin 5
+          python3 srb_hybrid_v9/tools/pack_periodic_portal_closure.py \
+            --input /tmp/closure.bin \
+            --output analysis/nocache_v10/p10/${{ matrix.direction }}/packed_1_5.bin \
+            --report analysis/nocache_v10/p10/${{ matrix.direction }}/packing.json --verify
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nocache-v10-p10-${{ matrix.direction }}
+          path: analysis/nocache_v10/p10/${{ matrix.direction }}/
+          compression-level: 0
+          retention-days: 30
+
+  release-gate:
+    runs-on: ubuntu-22.04
+    needs: [teacher-baseline, p10-rebuild]
+    if: always() && needs.teacher-baseline.result == 'success' && needs.p10-rebuild.result == 'success'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: false
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: nocache-v10-*
+          path: analysis/nocache_v10/downloaded
+      - name: Materialize K48 assets for byte inventory
+        run: git lfs pull --include='submission_k48_20261015/bin/assets/**'
+      - name: Fail-closed Short48, Hull and residual retirement audit
+        run: |
+          set +e
+          python3 tools/gate_nocache_asset_retirement.py \
+            --runtime submission_k48_20261015/bin \
+            --residual-report analysis/nocache_v10/downloaded/nocache-v10-teacher-baseline/analysis/nocache_v10/direct_residual/distillation_report.json \
+            --connector-report analysis/nocache_v10/downloaded/nocache-v10-teacher-baseline/analysis/nocache_v10/reports/connector_gate.json \
+            --p10-up-report analysis/nocache_v10/downloaded/nocache-v10-p10-up/analysis/nocache_v10/p10/up/packing.json \
+            --p10-down-report analysis/nocache_v10/downloaded/nocache-v10-p10-down/analysis/nocache_v10/p10/down/packing.json \
+            --output analysis/nocache_v10/asset_retirement_gate.json
+          status=$?
+          set -e
+          if [ "$status" -ne 0 ] && [ "$status" -ne 3 ]; then exit "$status"; fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nocache-v10-release-gate
+          path: analysis/nocache_v10/asset_retirement_gate.json
+          if-no-files-found: error
