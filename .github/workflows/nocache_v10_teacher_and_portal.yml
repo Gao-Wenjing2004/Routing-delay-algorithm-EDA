@@ -208,7 +208,7 @@ jobs:
       - name: Byte-exact AVX2, batch-width and PGO ablation
         run: |
           set -euo pipefail
-          common='-O3 -DNDEBUG -DSRB_IO_OPTIMIZED=1 -DSRB_BATCH_PREFETCH=1 -std=c++17 -static-libgcc -static-libstdc++'
+          common='-O3 -DNDEBUG -DSRB_IO_OPTIMIZED=1 -DSRB_BATCH_PREFETCH=1 -std=c++17 -Isubmission_k48_20261015/src -static-libgcc -static-libstdc++'
           g++ $common -DSRB_BATCH_WIDTH=8 -march=x86-64-v3 -mtune=generic \
             nocache_v10/src/estimate_trace.cpp -o analysis/nocache_v10/build/estimate_avx2_b8 \
             -Wl,-Bstatic -llzma -lz -Wl,-Bdynamic
