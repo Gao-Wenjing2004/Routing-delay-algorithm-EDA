@@ -249,6 +249,12 @@ jobs:
             --gap legacy_versions/v3/arch/SRB_Gap.json --bootstrap-samples 2000 \
             --output analysis/nocache_v10/reports/k48_independent_608k.json \
             --markdown analysis/nocache_v10/reports/k48_independent_608k.md
+      - name: Publish compact validation metrics as Check annotations
+        run: |
+          python3 tools/summarize_nocache_validation.py \
+            --reports analysis/nocache_v10/reports \
+            --residual analysis/nocache_v10/direct_residual/distillation_report.json \
+            --output analysis/nocache_v10/reports/ci_summary.json --annotations
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -327,6 +333,11 @@ jobs:
           status=$?
           set -e
           if [ "$status" -ne 0 ] && [ "$status" -ne 3 ]; then exit "$status"; fi
+      - name: Publish retirement decision as a Check annotation
+        run: |
+          python3 tools/summarize_nocache_validation.py \
+            --retirement analysis/nocache_v10/asset_retirement_gate.json \
+            --output analysis/nocache_v10/release_ci_summary.json --annotations
       - uses: actions/upload-artifact@v4
         with:
           name: nocache-v10-release-gate
