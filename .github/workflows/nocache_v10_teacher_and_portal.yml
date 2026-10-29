@@ -8,6 +8,7 @@ on:
     paths:
       - 'nocache_v10/**'
       - 'tools/*nocache*'
+      - 'tools/*axis_portal*'
       - 'tools/make_reverse_batch_probe.py'
       - 'tools/analyze_teacher_path_structure.py'
       - 'tests/**'
@@ -36,7 +37,7 @@ jobs:
         run: |
           python3 -m pip install --disable-pip-version-check pytest
           python3 -m pytest tests/test_unique_eval.py tests/test_nocache_teacher.py \
-            tests/test_nocache_residual.py -q
+            tests/test_nocache_residual.py tests/test_axis_portal_oracle.py -q
       - name: Build exact graph, forward/reverse Teacher and K48 trace
         run: |
           mkdir -p analysis/nocache_v10/build analysis/nocache_v10/work analysis/nocache_v10/reports
@@ -58,11 +59,20 @@ jobs:
             -o analysis/nocache_v10/build/offline_reverse_grouped_labeler
           g++ -std=c++17 -O3 -DNDEBUG -pthread srb_hybrid_v9/src/offline_local_connector_teacher.cpp \
             -o analysis/nocache_v10/build/offline_local_connector_teacher
+          g++ -O2 -DNDEBUG -std=c++17 -pthread -Isubmission_k48_20261015/src \
+            nocache_v10/src/estimate_soa_mt.cpp -o analysis/nocache_v10/build/estimate_soa_compile_check \
+            -Wl,-Bstatic -llzma -lz -Wl,-Bdynamic
           bash nocache_v10/build_trace.sh
           analysis/nocache_v10/build/preprocess_v9 \
             legacy_versions/v3/arch/SRB_Inst.json legacy_versions/v3/arch/SRB_Port.json \
             legacy_versions/v3/arch/SRB_Arc.json legacy_versions/v3/arch/SRB_Net.json \
             legacy_versions/v3/arch/SRB_Gap.json analysis/nocache_v10/build/srb_graph.bin
+          python3 srb_hybrid_v9/tools/export_compact_graph.py \
+            --graph analysis/nocache_v10/build/srb_graph.bin \
+            --gap legacy_versions/v3/arch/SRB_Gap.json \
+            --output analysis/nocache_v10/build/compact_graph.hpp \
+            --model-json analysis/nocache_v10/build/compact_model.json \
+            --transitions-csv analysis/nocache_v10/build/axis_transitions.csv
       - name: Generate globally unique boundary and Block/Gap panels
         run: |
           set -euo pipefail
@@ -140,6 +150,43 @@ jobs:
             --binary analysis/nocache_v10/work/local_connector_teacher.bin \
             --rows analysis/nocache_v10/work/local_connector_teacher.csv \
             --output analysis/nocache_v10/reports/connector_gate.json
+      - name: Audit exact distance-71/72 and single-Block structural replacement
+        id: axis_portal
+        shell: bash
+        run: |
+          set -euo pipefail
+          for split in train source_holdout region_holdout; do
+            python3 tools/select_axis_portal_probe.py \
+              --metadata analysis/nocache_v10/panels/${split}_metadata.csv \
+              --output analysis/nocache_v10/work/${split}_axis_portal_requests.csv \
+              --summaries analysis/nocache_v10/work/${split}_summaries.csv \
+              --summary-output analysis/nocache_v10/work/${split}_axis_portal_summaries.csv \
+              --trace analysis/nocache_v10/work/${split}_trace.csv \
+              --trace-output analysis/nocache_v10/work/${split}_axis_portal_trace.csv \
+              --rows 4096
+          done
+          python3 tools/analyze_axis_portal_templates.py \
+            --panel train:analysis/nocache_v10/work/train_axis_portal_summaries.csv \
+            --panel source_holdout:analysis/nocache_v10/work/source_holdout_axis_portal_summaries.csv \
+            --panel region_holdout:analysis/nocache_v10/work/region_holdout_axis_portal_summaries.csv \
+            --output analysis/nocache_v10/reports/axis_portal_template_recall.json
+          set +e
+          python3 tools/analyze_axis_portal_oracle.py \
+            --model analysis/nocache_v10/build/compact_model.json \
+            --transitions analysis/nocache_v10/build/axis_transitions.csv \
+            --gap legacy_versions/v3/arch/SRB_Gap.json \
+            --panel train:analysis/nocache_v10/work/train_axis_portal_summaries.csv:analysis/nocache_v10/work/train_axis_portal_trace.csv \
+            --panel source_holdout:analysis/nocache_v10/work/source_holdout_axis_portal_summaries.csv:analysis/nocache_v10/work/source_holdout_axis_portal_trace.csv \
+            --panel region_holdout:analysis/nocache_v10/work/region_holdout_axis_portal_summaries.csv:analysis/nocache_v10/work/region_holdout_axis_portal_trace.csv \
+            --radius 128 --search-margin 64 --portal-band 6 \
+            --output analysis/nocache_v10/reports/axis_portal_oracle.json
+          status=$?
+          set -e
+          if [ "$status" -ne 0 ] && [ "$status" -ne 2 ]; then exit "$status"; fi
+          python3 tools/gate_axis_portal_replacement.py \
+            --oracle analysis/nocache_v10/reports/axis_portal_oracle.json \
+            --templates analysis/nocache_v10/reports/axis_portal_template_recall.json \
+            --output analysis/nocache_v10/reports/axis_portal_gate.json
       - name: Verify reverse batch Dijkstra against ordinary exact Dijkstra
         run: |
           set -euo pipefail
@@ -249,6 +296,23 @@ jobs:
             --gap legacy_versions/v3/arch/SRB_Gap.json --bootstrap-samples 2000 \
             --output analysis/nocache_v10/reports/k48_independent_608k.json \
             --markdown analysis/nocache_v10/reports/k48_independent_608k.md
+      - name: Byte-exact SoA block pipeline and 1/2/4/8-thread ablation
+        run: |
+          set -euo pipefail
+          common='-O3 -DNDEBUG -std=c++17 -pthread -Isubmission_k48_20261015/src -static-libgcc -static-libstdc++'
+          g++ $common -march=x86-64 -mtune=generic -flto \
+            nocache_v10/src/estimate_soa_mt.cpp -o analysis/nocache_v10/build/estimate_soa_mt \
+            -Wl,-Bstatic -llzma -lz -Wl,-Bdynamic
+          for threads in 1 2 4 8; do
+            /usr/bin/time -v analysis/nocache_v10/build/estimate_soa_mt \
+              -in analysis/nocache_v10/work/unique_requests_608k.csv \
+              -out analysis/nocache_v10/work/soa_mt_${threads}.csv \
+              -atlas submission_k48_20261015/bin/assets/lower_k32.bin \
+              -threads $threads \
+              2> analysis/nocache_v10/reports/soa_mt_${threads}_timing.txt
+            cmp analysis/nocache_v10/work/soa_mt_${threads}.csv \
+                analysis/nocache_v10/work/k48_independent_prediction.csv
+          done
       - name: Publish compact validation metrics as Check annotations
         run: |
           python3 tools/summarize_nocache_validation.py \

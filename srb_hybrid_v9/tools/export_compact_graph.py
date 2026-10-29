@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import csv
 import heapq
 import json
 import struct
@@ -70,6 +71,8 @@ def main() -> int:
     parser.add_argument("--graph", type=Path, required=True)
     parser.add_argument("--gap", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--model-json", type=Path)
+    parser.add_argument("--transitions-csv", type=Path)
     parser.add_argument(
         "--landmark-output",
         type=Path,
@@ -102,6 +105,55 @@ def main() -> int:
         arc_to_output = values(vector(stream, "H"))
         spatial_next = values(vector(stream, "i"))
         spatial_extra = values(vector(stream, "H"))
+
+    if args.transitions_csv is not None:
+        best_transitions: dict[tuple[int, int, int, int], int] = {}
+        for source_route, full_input in enumerate(route_to_input):
+            for _output, destination_route, arc_delay, net_id in transitions_by_input[full_input]:
+                _net_output, _net_input, dx, dy = nets[net_id]
+                key = source_route, destination_route, dx, dy
+                best_transitions[key] = min(best_transitions.get(key, 65535), arc_delay)
+        args.transitions_csv.parent.mkdir(parents=True, exist_ok=True)
+        with args.transitions_csv.open("w", encoding="utf-8", newline="") as output:
+            writer = csv.writer(output, lineterminator="\n")
+            writer.writerow(("from_state", "to_state", "delta_x", "delta_y", "total_delay"))
+            for key, delay in sorted(best_transitions.items()):
+                writer.writerow((*key, delay))
+
+    if args.model_json is not None:
+        direct_arcs: list[list[list[int]]] = []
+        for group in transitions_by_input:
+            best: dict[int, int] = {}
+            for output, _destination_route, arc_delay, _net_id in group:
+                best[output] = min(best.get(output, 65535), arc_delay)
+            direct_arcs.append([[output, delay] for output, delay in sorted(best.items())])
+        output_nets = [[-1, 0, 0] for _ in ports]
+        for output, net_id in enumerate(net_by_output):
+            if net_id < 0:
+                continue
+            _net_output, destination_input, dx, dy = nets[net_id]
+            output_nets[output] = [input_to_route[destination_input], dx, dy]
+        target_arcs: list[list[list[int]]] = [[] for _ in ports]
+        for route, full_input in enumerate(route_to_input):
+            base = full_input * len(ports)
+            for output in range(len(ports)):
+                delay = arc_to_output[base + output]
+                if delay != 65535:
+                    target_arcs[output].append([route, delay])
+        model = {
+            "schema": 1,
+            "port_names": ports,
+            "port_to_input": port_to_input,
+            "input_to_state": input_to_route,
+            "direct_arcs": direct_arcs,
+            "output_nets": output_nets,
+            "target_arcs": target_arcs,
+        }
+        args.model_json.parent.mkdir(parents=True, exist_ok=True)
+        args.model_json.write_text(
+            json.dumps(model, ensure_ascii=False, separators=(",", ":")) + "\n",
+            encoding="utf-8",
+        )
 
     transition_offsets = [0]
     transitions: list[tuple[int, ...]] = []

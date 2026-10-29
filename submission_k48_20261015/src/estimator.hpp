@@ -70,6 +70,9 @@ public:
         srb_fast::Endpoint a,b;if(!parser_.parse_endpoint(from,a)||!parser_.parse_endpoint(to,b))return false;
         prepare(a,b,q);return true;
     }
+    void prepare_endpoints(const srb_fast::Endpoint&a,const srb_fast::Endpoint&b,PreparedRequest&q)const{
+        prepare(a,b,q);
+    }
     bool predict_spec(srb_fast::Slice from,srb_fast::Slice to,uint32_t&v,uint8_t&kind)const{
         PreparedRequest q;if(!prepare_spec(from,to,q))return false;v=predict_prepared(q,kind);return true;
     }
