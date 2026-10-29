@@ -14,11 +14,16 @@ import csv
 import json
 import math
 import re
+import sys
 from array import array
 from collections import defaultdict
 from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
 from srb_hybrid_v9.tools.analyze_axis_oracle import (
     INF,

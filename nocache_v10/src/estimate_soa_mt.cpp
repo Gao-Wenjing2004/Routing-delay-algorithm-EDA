@@ -4,11 +4,14 @@
 #include <algorithm>
 #include <array>
 #include <chrono>
+#include <condition_variable>
 #include <cstdio>
 #include <cstring>
+#include <exception>
 #include <filesystem>
 #include <iostream>
 #include <memory>
+#include <mutex>
 #include <stdexcept>
 #include <string>
 #include <thread>
@@ -86,6 +89,119 @@ struct Result {
     uint8_t kind = 0;
 };
 
+class PredictorPool {
+public:
+    PredictorPool(srb_v11_hybrid::Estimator& estimator, unsigned workers)
+        : estimator_(estimator), workers_(workers), local_branches_(workers) {
+        for (unsigned worker = 1; worker < workers_; ++worker)
+            threads_.emplace_back([this, worker] { worker_loop(worker); });
+    }
+
+    PredictorPool(const PredictorPool&) = delete;
+    PredictorPool& operator=(const PredictorPool&) = delete;
+
+    ~PredictorPool() {
+        {
+            std::lock_guard<std::mutex> lock(mutex_);
+            stopping_ = true;
+            ++generation_;
+        }
+        start_.notify_all();
+        for (auto& thread : threads_) thread.join();
+    }
+
+    void run(const EndpointSoA& rows, std::vector<Result>& results,
+             std::array<uint64_t, 5>& branches) {
+        results.resize(rows.size());
+        for (auto& values : local_branches_) values.fill(0);
+        {
+            std::lock_guard<std::mutex> lock(mutex_);
+            rows_ = &rows;
+            results_ = &results;
+            completed_ = 0;
+            failure_ = nullptr;
+            ++generation_;
+        }
+        start_.notify_all();
+        try {
+            predict_range(0, rows, results);
+        } catch (...) {
+            std::lock_guard<std::mutex> lock(mutex_);
+            failure_ = std::current_exception();
+        }
+        if (workers_ > 1) {
+            std::unique_lock<std::mutex> lock(mutex_);
+            done_.wait(lock, [this] { return completed_ == workers_ - 1; });
+        }
+        if (failure_) std::rethrow_exception(failure_);
+        for (const auto& local : local_branches_)
+            for (size_t index = 0; index < branches.size(); ++index)
+                branches[index] += local[index];
+    }
+
+private:
+    static constexpr size_t tile = 32;
+
+    void predict_range(unsigned worker, const EndpointSoA& rows,
+                       std::vector<Result>& results) {
+        const size_t begin = rows.size() * worker / workers_;
+        const size_t end = rows.size() * (worker + 1) / workers_;
+        for (size_t tile_begin = begin; tile_begin < end; tile_begin += tile) {
+            const size_t tile_end = std::min(end, tile_begin + tile);
+            std::array<srb_v11_hybrid::Estimator::PreparedRequest, tile> prepared;
+            for (size_t index = tile_begin; index < tile_end; ++index) {
+                const srb_fast::Endpoint a{static_cast<int16_t>(rows.ax[index]),
+                                           static_cast<int16_t>(rows.ay[index]), rows.ap[index]};
+                const srb_fast::Endpoint b{static_cast<int16_t>(rows.bx[index]),
+                                           static_cast<int16_t>(rows.by[index]), rows.bp[index]};
+                estimator_.prepare_endpoints(a, b, prepared[index - tile_begin]);
+            }
+            for (size_t index = tile_begin; index < tile_end; ++index) {
+                Result& result = results[index];
+                result.delay = estimator_.predict_prepared(prepared[index - tile_begin], result.kind);
+                ++local_branches_[worker][result.kind];
+            }
+        }
+    }
+
+    void worker_loop(unsigned worker) {
+        size_t observed = 0;
+        std::unique_lock<std::mutex> lock(mutex_);
+        while (true) {
+            start_.wait(lock, [this, observed] {
+                return stopping_ || generation_ != observed;
+            });
+            if (stopping_) return;
+            observed = generation_;
+            const EndpointSoA* rows = rows_;
+            std::vector<Result>* results = results_;
+            lock.unlock();
+            try {
+                predict_range(worker, *rows, *results);
+            } catch (...) {
+                std::lock_guard<std::mutex> failure_lock(mutex_);
+                if (!failure_) failure_ = std::current_exception();
+            }
+            lock.lock();
+            ++completed_;
+            if (completed_ == workers_ - 1) done_.notify_one();
+        }
+    }
+
+    srb_v11_hybrid::Estimator& estimator_;
+    unsigned workers_;
+    std::vector<std::thread> threads_;
+    std::vector<std::array<uint64_t, 5>> local_branches_;
+    std::mutex mutex_;
+    std::condition_variable start_, done_;
+    const EndpointSoA* rows_ = nullptr;
+    std::vector<Result>* results_ = nullptr;
+    size_t generation_ = 0;
+    unsigned completed_ = 0;
+    bool stopping_ = false;
+    std::exception_ptr failure_;
+};
+
 }  // namespace
 
 int main(int argc, char** argv) {
@@ -131,12 +247,12 @@ int main(int argc, char** argv) {
         const double load_seconds = seconds(Clock::now() - load_started);
 
         constexpr size_t block = 16u << 20;
-        constexpr size_t tile = 32;
         std::vector<char> buffer(block + 4096);
         srb_v11_io::OutputBuffer text(block);
         EndpointSoA rows;
         rows.reserve(block / 24);
         std::vector<Result> results;
+        PredictorPool predictor_pool(estimator, threads);
         size_t carry = 0;
         bool first_line = true;
         uint64_t count = 0, bad = 0;
@@ -188,37 +304,7 @@ int main(int argc, char** argv) {
             parse_seconds += seconds(Clock::now() - stage);
 
             stage = Clock::now();
-            results.resize(rows.size());
-            const unsigned workers = static_cast<unsigned>(
-                std::min<size_t>(threads, std::max<size_t>(rows.size(), 1)));
-            std::vector<std::array<uint64_t, 5>> worker_branches(workers);
-            auto work = [&](unsigned worker) {
-                const size_t begin = rows.size() * worker / workers;
-                const size_t end = rows.size() * (worker + 1) / workers;
-                for (size_t tile_begin = begin; tile_begin < end; tile_begin += tile) {
-                    const size_t tile_end = std::min(end, tile_begin + tile);
-                    std::array<srb_v11_hybrid::Estimator::PreparedRequest, tile> prepared;
-                    for (size_t index = tile_begin; index < tile_end; ++index) {
-                        const srb_fast::Endpoint a{static_cast<int16_t>(rows.ax[index]),
-                                                   static_cast<int16_t>(rows.ay[index]), rows.ap[index]};
-                        const srb_fast::Endpoint b{static_cast<int16_t>(rows.bx[index]),
-                                                   static_cast<int16_t>(rows.by[index]), rows.bp[index]};
-                        estimator.prepare_endpoints(a, b, prepared[index - tile_begin]);
-                    }
-                    for (size_t index = tile_begin; index < tile_end; ++index) {
-                        Result& result = results[index];
-                        result.delay = estimator.predict_prepared(prepared[index - tile_begin], result.kind);
-                        ++worker_branches[worker][result.kind];
-                    }
-                }
-            };
-            std::vector<std::thread> pool;
-            pool.reserve(workers > 0 ? workers - 1 : 0);
-            for (unsigned worker = 1; worker < workers; ++worker) pool.emplace_back(work, worker);
-            work(0);
-            for (auto& thread : pool) thread.join();
-            for (const auto& local : worker_branches)
-                for (size_t index = 0; index < branches.size(); ++index) branches[index] += local[index];
+            predictor_pool.run(rows, results, branches);
             predict_seconds += seconds(Clock::now() - stage);
 
             stage = Clock::now();

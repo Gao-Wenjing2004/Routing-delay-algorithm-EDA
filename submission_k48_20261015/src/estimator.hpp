@@ -31,7 +31,12 @@
 #include "short48/new_model_hook.hpp"
 #include "short48_model/selected_model.hpp"
 #include <filesystem>
+#include <future>
 #include <memory>
+
+#ifndef SRB_PARALLEL_ASSET_LOAD
+#define SRB_PARALLEL_ASSET_LOAD 0
+#endif
 
 namespace srb_v11_hybrid {
 class Estimator {
@@ -40,20 +45,63 @@ public:
         if(local_radius<0||local_radius>24)throw std::runtime_error("invalid local radius");
         if(use_atlas){
             const auto parent=std::filesystem::path(path).parent_path();
+#if SRB_PARALLEL_ASSET_LOAD
+            // Loading is CPU-heavy (XZ/zlib decode plus table reconstruction),
+            // and Local and Short do not depend on each other.  Keep this
+            // behind an ablation macro: official use is allowed only after a
+            // byte-identical output and cold-start timing gate.
+            auto local_future=std::async(std::launch::async,[parent]{
+                return std::make_unique<srb_v11_local_expand::Local>(
+                    (parent/"normalized_local.bin").string(),srb_v10_parameters::graph_signature);
+            });
+            auto short_future=std::async(std::launch::async,[parent,path]{
+                return std::make_unique<srb_v11_adaptive_d72::Table>(
+                    (parent/"short_k32.bin").string(),path,(parent/"adaptive_a.bin").string(),
+                    srb_v11_adaptive_d72_generated::binding());
+            });
+            short_=short_future.get();
+            local_=local_future.get();
+#else
             local_=std::make_unique<srb_v11_local_expand::Local>((parent/"normalized_local.bin").string(),srb_v10_parameters::graph_signature);
-            if(local_->radius()!=24)throw std::runtime_error("expected frozen R24 Local");
             short_=std::make_unique<srb_v11_adaptive_d72::Table>((parent/"short_k32.bin").string(),path,
                 (parent/"adaptive_a.bin").string(),srb_v11_adaptive_d72_generated::binding());
+#endif
+            if(local_->radius()!=24)throw std::runtime_error("expected frozen R24 Local");
+#if SRB_PARALLEL_ASSET_LOAD
+            // These three readers only query the already frozen Short table.
+            // They own disjoint outputs, so their decode/reconstruction work
+            // can overlap without introducing mutable prediction state.
+            auto prototype_future=std::async(std::launch::async,[&,parent]{
+                return std::make_unique<srb_v11_adaptive_long_control::Table>(
+                    (parent/"complete_hull.bin").string(),(parent/"adaptive_a.bin").string(),*short_,
+                    srb_v11_adaptive_long_runtime_generated::binding(),srb_v11_adaptive_long_control::Mode::CertifiedQ6,
+                    srb_v11_adaptive_long_control_generated::certificate(),(parent/"short_k32.bin").string());
+            });
+            auto pair_future=std::async(std::launch::async,[&,parent]{
+                return std::make_unique<srb_v11_pair30::AssignmentMap>(
+                    (parent/"pair30.delta.bin").string(),*short_,srb_v11_adaptive_d72_generated::binding(),
+                    srb_v11_pair30::Deployment::D72,(parent/"short_k32.bin").string(),1);
+            });
+            auto short48_future=std::async(std::launch::async,[&,parent]{
+                return std::make_unique<srb_v11_short48::Table>(
+                    *short_,(parent/"augment48_full110.bin").string(),(parent/"adaptive_a.bin").string(),
+                    srb_v11_adaptive_d72_generated::binding(),srb_v11_short48_generated::binding());
+            });
+            prototype_=prototype_future.get();
+            pair_map_=pair_future.get();
+            short48_=short48_future.get();
+#else
             prototype_=std::make_unique<srb_v11_adaptive_long_control::Table>(
                 (parent/"complete_hull.bin").string(),(parent/"adaptive_a.bin").string(),*short_,
                 srb_v11_adaptive_long_runtime_generated::binding(),srb_v11_adaptive_long_control::Mode::CertifiedQ6,
                 srb_v11_adaptive_long_control_generated::certificate(),(parent/"short_k32.bin").string());
-            if(!prototype_->q6_gate_enabled())throw std::runtime_error("frozen q6 certificate unavailable");
             pair_map_=std::make_unique<srb_v11_pair30::AssignmentMap>((parent/"pair30.delta.bin").string(),*short_,
                 srb_v11_adaptive_d72_generated::binding(),srb_v11_pair30::Deployment::D72,(parent/"short_k32.bin").string(),1);
-            teacher_=std::make_unique<srb_v11_pair30_runtime::Teacher>(*short_,*prototype_,*pair_map_);
             short48_=std::make_unique<srb_v11_short48::Table>(*short_,(parent/"augment48_full110.bin").string(),
                 (parent/"adaptive_a.bin").string(),srb_v11_adaptive_d72_generated::binding(),srb_v11_short48_generated::binding());
+#endif
+            if(!prototype_->q6_gate_enabled())throw std::runtime_error("frozen q6 certificate unavailable");
+            teacher_=std::make_unique<srb_v11_pair30_runtime::Teacher>(*short_,*prototype_,*pair_map_);
             short48_teacher_=std::make_unique<srb_v11_short48_teacher::Teacher>(*short48_,*teacher_);
         }
     }

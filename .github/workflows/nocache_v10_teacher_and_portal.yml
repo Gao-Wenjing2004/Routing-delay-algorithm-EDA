@@ -276,6 +276,10 @@ jobs:
           g++ $common -DSRB_BATCH_WIDTH=8 -march=x86-64-v3 -mtune=generic \
             nocache_v10/src/estimate_trace.cpp -o analysis/nocache_v10/build/estimate_avx2_b8 \
             -Wl,-Bstatic -llzma -lz -Wl,-Bdynamic
+          g++ $common -DSRB_BATCH_WIDTH=8 -DSRB_PARALLEL_ASSET_LOAD=1 \
+            -march=x86-64-v3 -mtune=generic -pthread \
+            nocache_v10/src/estimate_trace.cpp -o analysis/nocache_v10/build/estimate_avx2_b8_parallel_load \
+            -Wl,-Bstatic -llzma -lz -Wl,-Bdynamic
           mkdir -p analysis/nocache_v10/work/pgo
           g++ $common -DSRB_BATCH_WIDTH=8 -march=x86-64-v3 -mtune=generic \
             -fprofile-generate=analysis/nocache_v10/work/pgo \
@@ -290,7 +294,7 @@ jobs:
             -fprofile-use=analysis/nocache_v10/work/pgo -fprofile-correction \
             nocache_v10/src/estimate_trace.cpp -o analysis/nocache_v10/build/estimate_avx2_b8_pgo \
             -Wl,-Bstatic -llzma -lz -Wl,-Bdynamic
-          for variant in estimate_avx2_b8 estimate_avx2_b8_pgo; do
+          for variant in estimate_avx2_b8 estimate_avx2_b8_parallel_load estimate_avx2_b8_pgo; do
             /usr/bin/time -v analysis/nocache_v10/build/$variant \
               -in analysis/nocache_v10/panels/region_holdout_requests.csv \
               -out analysis/nocache_v10/work/${variant}.csv \

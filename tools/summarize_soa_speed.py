@@ -72,6 +72,17 @@ def main() -> int:
             "score_at_accuracy_100": total_score(100.0, projected),
         }
     best = min(variants, key=lambda key: variants[key]["official_1b_seconds_relative_projection"])
+    load_variants = {}
+    for name in ("estimate_avx2_b8", "estimate_avx2_b8_parallel_load", "estimate_avx2_b8_pgo"):
+        path = args.reports / f"{name}_timing.txt"
+        if not path.exists():
+            continue
+        row = timing(path)
+        if "total_elapsed" in row and "stream_elapsed" in row:
+            row["asset_load_seconds"] = row.get(
+                "load", row["total_elapsed"] - row["stream_elapsed"]
+            )
+        load_variants[name] = row
     report = {
         "schema": 1,
         "kind": "byte-exact-SoA-thread-speed-ablation",
@@ -82,6 +93,7 @@ def main() -> int:
         "local_k48_1b_seconds_linear_projection": baseline_local_1b,
         "variants": variants,
         "best_threads": int(best),
+        "asset_load_ablation": load_variants,
         "projection_warning": (
             "Relative projection assumes local and official phase ratios are stable. "
             "A 10M/50M/100M unique Linux curve remains required before release."

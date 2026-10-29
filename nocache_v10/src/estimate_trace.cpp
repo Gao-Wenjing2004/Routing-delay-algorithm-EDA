@@ -116,6 +116,7 @@ unsigned block_mask(const srb_v11_hybrid::Estimator::PreparedRequest& query) {
 }  // namespace
 
 int main(int argc, char** argv) {
+    const auto total_started = std::chrono::steady_clock::now();
     try {
         std::string input_path, output_path, trace_path, residual_path;
         std::string atlas_path =
@@ -141,7 +142,10 @@ int main(int argc, char** argv) {
         File trace(trace_path.empty() ? nullptr : std::fopen(trace_path.c_str(), "wb"), &std::fclose);
         if (!input || !output || (!trace_path.empty() && !trace))
             throw std::runtime_error("cannot open input/output/trace");
+        const auto load_started = std::chrono::steady_clock::now();
         srb_v11_hybrid::Estimator estimator(atlas_path, local_radius, true);
+        const double load_seconds = std::chrono::duration<double>(
+            std::chrono::steady_clock::now() - load_started).count();
         std::unique_ptr<nocache_v10::DirectResidual> residual;
         if (residual_path.empty()) {
             const auto candidate = std::filesystem::path(argv[0]).parent_path() / "assets/direct_residual.bin";
@@ -217,6 +221,7 @@ int main(int argc, char** argv) {
             pending_count = 0;
         };
 
+        const auto stream_started = std::chrono::steady_clock::now();
         while (true) {
             const size_t bytes = std::fread(buffer.data() + carry, 1, block, input.get());
             if (std::ferror(input.get())) throw std::runtime_error("input read failed");
@@ -264,7 +269,12 @@ int main(int argc, char** argv) {
             throw std::runtime_error("flush failed");
         std::cerr << "processed=" << rows << " bad_rows=" << bad
                   << " atlas_memory_bytes=" << estimator.atlas_memory_bytes()
-                  << " residual_bytes=" << (residual ? residual->memory_bytes() : 0) << '\n';
+                  << " residual_bytes=" << (residual ? residual->memory_bytes() : 0)
+                  << " load=" << load_seconds
+                  << " stream_elapsed=" << std::chrono::duration<double>(
+                         std::chrono::steady_clock::now() - stream_started).count()
+                  << " total_elapsed=" << std::chrono::duration<double>(
+                         std::chrono::steady_clock::now() - total_started).count() << '\n';
         return bad ? 1 : 0;
     } catch (const std::exception& error) {
         std::cerr << "error: " << error.what() << '\n';

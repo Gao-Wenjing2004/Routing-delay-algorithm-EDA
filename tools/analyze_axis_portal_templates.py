@@ -8,8 +8,13 @@ import csv
 import json
 import math
 import re
+import sys
 from collections import Counter, defaultdict
 from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
 from srb_hybrid_v9.tools.analyze_path_skeletons import stem, symbolic_skeleton
 
