@@ -27,6 +27,36 @@ def weakest(values: dict[str, dict], limit: int = 6) -> list[dict]:
     return [{"name": name, **metric(value)} for name, value in eligible[:limit]]
 
 
+def portal_summary(report: dict) -> dict:
+    return {
+        "structural_pass": report.get("structural_pass"),
+        "retirement_authorized": report.get("retirement_authorized"),
+        "checks": report.get("checks"),
+        "measurements": report.get("measurements"),
+        "next_action": report.get("next_action"),
+    }
+
+
+def speed_summary(report: dict) -> dict:
+    variants = {}
+    for threads, row in report.get("variants", {}).items():
+        variants[threads] = {
+            key: row.get(key) for key in (
+                "load", "read", "parse", "predict", "format", "write",
+                "local_1b_speedup_vs_k48", "official_1b_seconds_relative_projection",
+                "score_at_accuracy_97_56", "score_at_accuracy_99_9", "score_at_accuracy_100",
+            )
+        }
+    return {
+        "rows": report.get("rows"),
+        "official_baseline_seconds": report.get("official_baseline_seconds"),
+        "best_threads": report.get("best_threads"),
+        "variants": variants,
+        "asset_load_ablation": report.get("asset_load_ablation"),
+        "projection_warning": report.get("projection_warning"),
+    }
+
+
 def annotation(title: str, value: object) -> None:
     message = json.dumps(value, ensure_ascii=False, separators=(",", ":"))
     message = message.replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")
@@ -73,6 +103,12 @@ def main() -> int:
                     }
                 else:
                     summary[name] = report
+        portal = args.reports / "axis_portal_gate.json"
+        if portal.exists():
+            summary["axis_portal_gate"] = portal_summary(load(portal))
+        speed = args.reports / "soa_mt_speed_summary.json"
+        if speed.exists():
+            summary["soa_mt_speed"] = speed_summary(load(speed))
 
     if args.residual and args.residual.exists():
         report = load(args.residual)
