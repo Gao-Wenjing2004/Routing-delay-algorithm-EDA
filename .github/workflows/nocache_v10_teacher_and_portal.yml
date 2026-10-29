@@ -18,6 +18,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: nocache-v10-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   teacher-baseline:
     runs-on: ubuntu-22.04
@@ -37,7 +41,8 @@ jobs:
         run: |
           python3 -m pip install --disable-pip-version-check pytest
           python3 -m pytest tests/test_unique_eval.py tests/test_nocache_teacher.py \
-            tests/test_nocache_residual.py tests/test_axis_portal_oracle.py -q
+            tests/test_nocache_residual.py tests/test_axis_portal_oracle.py \
+            tests/test_summarize_soa_speed.py -q
       - name: Build exact graph, forward/reverse Teacher and K48 trace
         run: |
           mkdir -p analysis/nocache_v10/build analysis/nocache_v10/work analysis/nocache_v10/reports
@@ -154,8 +159,18 @@ jobs:
         id: axis_portal
         shell: bash
         run: |
+          exec > >(tee analysis/nocache_v10/reports/axis_portal_step.log) 2>&1
+          report_failure() {
+            message=$(tail -c 12000 analysis/nocache_v10/reports/axis_portal_step.log)
+            message=${message//'%'/'%25'}
+            message=${message//$'\r'/'%0D'}
+            message=${message//$'\n'/'%0A'}
+            echo "::error title=Axis/Portal audit failed::$message"
+          }
+          trap report_failure ERR
           set -euo pipefail
           for split in train source_holdout region_holdout; do
+            echo "selecting axis/Portal probe: $split"
             python3 tools/select_axis_portal_probe.py \
               --metadata analysis/nocache_v10/panels/${split}_metadata.csv \
               --output analysis/nocache_v10/work/${split}_axis_portal_requests.csv \
@@ -165,11 +180,13 @@ jobs:
               --trace-output analysis/nocache_v10/work/${split}_axis_portal_trace.csv \
               --rows 4096
           done
+          echo 'measuring request-identity-free skeleton recall'
           python3 tools/analyze_axis_portal_templates.py \
             --panel train:analysis/nocache_v10/work/train_axis_portal_summaries.csv \
             --panel source_holdout:analysis/nocache_v10/work/source_holdout_axis_portal_summaries.csv \
             --panel region_holdout:analysis/nocache_v10/work/region_holdout_axis_portal_summaries.csv \
             --output analysis/nocache_v10/reports/axis_portal_template_recall.json
+          echo 'pricing fixed H/V and single-Block Portal structures'
           set +e
           python3 tools/analyze_axis_portal_oracle.py \
             --model analysis/nocache_v10/build/compact_model.json \
@@ -313,6 +330,10 @@ jobs:
             cmp analysis/nocache_v10/work/soa_mt_${threads}.csv \
                 analysis/nocache_v10/work/k48_independent_prediction.csv
           done
+          python3 tools/summarize_soa_speed.py \
+            --reports analysis/nocache_v10/reports \
+            --output analysis/nocache_v10/reports/soa_mt_speed_summary.json \
+            --official-baseline-seconds 329.58
       - name: Publish compact validation metrics as Check annotations
         run: |
           python3 tools/summarize_nocache_validation.py \

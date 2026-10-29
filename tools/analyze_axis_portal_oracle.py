@@ -99,7 +99,12 @@ class Architecture:
     def between(site: int, first: int, second: int) -> bool:
         return min(first, second) <= site < max(first, second)
 
-    def segment_extra(self, first: tuple[int, int], second: tuple[int, int]) -> int | None:
+    def segment_extra(
+        self,
+        first: tuple[int, int],
+        second: tuple[int, int],
+        reject_crossable_block: bool = False,
+    ) -> int | None:
         x, y = first
         nx, ny = second
         if (x == nx) == (y == ny):
@@ -120,6 +125,12 @@ class Architecture:
                     continue
                 if not bool(block["horizontal crossable"]):
                     return None
+                if reject_crossable_block:
+                    # In the official graph a crossable Block's missing SRBs do
+                    # not consume Net displacement.  The obstacle-free AXS9
+                    # displacement is therefore not a valid core for this
+                    # segment; leave it to an exact Portal/P10 transfer.
+                    return None
                 extra += int(block["horizontal cross delay"])
             else:
                 same_lane = int(block["left"]) <= x <= int(block["right"])
@@ -128,13 +139,17 @@ class Architecture:
                     continue
                 if not bool(block["vertical crossable"]):
                     return None
+                if reject_crossable_block:
+                    return None
                 extra += int(block["vertical cross delay"])
         return extra
 
-    def path_extra(self, points: list[tuple[int, int]]) -> int | None:
+    def path_extra(
+        self, points: list[tuple[int, int]], reject_crossable_block: bool = False,
+    ) -> int | None:
         total = 0
         for first, second in zip(points, points[1:]):
-            value = self.segment_extra(first, second)
+            value = self.segment_extra(first, second, reject_crossable_block)
             if value is None:
                 return None
             total += value
@@ -170,6 +185,11 @@ class AxisPricer:
         )
 
     def chain(self, source: int, target: int, runs: tuple[tuple[str, int], ...]) -> int:
+        return self.chain_to_targets(source, {target: 0}, runs)
+
+    def chain_to_targets(
+        self, source: int, targets: dict[int, int], runs: tuple[tuple[str, int], ...],
+    ) -> int:
         costs = {source: 0}
         for axis, delta in runs:
             if delta == 0:
@@ -183,7 +203,8 @@ class AxisPricer:
             costs = following
             if not costs:
                 return INF
-        return costs.get(target, INF)
+        return min((costs[state] + exit_cost for state, exit_cost in targets.items()
+                    if state in costs), default=INF)
 
 
 def load_trace(path: Path) -> dict[tuple[str, str], dict[str, str]]:
@@ -272,24 +293,32 @@ def main() -> int:
 
                 best = INF
                 selected = "none"
+                target_costs: dict[int, int] = {}
+                for target_state, exit_cost in target_candidates(model, port_id[target_name]):
+                    target_costs[target_state] = min(
+                        target_costs.get(target_state, INF), exit_cost
+                    )
                 for source_state, entry_dx, entry_dy, entry_cost in source_candidates(
                     model, port_id[source_name]
                 ):
                     start = sx + entry_dx, sy + entry_dy
-                    entry_extra = architecture.segment_extra((sx, sy), start)
+                    entry_extra = architecture.segment_extra(
+                        (sx, sy), start, reject_crossable_block=True
+                    )
                     if entry_extra is None:
                         continue
-                    for target_state, exit_cost in target_candidates(model, port_id[target_name]):
-                        for name, points, runs in geometry_candidates(start, (tx, ty), blocks, args.portal_band):
-                            extra = architecture.path_extra(points)
-                            if extra is None:
-                                continue
-                            core = pricer.chain(source_state, target_state, runs)
-                            if core == INF:
-                                continue
-                            value = entry_cost + entry_extra + core + exit_cost + extra
-                            if value < best:
-                                best, selected = value, name
+                    for name, points, runs in geometry_candidates(
+                        start, (tx, ty), blocks, args.portal_band
+                    ):
+                        extra = architecture.path_extra(points, reject_crossable_block=True)
+                        if extra is None:
+                            continue
+                        core = pricer.chain_to_targets(source_state, target_costs, runs)
+                        if core == INF:
+                            continue
+                        value = entry_cost + entry_extra + core + extra
+                        if value < best:
+                            best, selected = value, name
                 candidate = None if best == INF else best
                 golden = int(row["Delay"])
                 baseline = int(baseline_row["Delay"])
@@ -300,11 +329,17 @@ def main() -> int:
     report = {
         "schema": 1,
         "kind": "exact-axis-plus-single-block-portal-offline-oracle",
+        "request_identity_stored": False,
+        "online_search": False,
         "radius": args.radius,
         "search_margin": args.search_margin,
         "portal_band": args.portal_band,
         "candidate_policy": (
             "H/V/HV/VH plus H-V-H at the configured columns on each side of one periodic Block"
+        ),
+        "safety_policy": (
+            "reject an AXS9 segment that intersects a crossable Block because official Net displacement "
+            "skips missing Block sites; such segments require an exact Portal/P10 transfer"
         ),
         "panels": {
             split: {group: value.result() for group, value in sorted(groups.items())}

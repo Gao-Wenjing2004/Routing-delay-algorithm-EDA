@@ -20,6 +20,8 @@ def main() -> int:
     oracle = json.loads(args.oracle.read_text(encoding="utf-8"))
     templates = json.loads(args.templates.read_text(encoding="utf-8"))
     checks: dict[str, bool] = {}
+    checks["no_request_identity"] = oracle.get("request_identity_stored") is False
+    checks["no_online_search"] = oracle.get("online_search") is False
     measurements: dict[str, dict[str, float | int]] = {}
     for panel in PANELS:
         row = oracle.get("panels", {}).get(panel, {}).get("replacement_target", {})

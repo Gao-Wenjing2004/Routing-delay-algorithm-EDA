@@ -24,6 +24,7 @@ def test_concrete_segment_gap_and_block_costs(tmp_path):
     assert arch.segment_extra((0, 0), (10, 0)) == 7
     assert arch.segment_extra((35, 0), (35, 30)) is None
     assert arch.segment_extra((20, 15), (50, 15)) == 29
+    assert arch.segment_extra((20, 15), (50, 15), reject_crossable_block=True) is None
     assert arch.segment_extra((20, 0), (50, 0)) == 0
 
 
