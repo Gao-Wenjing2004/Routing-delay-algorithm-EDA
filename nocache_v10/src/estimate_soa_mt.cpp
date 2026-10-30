@@ -9,6 +9,7 @@
 #include <cstring>
 #include <exception>
 #include <filesystem>
+#include <fstream>
 #include <iostream>
 #include <memory>
 #include <mutex>
@@ -16,6 +17,10 @@
 #include <string>
 #include <thread>
 #include <vector>
+
+#ifdef __linux__
+#include <sched.h>
+#endif
 
 using srb_fast::Slice;
 using Clock = std::chrono::steady_clock;
@@ -61,6 +66,37 @@ void write_all(FILE* stream, const char* data, size_t bytes) {
 
 double seconds(Clock::duration duration) {
     return std::chrono::duration<double>(duration).count();
+}
+
+unsigned quota_threads() {
+    unsigned available = std::thread::hardware_concurrency();
+    if (!available) available = 1;
+#ifdef __linux__
+    cpu_set_t affinity;
+    CPU_ZERO(&affinity);
+    if (sched_getaffinity(0, sizeof(affinity), &affinity) == 0) {
+        const int count = CPU_COUNT(&affinity);
+        if (count > 0) available = std::min(available, static_cast<unsigned>(count));
+    }
+
+    // cgroup v2 is used by current GitHub runners and most contest containers.
+    // Honour the CPU quota so a container exposing many host CPUs does not
+    // oversubscribe its actual allocation.  This is scheduling only; no
+    // request identity or prediction is retained.
+    std::ifstream limit("/sys/fs/cgroup/cpu.max");
+    std::string quota;
+    uint64_t period = 0;
+    if (limit >> quota >> period && quota != "max" && period) {
+        try {
+            const uint64_t value = std::stoull(quota);
+            const unsigned allowed = static_cast<unsigned>(std::max<uint64_t>(1, value / period));
+            available = std::min(available, allowed);
+        } catch (const std::exception&) {
+            // A malformed optional cgroup hint must not prevent estimation.
+        }
+    }
+#endif
+    return std::max(1u, std::min(4u, available));
 }
 
 struct EndpointSoA {
@@ -211,7 +247,7 @@ int main(int argc, char** argv) {
         std::string atlas_path =
             (std::filesystem::path(argv[0]).parent_path() / "assets/lower_k32.bin").string();
         int local_radius = 24;
-        unsigned threads = 1;
+        unsigned threads = 0;
         bool use_atlas = true;
         for (int index = 1; index < argc; ++index) {
             const std::string option = argv[index];
@@ -229,6 +265,7 @@ int main(int argc, char** argv) {
                 throw std::runtime_error("usage: estimate_soa_mt -in request.csv -out result.csv [-threads 1|2|4|8]");
             }
         }
+        if (!threads) threads = quota_threads();
         if (input_path.empty() || output_path.empty() ||
             (threads != 1 && threads != 2 && threads != 4 && threads != 8))
             throw std::runtime_error("input/output required; threads must be 1, 2, 4 or 8");

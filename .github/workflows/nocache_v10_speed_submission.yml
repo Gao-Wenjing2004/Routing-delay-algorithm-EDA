@@ -1,0 +1,42 @@
+name: V10 speed-only submission
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - opt/wufan-nocache-v10
+    paths:
+      - nocache_v10/src/estimate_soa_mt.cpp
+      - nocache_v10/build_speed_submission.sh
+      - submission_k48_20261015/src/**
+      - .github/workflows/nocache_v10_speed_submission.yml
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-gate:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq g++ zstd zip unzip zlib1g-dev liblzma-dev
+      - name: Build, train PGO, and prove byte equality
+        run: |
+          chmod +x nocache_v10/build_speed_submission.sh
+          nocache_v10/build_speed_submission.sh analysis/nocache_v10/speed_submission
+      - name: Publish formal submission
+        uses: actions/upload-artifact@v4
+        with:
+          name: submission-v10-speedonly-${{ github.run_number }}
+          path: |
+            analysis/nocache_v10/speed_submission/submission.zip
+            analysis/nocache_v10/speed_submission/reports/submission_report.json
+            analysis/nocache_v10/speed_submission/reports/submission.sha256
+            analysis/nocache_v10/speed_submission/reports/*.seconds
+            analysis/nocache_v10/speed_submission/reports/candidate_auto.log
+          if-no-files-found: error
+          retention-days: 30
