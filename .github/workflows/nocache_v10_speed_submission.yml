@@ -30,7 +30,11 @@ jobs:
           if ! nocache_v10/build_speed_submission.sh analysis/nocache_v10/speed_submission \
               > /tmp/v10-speed-build.log 2>&1; then
             tail -80 /tmp/v10-speed-build.log
-            message=$(tail -30 /tmp/v10-speed-build.log | tr '\n' '|' | sed 's/%/%25/g;s/\r/%0D/g')
+            message=$(grep -E -m 35 '(^|: )(fatal error:|error:|Killed|No such file|undefined)' \
+                /tmp/v10-speed-build.log | tr '\n' '|' | sed 's/%/%25/g;s/\r/%0D/g')
+            if [ -z "$message" ]; then
+              message=$(head -35 /tmp/v10-speed-build.log | tr '\n' '|' | sed 's/%/%25/g;s/\r/%0D/g')
+            fi
             echo "::error file=nocache_v10/build_speed_submission.sh,line=1::$message"
             exit 1
           fi
